@@ -15,6 +15,7 @@ Miniature construction timelapse prompt generator and pipeline scaffold.
 - An end-to-end orchestrator that writes all artifacts into a single output folder
 - A Google Flow manual execution checklist
 - Per-scene Markdown exports for Google Flow
+- A full pipeline runner that stitches automatically when renders exist
 
 ## Quick start
 
@@ -78,6 +79,12 @@ Run the full pipeline:
 python3 src/orchestrator.py "Korean hanok" --duration 60 --base-dir output
 ```
 
+Run everything and stitch if renders already exist:
+
+```bash
+python3 src/run_full_pipeline.py "Korean hanok" --duration 60 --base-dir output
+```
+
 Export per-scene markdown files:
 
 ```bash
@@ -114,4 +121,5 @@ cat docs/google-flow-checklist.md
 - `src/orchestrator.py` for one-shot project generation
 - `src/stitch_ffmpeg.sh` for clip concatenation
 - `src/stitch_finalize.py` for the final FFmpeg stitch step
+- `src/run_full_pipeline.py` for generate-and-stitch flow
 - `examples/project.example.json` for a sample project
