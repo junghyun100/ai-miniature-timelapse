@@ -13,8 +13,8 @@ Miniature construction timelapse prompt generator and pipeline scaffold.
 - A scene-separated prompt pack and retry plan
 - A retry selector that chooses only missing scenes
 - An end-to-end orchestrator that writes all artifacts into a single output folder
-- A Google Flow manual execution checklist
-- Per-scene Markdown exports for Google Flow
+- A manual render checklist
+- Per-scene Markdown exports for manual rendering
 - A full pipeline runner that stitches automatically when renders exist
 
 ## Quick start
@@ -97,21 +97,22 @@ Finalize stitching:
 python3 src/stitch_finalize.py output output/exports/final_timeline.mp4
 ```
 
-Manual Google Flow steps:
+Manual render steps:
 
 ```bash
-cat docs/google-flow-checklist.md
+cat docs/render-checklist.md
 ```
 
 ## Structure
 
 - `docs/pipeline.md` for the system design
-- `docs/google-flow-checklist.md` for manual video generation steps
+- `docs/render-checklist.md` for manual video generation steps
 - `schema/project.schema.json` for the output contract
 - `src/pipeline.py` for project generation
 - `src/export_prompts.py` for prompt export
 - `src/render_plan.py` for stitch/QC planning
 - `src/render_manifest.py` for external video generator input
+- `src/prompt_templates.py` for shared prompt text
 - `src/prompt_pack.py` for first-frame and scene-separated prompts
 - `src/render_commands.py` for local execution commands
 - `src/retry_plan.py` for scene-only regeneration rules

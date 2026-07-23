@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
+from prompt_templates import build_first_frame_prompt
+
 
 def load_json(path: str | Path) -> Dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -14,12 +16,7 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
     scenes: List[Dict[str, Any]] = []
     for scene in project["scenes"]:
         transition = "hard cut to next scene" if scene["id"] < len(project["scenes"]) else "cinematic reveal and hold"
-        first_frame_prompt = (
-            f"Ultra realistic macro photography, miniature construction site, sand or soil surface, "
-            f"giant human fingers interacting with miniature materials, tiny realistic construction tools, "
-            f"partially prepared foundation area, 8K detail, cinematic studio lighting, shallow depth of field, "
-            f"{project['topic']}, scene: {scene['name']}."
-        )
+        first_frame_prompt = build_first_frame_prompt(project["topic"], scene["name"])
         scenes.append(
             {
                 "id": scene["id"],

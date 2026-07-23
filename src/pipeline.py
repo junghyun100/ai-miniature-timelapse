@@ -6,14 +6,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import List
 
-
-NEGATIVE_PROMPT = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
-
-STYLE_BLOCK = (
-    "ultra realistic macro photography, miniature construction site, giant human hands only, "
-    "ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, "
-    "cinematic studio lighting, shallow depth of field"
-)
+from prompt_templates import NEGATIVE_PROMPT, STYLE_BLOCK
 
 
 @dataclass
