@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from prompt_templates import build_first_frame_prompt
+from prompt_templates import get_building_template
 
 
 def load_json(path: str | Path) -> Dict[str, Any]:
@@ -13,6 +14,7 @@ def load_json(path: str | Path) -> Dict[str, Any]:
 
 
 def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
+    template = get_building_template(project.get("building_type", "hanok"))
     scenes: List[Dict[str, Any]] = []
     for scene in project["scenes"]:
         transition = "hard cut to next scene" if scene["id"] < len(project["scenes"]) else "cinematic reveal and hold"
@@ -27,9 +29,19 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
                     "end_second": scene["id"] * scene["seconds"],
                 },
                 "first_frame_prompt": first_frame_prompt,
+                "scene_style": {
+                    "materials": template["materials"],
+                    "camera": template["camera"],
+                    "lighting": template["lighting"],
+                    "color_palette": template.get("color_palette", ""),
+                },
                 "google_flow_input": (
                     f"Scene {scene['id']}\n"
                     f"First Frame Prompt: {first_frame_prompt}\n"
+                    f"Materials: {template['materials']}\n"
+                    f"Camera: {template['camera']}\n"
+                    f"Lighting: {template['lighting']}\n"
+                    f"Color Palette: {template.get('color_palette', '')}\n"
                     f"Video Prompt: {scene['prompt']}\n"
                     f"Negative Prompt: {scene['negative_prompt']}\n"
                     f"Duration Seconds: {scene['seconds']}\n"
@@ -43,10 +55,17 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "topic": project["topic"],
+        "building_type": project.get("building_type", "hanok"),
         "duration": project["duration"],
         "format": project["format"],
         "global_style": project["style"],
         "global_negative_prompt": project["negative_prompt"],
+        "building_style": {
+            "materials": template["materials"],
+            "camera": template["camera"],
+            "lighting": template["lighting"],
+            "color_palette": template.get("color_palette", ""),
+        },
         "scenes": scenes,
     }
 

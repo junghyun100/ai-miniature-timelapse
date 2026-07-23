@@ -15,6 +15,7 @@ from render_plan import build_render_plan
 from retry_selector import build_retry_selection
 from retry_plan import build_retry_plan
 from scene_md_export import export_scene_md
+from prompt_templates import format_building_type_choices, get_supported_building_types
 
 
 def ensure_dirs(base_dir: Path) -> None:
@@ -52,11 +53,11 @@ def collect_render_status(project: Dict[str, Any], base_dir: Path) -> Dict[str, 
     }
 
 
-def run(topic: str, duration: int, format_: str, variant: str, base_dir: Path) -> Dict[str, Any]:
+def run(topic: str, duration: int, format_: str, variant: str, base_dir: Path, building_type: str = "hanok") -> Dict[str, Any]:
     ensure_dirs(base_dir)
     scene_md_dir = base_dir / "scenes_md"
 
-    project = build_project(topic, duration, format_, STYLE_BLOCK, variant)
+    project = build_project(topic, duration, format_, STYLE_BLOCK, variant, building_type)
     render_plan = build_render_plan(project)
     render_manifest = build_render_manifest(project)
     prompt_pack = build_prompt_pack(project)
@@ -113,13 +114,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the full miniature timelapse prompt pipeline.")
     parser.add_argument("topic", help="Target subject, for example 'Korean hanok'.")
     parser.add_argument("--duration", type=int, choices=[30, 60], default=60)
+    parser.add_argument("--building-type", default="hanok", choices=get_supported_building_types())
+    parser.add_argument("--list-building-types", action="store_true", help="Print available building templates and exit.")
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
     parser.add_argument("--variant", default="")
     parser.add_argument("--base-dir", default="output", help="Root directory for generated artifacts.")
     parser.add_argument("--output", default="-", help="Print summary JSON to stdout or write to a file.")
     args = parser.parse_args()
 
-    summary = run(args.topic, args.duration, args.format_, args.variant, Path(args.base_dir))
+    if args.list_building_types:
+        print(format_building_type_choices())
+        return
+
+    summary = run(args.topic, args.duration, args.format_, args.variant, Path(args.base_dir), args.building_type)
     payload = json.dumps(summary, ensure_ascii=False, indent=2)
     if args.output == "-":
         print(payload)

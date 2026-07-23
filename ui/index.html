@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Miniature Timelapse Launcher</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --panel: rgba(255, 252, 246, 0.88);
+      --panel-strong: #fffaf0;
+      --text: #1f2328;
+      --muted: #65615a;
+      --line: rgba(31, 35, 40, 0.12);
+      --accent: #8f5f34;
+      --accent-2: #b78b5a;
+      --shadow: 0 18px 50px rgba(53, 37, 20, 0.12);
+      --radius: 22px;
+      --radius-sm: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(183, 139, 90, 0.24), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(143, 95, 52, 0.16), transparent 28%),
+        linear-gradient(180deg, #f7f2e9 0%, #efe7db 100%);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .intro {
+      padding: 28px;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .lede {
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.55);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .stat .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .launcher {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    select, input, textarea, button {
+      font: inherit;
+    }
+
+    select, input {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      border-radius: 14px;
+      padding: 14px 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+
+    select:focus, input:focus {
+      border-color: rgba(143, 95, 52, 0.55);
+      box-shadow: 0 0 0 4px rgba(143, 95, 52, 0.12);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #6f4521);
+      color: white;
+      box-shadow: 0 12px 24px rgba(143, 95, 52, 0.22);
+    }
+
+    .secondary {
+      background: rgba(255,255,255,0.7);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.7);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    pre, textarea {
+      width: 100%;
+      min-height: 220px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: #14120f;
+      color: #f5efe5;
+      padding: 16px;
+      overflow: auto;
+      font-family: var(--mono);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 280px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .template-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .template-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .template-meta {
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .template-meta strong {
+      color: var(--text);
+    }
+
+    .scene-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .scene-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.74);
+      border-radius: 18px;
+      padding: 14px;
+      text-align: left;
+      width: 100%;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .scene-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .scene-card.active {
+      border-color: rgba(143, 95, 52, 0.4);
+      background: rgba(255, 245, 231, 0.92);
+      box-shadow: 0 10px 24px rgba(143, 95, 52, 0.12);
+    }
+
+    .scene-name {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .scene-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 960px) {
+      .hero, .workspace, .grid { grid-template-columns: 1fr; }
+      .wrap { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="card intro">
+        <div class="eyebrow">Miniature Timelapse Launcher</div>
+        <h1>Pick a genre, pick a type, and generate the scene kit.</h1>
+        <p class="lede">
+          This screen lets you choose the visual lane for the video without touching the command line.
+          The engine still runs in Python; this page only handles selection and hands the result to the pipeline.
+        </p>
+        <div class="stats">
+          <div class="stat"><div class="label">Genres</div><div class="value">Architecture, Vehicle, Product, Fantasy</div></div>
+          <div class="stat"><div class="label">Outputs</div><div class="value">Scene kit, prompts, status, stitch</div></div>
+          <div class="stat"><div class="label">Workflow</div><div class="value">Choose → Generate → Render → Auto-finalize</div></div>
+        </div>
+      </div>
+      <div class="card launcher">
+        <div class="grid">
+          <div class="field">
+            <label for="genre">Genre</label>
+            <select id="genre">
+              <option value="architecture">Architecture</option>
+              <option value="vehicle">Vehicle</option>
+              <option value="product">Product</option>
+              <option value="character">Character</option>
+              <option value="fantasy">Fantasy</option>
+              <option value="scifi">Sci-Fi</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="subtype">Subtype</label>
+            <select id="subtype"></select>
+          </div>
+          <div class="field">
+            <label for="duration">Duration</label>
+            <select id="duration">
+              <option value="30">30 seconds</option>
+              <option value="60" selected>60 seconds</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="format">Format</label>
+            <select id="format">
+              <option value="9:16" selected>9:16</option>
+              <option value="16:9">16:9</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="topic">Topic label</label>
+          <input id="topic" value="Korean hanok" />
+        </div>
+        <div class="button-row">
+          <button class="primary" id="generate">Generate Command</button>
+          <button class="secondary" id="copy">Copy Command</button>
+        </div>
+        <div class="hint">The command is prefilled for the Python runner. You can swap in a different genre/subtype anytime.</div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="card panel">
+        <h2>Selected Template</h2>
+        <div class="chips" id="chips"></div>
+        <div class="template-box" id="templateBox"></div>
+      </div>
+      <div class="card panel">
+        <h2>Launch Command</h2>
+        <textarea id="command" spellcheck="false"></textarea>
+        <div class="hint">Run this in the project root. It will use the chosen subtype and feed the pipeline.</div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="card panel">
+        <h2>Scene Outputs</h2>
+        <div class="scene-grid" id="sceneGrid"></div>
+      </div>
+      <div class="card panel">
+        <h2>Scene Preview</h2>
+        <div class="template-box" id="scenePreview">
+          <div class="template-title">Select a scene</div>
+          <div class="template-meta">Click a scene card to inspect the generated scene summary.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const templates = {
+      architecture: {
+        label: "Architecture",
+        subtypes: {
+          hanok: { label: "Hanok", type: "hanok", genre: "architecture", color: "warm wood, hanji paper, clay tiles" },
+          modern_house: { label: "Modern House", type: "modern_house", genre: "architecture", color: "cool gray, glass blue, white trim" },
+          cafe: { label: "Cafe", type: "cafe", genre: "architecture", color: "brick red, wood brown, warm amber" },
+          church: { label: "Church", type: "church", genre: "architecture", color: "stone gray, stained-glass jewel tones, iron black" },
+          castle: { label: "Castle", type: "castle", genre: "architecture", color: "stone gray, slate blue, weathered gold" },
+          temple: { label: "Temple", type: "temple", genre: "architecture", color: "dark wood, moss green, mist gray" },
+          villa: { label: "Villa", type: "villa", genre: "architecture", color: "champagne gold, beige, marble white" },
+          store: { label: "Store", type: "store", genre: "architecture", color: "white, steel gray, accent red" },
+          school: { label: "School", type: "school", genre: "architecture", color: "brick red, pale blue, white trim" },
+          hotel: { label: "Hotel", type: "hotel", genre: "architecture", color: "champagne gold, charcoal gray, amber" },
+          apartment: { label: "Apartment", type: "apartment", genre: "architecture", color: "light gray, slate blue, muted tan" },
+          factory: { label: "Factory", type: "factory", genre: "architecture", color: "industrial gray, safety yellow, rust orange" },
+          barn: { label: "Barn", type: "barn", genre: "architecture", color: "barn red, hay gold, weathered brown" },
+        }
+      },
+      vehicle: {
+        label: "Vehicle",
+        subtypes: {
+          car: { label: "Car", type: "car", genre: "vehicle", color: "metallic silver, black glass, red accents" },
+          train: { label: "Train", type: "train", genre: "vehicle", color: "steel gray, deep green, signal red" },
+          airplane: { label: "Airplane", type: "airplane", genre: "vehicle", color: "white fuselage, navy trim, airline blue" },
+          boat: { label: "Boat", type: "boat", genre: "vehicle", color: "navy blue, teak brown, white foam" },
+        }
+      },
+      product: {
+        label: "Product",
+        subtypes: {
+          watch: { label: "Watch", type: "watch", genre: "product", color: "silver, black dial, gold highlight" },
+          camera: { label: "Camera", type: "camera", genre: "product", color: "matte black, chrome silver, red indicator" },
+          sneaker: { label: "Sneaker", type: "sneaker", genre: "product", color: "white, gum sole, accent color" },
+        }
+      },
+      character: {
+        label: "Character",
+        subtypes: {
+          robot: { label: "Robot", type: "robot", genre: "character", color: "metal gray, neon cyan, soft white" },
+          dinosaur: { label: "Dinosaur", type: "dinosaur", genre: "character", color: "earth green, moss, bone ivory" },
+          mecha: { label: "Mecha", type: "mecha", genre: "character", color: "gunmetal, electric blue, warning orange" },
+        }
+      },
+      fantasy: {
+        label: "Fantasy",
+        subtypes: {
+          dragon: { label: "Dragon", type: "dragon", genre: "fantasy", color: "ember red, gold, smoky black" },
+          wizard_house: { label: "Wizard House", type: "wizard_house", genre: "fantasy", color: "deep purple, brass, moonlit blue" },
+        }
+      },
+      scifi: {
+        label: "Sci-Fi",
+        subtypes: {
+          spaceship: { label: "Spaceship", type: "spaceship", genre: "scifi", color: "white, neon blue, graphite gray" },
+          hoverbike: { label: "Hoverbike", type: "hoverbike", genre: "scifi", color: "black, electric teal, chrome" },
+          mech: { label: "Mech", type: "mech", genre: "scifi", color: "industrial gray, hazard yellow, plasma blue" },
+        }
+      }
+    };
+
+    const genreEl = document.getElementById('genre');
+    const subtypeEl = document.getElementById('subtype');
+    const durationEl = document.getElementById('duration');
+    const formatEl = document.getElementById('format');
+    const topicEl = document.getElementById('topic');
+    const commandEl = document.getElementById('command');
+    const chipsEl = document.getElementById('chips');
+    const templateBox = document.getElementById('templateBox');
+
+    function renderSubtypes() {
+      const genre = templates[genreEl.value];
+      subtypeEl.innerHTML = '';
+      Object.entries(genre.subtypes).forEach(([key, item], index) => {
+        const opt = document.createElement('option');
+        opt.value = item.type;
+        opt.textContent = item.label;
+        if (index === 0) opt.selected = true;
+        subtypeEl.appendChild(opt);
+      });
+      render();
+    }
+
+    function currentSubtype() {
+      const genre = templates[genreEl.value];
+      return Object.values(genre.subtypes).find(item => item.type === subtypeEl.value) || Object.values(genre.subtypes)[0];
+    }
+
+    function sceneNamesFor(type, duration) {
+      const map = {
+        hanok: {
+          60: ["Foundation", "Wall and Windows", "Roofing", "Exterior Finishing", "Painting and Weathering", "Landscaping and Reveal"],
+          30: ["Foundation and Walls", "Roofing and Exterior", "Painting, Landscaping, and Reveal"],
+        },
+        modern_house: {
+          60: ["Foundation", "Framing and Windows", "Roofing", "Exterior Finishing", "Painting and Detailing", "Landscaping and Reveal"],
+          30: ["Foundation and Framing", "Roofing and Exterior", "Painting, Landscaping, and Reveal"],
+        },
+        cafe: {
+          60: ["Foundation", "Wall and Windows", "Roofing", "Exterior Finishing", "Painting and Signage", "Terrace and Reveal"],
+          30: ["Foundation and Walls", "Roofing and Exterior", "Painting, Terrace, and Reveal"],
+        },
+        church: {
+          60: ["Foundation", "Nave Walls", "Tower and Roof", "Exterior Finishing", "Stained Glass and Painting", "Courtyard and Reveal"],
+          30: ["Foundation and Walls", "Tower and Exterior", "Stained Glass, Courtyard, and Reveal"],
+        },
+        castle: {
+          60: ["Foundation", "Curtain Walls", "Towers and Gate", "Roofing and Battlements", "Painting and Weathering", "Courtyard and Reveal"],
+          30: ["Foundation and Walls", "Towers and Gate", "Painting, Courtyard, and Reveal"],
+        },
+        temple: {
+          60: ["Foundation", "Pavilion Structure", "Roofing", "Exterior Finishing", "Painting and Details", "Garden and Reveal"],
+          30: ["Foundation and Structure", "Roofing and Exterior", "Painting, Garden, and Reveal"],
+        },
+        villa: {
+          60: ["Foundation", "Framing and Glass", "Roofing", "Exterior Finishing", "Painting and Detailing", "Pool and Reveal"],
+          30: ["Foundation and Framing", "Roofing and Exterior", "Painting, Pool, and Reveal"],
+        },
+        store: {
+          60: ["Foundation", "Storefront Frame", "Roofing", "Exterior Finishing", "Signage and Display", "Street Reveal"],
+          30: ["Foundation and Frame", "Roofing and Exterior", "Signage, Display, and Reveal"],
+        },
+        school: {
+          60: ["Foundation", "Classroom Walls", "Roofing", "Exterior Finishing", "Painting and Signage", "Playground and Reveal"],
+          30: ["Foundation and Walls", "Roofing and Exterior", "Painting, Playground, and Reveal"],
+        },
+        hotel: {
+          60: ["Foundation", "Lobby Frame", "Upper Floors", "Exterior Finishing", "Lighting and Detailing", "Night Reveal"],
+          30: ["Foundation and Lobby", "Upper Floors and Exterior", "Lighting, Detailing, and Reveal"],
+        },
+        apartment: {
+          60: ["Foundation", "Floor Stack", "Window Grid", "Exterior Finishing", "Balcony and Detailing", "City Reveal"],
+          30: ["Foundation and Floors", "Window Grid and Exterior", "Balcony, Detailing, and Reveal"],
+        },
+        factory: {
+          60: ["Foundation", "Steel Frame", "Roofing", "Exterior Finishing", "Pipes and Detailing", "Factory Reveal"],
+          30: ["Foundation and Frame", "Roofing and Exterior", "Pipes, Detailing, and Reveal"],
+        },
+        barn: {
+          60: ["Foundation", "Frame and Walls", "Roofing", "Exterior Finishing", "Painting and Weathering", "Farmyard and Reveal"],
+          30: ["Foundation and Frame", "Roofing and Exterior", "Painting, Farmyard, and Reveal"],
+        },
+        car: {
+          60: ["Chassis", "Body Frame", "Wheels and Suspension", "Paint and Trim", "Interior Details", "Final Reveal"],
+          30: ["Chassis and Frame", "Wheels and Body", "Paint, Interior, and Reveal"],
+        },
+        train: {
+          60: ["Engine Base", "Passenger Cars", "Wheel Assembly", "Roof and Trim", "Cabin Details", "Track Reveal"],
+          30: ["Engine and Cars", "Wheels and Roof", "Details and Reveal"],
+        },
+        airplane: {
+          60: ["Fuselage", "Wing Structure", "Engines and Gear", "Surface Panels", "Cabin Details", "Runway Reveal"],
+          30: ["Fuselage and Wings", "Engines and Exterior", "Cabin, Panels, and Reveal"],
+        },
+        boat: {
+          60: ["Hull", "Deck Frame", "Sails or Cabin", "Rigging", "Finishing", "Harbor Reveal"],
+          30: ["Hull and Deck", "Rigging and Exterior", "Finishing and Reveal"],
+        },
+        watch: {
+          60: ["Case Body", "Dial Assembly", "Hands and Crown", "Strap Attachment", "Polishing", "Luxury Reveal"],
+          30: ["Case and Dial", "Hands and Strap", "Polish and Reveal"],
+        },
+        camera: {
+          60: ["Body Shell", "Lens Assembly", "Controls", "Grip and Mount", "Polishing", "Hero Reveal"],
+          30: ["Body and Lens", "Controls and Grip", "Polish and Reveal"],
+        },
+        sneaker: {
+          60: ["Sole Base", "Upper Panels", "Lace System", "Tongue and Heel", "Finishing", "Product Reveal"],
+          30: ["Sole and Upper", "Laces and Trim", "Finish and Reveal"],
+        },
+        robot: {
+          60: ["Core Frame", "Joints and Limbs", "Shell Panels", "Wiring and Lights", "Painting", "Robot Reveal"],
+          30: ["Frame and Limbs", "Shell and Lights", "Paint and Reveal"],
+        },
+        dinosaur: {
+          60: ["Skeleton Base", "Body Form", "Skin and Tail", "Texture Details", "Painting", "Creature Reveal"],
+          30: ["Body and Tail", "Texture and Reveal", "Finish and Reveal"],
+        },
+        mecha: {
+          60: ["Core Frame", "Arms and Legs", "Armor Plates", "Weapons and Vents", "Painting", "Mecha Reveal"],
+          30: ["Frame and Limbs", "Armor and Weapons", "Paint and Reveal"],
+        },
+        dragon: {
+          60: ["Body Core", "Wings and Tail", "Horn Details", "Texture and Paint", "Base and Finish", "Dragon Reveal"],
+          30: ["Body and Wings", "Texture and Finish", "Reveal"],
+        },
+        wizard_house: {
+          60: ["Foundation", "Main Structure", "Roof and Windows", "Ornaments", "Coloring", "Reveal"],
+          30: ["Structure and Roof", "Ornaments and Reveal", "Finish and Reveal"],
+        },
+        spaceship: {
+          60: ["Core Hull", "Wing Structure", "Engines", "Surface Panels", "Lighting", "Launch Reveal"],
+          30: ["Hull and Wings", "Engines and Panels", "Lighting and Reveal"],
+        },
+        hoverbike: {
+          60: ["Frame", "Pods and Wheels", "Body Panels", "Controls", "Lighting", "Street Reveal"],
+          30: ["Frame and Pods", "Panels and Controls", "Lighting and Reveal"],
+        },
+      };
+      return (map[type] && map[type][duration]) || map.hanok[duration];
+    }
+
+    function sceneSummary(type, sceneName) {
+      return `Scene: ${sceneName}. Materials, camera, lighting, and color palette are already bundled for ${type}.`;
+    }
+
+    function render() {
+      const sub = currentSubtype();
+      const genre = templates[genreEl.value];
+      const cmd = `python3 src/watch_and_finalize.py "${topicEl.value}" --building-type ${sub.type} --duration ${durationEl.value} --format ${formatEl.value} --base-dir output`;
+      commandEl.value = cmd;
+      const scenes = sceneNamesFor(sub.type, Number(durationEl.value));
+      if (activeSceneIndex >= scenes.length) activeSceneIndex = 0;
+
+      chipsEl.innerHTML = '';
+      [
+        `Genre: ${genre.label}`,
+        `Subtype: ${sub.label}`,
+        `Color: ${sub.color}`,
+        `Duration: ${durationEl.value}s`,
+        `Format: ${formatEl.value}`
+      ].forEach(text => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = text;
+        chipsEl.appendChild(chip);
+      });
+
+      templateBox.innerHTML = `
+        <div class="template-title">${sub.label}</div>
+        <div class="template-meta">
+          <div><strong>Genre:</strong> ${genre.label}</div>
+          <div><strong>Building key:</strong> ${sub.type}</div>
+          <div><strong>Recommended color palette:</strong> ${sub.color}</div>
+          <div><strong>Run command:</strong> chosen type is already injected into the pipeline</div>
+        </div>
+      `;
+
+      sceneGrid.innerHTML = '';
+      scenes.forEach((sceneName, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'scene-card' + (index === activeSceneIndex ? ' active' : '');
+        btn.innerHTML = `
+          <div class="scene-name">Scene ${index + 1}: ${sceneName}</div>
+          <div class="scene-note">Tap to preview the generated scene summary.</div>
+        `;
+        btn.addEventListener('click', () => {
+          activeSceneIndex = index;
+          render();
+        });
+        sceneGrid.appendChild(btn);
+      });
+
+      const sceneName = scenes[activeSceneIndex] || scenes[0];
+      document.getElementById('scenePreview').innerHTML = `
+        <div class="template-title">Scene ${activeSceneIndex + 1}: ${sceneName}</div>
+        <div class="template-meta">
+          <div><strong>Preview:</strong> ${sceneSummary(sub.type, sceneName)}</div>
+          <div><strong>Color palette:</strong> ${sub.color}</div>
+          <div><strong>Command fragment:</strong> --building-type ${sub.type} --duration ${durationEl.value}</div>
+          <div><strong>Copy target:</strong> use the right-side command, then run the selected scene in the video tool.</div>
+        </div>
+      `;
+    }
+
+    document.getElementById('generate').addEventListener('click', render);
+    document.getElementById('copy').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(commandEl.value);
+    });
+    genreEl.addEventListener('change', renderSubtypes);
+    [subtypeEl, durationEl, formatEl, topicEl].forEach(el => el.addEventListener('input', render));
+
+    renderSubtypes();
+  </script>
+</body>
+</html>
