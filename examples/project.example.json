@@ -1,0 +1,52 @@
+{
+  "topic": "Korean hanok",
+  "duration": 60,
+  "format": "9:16",
+  "style": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field",
+  "variant": "daylight",
+  "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry",
+  "scenes": [
+    {
+      "id": 1,
+      "name": "Foundation",
+      "seconds": 10,
+      "prompt": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field, miniature DIY construction timelapse of a Korean hanok, scene: Foundation, survey the ground, apply miniature cement, place foundation bricks, and prepare the base.",
+      "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
+    },
+    {
+      "id": 2,
+      "name": "Wall and Windows",
+      "seconds": 10,
+      "prompt": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field, miniature DIY construction timelapse of a Korean hanok, scene: Wall and Windows, build walls, insert window frames, and align door openings with continuous hand movement.",
+      "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
+    },
+    {
+      "id": 3,
+      "name": "Roofing",
+      "seconds": 10,
+      "prompt": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field, miniature DIY construction timelapse of a Korean hanok, scene: Roofing, assemble roof framing and install tiles or panels in a smooth timelapse sequence.",
+      "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
+    },
+    {
+      "id": 4,
+      "name": "Exterior Finishing",
+      "seconds": 10,
+      "prompt": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field, miniature DIY construction timelapse of a Korean hanok, scene: Exterior Finishing, finish exterior walls, install doors and windows, and add fine decorative details.",
+      "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
+    },
+    {
+      "id": 5,
+      "name": "Painting and Weathering",
+      "seconds": 10,
+      "prompt": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field, miniature DIY construction timelapse of a Korean hanok, scene: Painting and Weathering, apply primer, paint coats, and weathering effects with realistic tool motion.",
+      "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
+    },
+    {
+      "id": 6,
+      "name": "Landscaping and Reveal",
+      "seconds": 10,
+      "prompt": "ultra realistic macro photography, miniature construction site, giant human hands only, ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, cinematic studio lighting, shallow depth of field, miniature DIY construction timelapse of a Korean hanok, scene: Landscaping and Reveal, add grass, soil, fences, and landscaping, then remove the hands and reveal the completed building with a cinematic zoom out.",
+      "negative_prompt": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
+    }
+  ]
+}
