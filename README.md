@@ -1,126 +1,31 @@
 # ai-miniature-timelapse
 
-Miniature construction timelapse prompt generator and pipeline scaffold.
+Miniature construction timelapse pipeline.
 
-## What is included
+## Use
 
-- A pipeline design document
-- A JSON schema for project output
-- A Python generator that turns a topic into scene-by-scene prompts
-- A text exporter for Google Flow-style prompt bundles
-- A render plan generator and QC report template
-- A render manifest and local render command generator
-- A scene-separated prompt pack and retry plan
-- A retry selector that chooses only missing scenes
-- An end-to-end orchestrator that writes all artifacts into a single output folder
-- A manual render checklist
-- Per-scene Markdown exports for manual rendering
-- A full pipeline runner that stitches automatically when renders exist
-
-## Quick start
-
-Generate a 60-second project:
+1. Generate everything:
 
 ```bash
-python3 src/pipeline.py "Korean hanok" --duration 60 --output project.json
+python3 src/watch_and_finalize.py "Korean hanok" --duration 60 --base-dir output
 ```
 
-Export a readable prompt bundle:
+2. Render scenes in your video tool using `output/scenes_md/*.md`.
+3. Drop finished clips into `output/renders/scene_01.mp4`, `scene_02.mp4`, and so on.
+4. The watcher stitches automatically when all clips are present.
 
-```bash
-python3 src/export_prompts.py project.json --output prompts.txt
-```
+## Human Work
 
-Build a render plan:
+- Start the pipeline.
+- Create the scene clips in your video tool.
+- Save the clips into `output/renders/`.
 
-```bash
-python3 src/render_plan.py project.json --output render-plan.json
-```
+## Automatic Work
 
-Build a render manifest:
+- Project, prompt, and scene file generation
+- Retry selection and render status tracking
+- Auto-stitching when all clips appear
 
-```bash
-python3 src/render_manifest.py project.json --output render-manifest.json
-```
+## Fallback
 
-Build a prompt pack:
-
-```bash
-python3 src/prompt_pack.py project.json --output prompt-pack.json
-```
-
-Build a retry plan:
-
-```bash
-python3 src/retry_plan.py project.json --output retry-plan.json
-```
-
-Select missing scenes for retry:
-
-```bash
-python3 src/retry_selector.py output/exports/render-status.json output/qc/retry-plan.json --output retry-selection.json
-```
-
-Generate local render commands:
-
-```bash
-python3 src/render_commands.py project.json --base-dir output --output render-commands.json
-```
-
-Create a QC template:
-
-```bash
-python3 src/qc_report.py project.json --output qa-report.json
-```
-
-Run the full pipeline:
-
-```bash
-python3 src/orchestrator.py "Korean hanok" --duration 60 --base-dir output
-```
-
-Run everything and stitch if renders already exist:
-
-```bash
-python3 src/run_full_pipeline.py "Korean hanok" --duration 60 --base-dir output
-```
-
-Export per-scene markdown files:
-
-```bash
-python3 src/scene_md_export.py output/input/project.json --output-dir output/scenes_md
-```
-
-Finalize stitching:
-
-```bash
-python3 src/stitch_finalize.py output output/exports/final_timeline.mp4
-```
-
-Manual render steps:
-
-```bash
-cat docs/render-checklist.md
-```
-
-## Structure
-
-- `docs/pipeline.md` for the system design
-- `docs/render-checklist.md` for manual video generation steps
-- `schema/project.schema.json` for the output contract
-- `src/pipeline.py` for project generation
-- `src/export_prompts.py` for prompt export
-- `src/render_plan.py` for stitch/QC planning
-- `src/render_manifest.py` for external video generator input
-- `src/prompt_templates.py` for shared prompt text
-- `src/prompt_pack.py` for first-frame and scene-separated prompts
-- `src/render_commands.py` for local execution commands
-- `src/retry_plan.py` for scene-only regeneration rules
-- `src/retry_selector.py` for selecting missing clips
-- `src/scene_md_export.py` for per-scene Markdown exports
-- `src/qc_report.py` for quality check scaffolding
-- `src/orchestrator.py` for one-shot project generation
-- `src/stitch_ffmpeg.sh` for clip concatenation
-- `src/stitch_finalize.py` for the final FFmpeg stitch step
-- `src/run_full_pipeline.py` for generate-and-stitch flow
-- `examples/project.example.json` for a sample project
+Use `docs/render-checklist.md` only if you want the manual version of the same flow.
