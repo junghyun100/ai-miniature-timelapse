@@ -65,6 +65,119 @@ def build_common_core() -> str:
 
 def build_first_frame_prompt(topic: str, scene_name: str, building_type: str | None = None) -> str:
     key = (building_type or "").strip().lower()
+    if key == "hanok":
+        return (
+            "Ultra realistic macro photography, miniature Korean hanok construction site, packed soil base with a few "
+            "weathered stone foundation blocks already marked in place, empty timber frame footprint, thin guide strings, "
+            "bare clay and gravel surface, giant human hands only, no miniature people, no small people, no tiny workers, "
+            "no human figures, no characters, giant human fingers carefully setting the first hanok foundation stones, "
+            "tiny traditional construction tools, 8K detail, soft daylight, warm rim light, natural shadows, cinematic studio lighting, "
+            "shallow depth of field, Korean hanok, scene: "
+            f"{scene_name}."
+        )
+    if key == "modern_house":
+        return (
+            "Ultra realistic macro photography, miniature modern house construction site, clean concrete base slab with "
+            "steel guide lines and exposed framing marks, empty window openings, bare foundation footprint, pale dust and "
+            "construction grit, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, "
+            "no characters, giant human fingers starting the first structural placement, tiny realistic construction tools, "
+            "8K detail, clean daylight, cool neutral tones, glossy reflections, cinematic studio lighting, shallow depth of field, "
+            "modern house, scene: "
+            f"{scene_name}."
+        )
+    if key == "cafe":
+        return (
+            "Ultra realistic macro photography, miniature cozy cafe construction site, brick base outline on compacted soil, "
+            "storefront footprint marked with thin measuring strings, empty door and window openings, scattered sand and tiny brick chips, "
+            "giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first cafe foundation pieces, tiny realistic construction tools, 8K detail, golden hour glow, "
+            "soft window light, warm interior spill, cinematic bokeh, shallow depth of field, cozy cafe, scene: "
+            f"{scene_name}."
+        )
+    if key == "church":
+        return (
+            "Ultra realistic macro photography, miniature stone church construction site, chalked foundation outline on dark soil, "
+            "first stone blocks and arch markers laid out separately, empty nave footprint, tiny gravel and masonry dust, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first church foundation stones, "
+            "tiny realistic masonry tools, 8K detail, high-contrast daylight, stained-glass color spill, dramatic edge light, shallow depth of field, "
+            "stone church, scene: "
+            f"{scene_name}."
+        )
+    if key == "castle":
+        return (
+            "Ultra realistic macro photography, miniature medieval castle construction site, rough soil base with a partially traced fortress outline, "
+            "first stone blocks stacked beside an empty keep footprint, timber scaffolding pieces, scattered gravel, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers starting the first castle foundation placement, "
+            "tiny realistic masonry tools, 8K detail, moody overcast light, hard-edged highlights, atmospheric shadows, shallow depth of field, "
+            "medieval castle, scene: "
+            f"{scene_name}."
+        )
+    if key == "temple":
+        return (
+            "Ultra realistic macro photography, miniature mountain temple construction site, mossy stone base on bare soil, "
+            "first pavilion markers and foundation stones arranged separately, empty wooden frame footprint, thin guide lines, tiny lantern parts waiting nearby, "
+            "giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers setting the first temple foundation stones, "
+            "tiny realistic temple-building tools, 8K detail, misty morning light, soft haze, luminous highlights, tranquil shadows, shallow depth of field, "
+            "mountain temple, scene: "
+            f"{scene_name}."
+        )
+    if key == "villa":
+        return (
+            "Ultra realistic macro photography, miniature luxury villa construction site, clean concrete slab with marble corner markers, "
+            "glass frame guides, empty balcony footprint, pale construction dust and aligned measuring strings, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first villa slab pieces, "
+            "tiny realistic construction tools, 8K detail, bright premium daylight, polished reflections, soft shadows, luxury showcase lighting, shallow depth of field, "
+            "luxury villa, scene: "
+            f"{scene_name}."
+        )
+    if key == "store":
+        return (
+            "Ultra realistic macro photography, miniature small retail store construction site, brick base outline with storefront width marked by thin strings, "
+            "empty glass frame openings, plywood floor markers, scattered tiny sign pieces, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first storefront foundation pieces, tiny realistic construction tools, 8K detail, bright commercial lighting, clean reflections, sign glow, balanced exposure, shallow depth of field, "
+            "small retail store, scene: "
+            f"{scene_name}."
+        )
+    if key == "school":
+        return (
+            "Ultra realistic macro photography, miniature school construction site, brick-red foundation marks on compact soil, "
+            "empty classroom wing footprint, chalked guide lines, tiny playground markers, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers starting the first school foundation placement, tiny realistic construction tools, 8K detail, soft blue daylight, pale yellow highlights, warm white trim tones, shallow depth of field, "
+            "school, scene: "
+            f"{scene_name}."
+        )
+    if key == "hotel":
+        return (
+            "Ultra realistic macro photography, miniature hotel construction site, polished concrete slab with luxury lobby footprint marked on clean soil, "
+            "glass and marble guide pieces laid separately, empty entrance arch opening, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first hotel foundation elements, tiny realistic construction tools, 8K detail, champagne gold daylight, charcoal gray contrast, amber highlights, cinematic studio lighting, shallow depth of field, "
+            "hotel, scene: "
+            f"{scene_name}."
+        )
+    if key == "apartment":
+        return (
+            "Ultra realistic macro photography, miniature apartment building construction site, stacked concrete base with grid-like floor markers, "
+            "empty window bay openings, aligned balcony traces, compact soil and fine dust, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first apartment slab pieces, tiny realistic construction tools, 8K detail, light gray daylight, slate blue accents, muted tan shadows, shallow depth of field, "
+            "apartment, scene: "
+            f"{scene_name}."
+        )
+    if key == "factory":
+        return (
+            "Ultra realistic macro photography, miniature factory construction site, industrial concrete floor grid with steel column markers, "
+            "empty loading bay outline, pipe guides, safety stripe markers, and raw gravel base, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first factory foundation sections, tiny realistic industrial tools, 8K detail, industrial gray light, safety yellow accents, steel blue reflections, rust orange detail, shallow depth of field, "
+            "factory, scene: "
+            f"{scene_name}."
+        )
+    if key == "barn":
+        return (
+            "Ultra realistic macro photography, miniature barn construction site, weathered dirt base with a simple timber footprint, "
+            "empty loft outline, loose hay fibers and rough gravel, first barn post markers separated on the soil, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first barn foundation posts, tiny realistic farm tools, 8K detail, sunset farm light, warm amber highlights, dusty shadows, nostalgic glow, shallow depth of field, "
+            "barn, scene: "
+            f"{scene_name}."
+        )
     if key == "watch":
         return _first_frame_style(
             "Ultra realistic macro product photography",
@@ -94,6 +207,87 @@ def build_first_frame_prompt(topic: str, scene_name: str, building_type: str | N
             topic,
             scene_name,
             "bright studio lighting",
+        )
+    if key == "car":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature car parts neatly arranged on a wooden workbench, "
+            "separate chassis, engine block, wheels, suspension, steering rack, body panels, glass pieces, and trim components, "
+            "giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, "
+            "giant human fingers placing the first car components, tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, "
+            "8K product photo quality, bright workshop lighting, automotive assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "motorcycle":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature motorcycle parts arranged on a compact metal workbench, "
+            "separate frame, fork, fuel tank, engine, wheels, chain, handlebars, and fairing pieces, giant human hands only, no miniature people, "
+            "no small people, no tiny workers, no human figures, no characters, giant human fingers aligning the first bike frame pieces, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "motorcycle assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "airplane":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature airplane parts neatly arranged on a clean hangar-style workbench, "
+            "separate fuselage sections, wings, tail fin, engines, landing gear, cockpit glass, and panel pieces, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first fuselage components, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "airplane assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "boat":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature boat parts neatly arranged on a wooden dock-style workbench, "
+            "separate hull pieces, deck boards, mast, cabin windows, ropes, rails, and fittings, giant human hands only, no miniature people, "
+            "no small people, no tiny workers, no human figures, no characters, giant human fingers arranging the first hull sections, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "boat assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "helicopter":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature helicopter parts neatly arranged on a rotorcraft workbench, "
+            "separate fuselage shell, main rotor, tail rotor, landing skids, cockpit canopy, engine modules, and panel pieces, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first fuselage modules, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "helicopter assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "tank":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature tank parts neatly arranged on a rugged military workbench, "
+            "separate hull armor, turret, cannon, track links, suspension, hatches, and exterior plates, giant human hands only, no miniature people, "
+            "no small people, no tiny workers, no human figures, no characters, giant human fingers aligning the first armored hull sections, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "tank assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "bicycle":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature bicycle parts neatly arranged on a clean bicycle repair bench, "
+            "separate frame, wheels, chain, pedals, handlebars, seat, brake cables, and fork pieces, giant human hands only, no miniature people, "
+            "no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first frame and wheel parts, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "bicycle assembly, scene: "
+            f"{scene_name}."
+        )
+    if key == "spaceship":
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature spaceship parts neatly arranged on a futuristic assembly bench, "
+            "separate hull shells, engine rings, cockpit glass, fins, landing struts, panel modules, and glowing interface parts, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first hull modules, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "spaceship assembly, scene: "
+            f"{scene_name}."
+        )
+    if key in {"construction_vehicle", "agricultural_machinery"}:
+        return (
+            "Hyper-realistic macro photo of 100% disassembled miniature heavy machine parts neatly arranged on an industrial workbench, "
+            "separate chassis, arm or boom sections, wheels or tracks, hydraulic parts, cabin modules, and tool attachments, giant human hands only, "
+            "no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers placing the first frame modules, "
+            "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, "
+            "heavy machine assembly, scene: "
+            f"{scene_name}."
         )
     if key in {"car", "train", "airplane", "boat", "robot", "dinosaur", "mecha", "dragon", "wizard_house", "spaceship", "hoverbike", "mech"}:
         return _first_frame_style(

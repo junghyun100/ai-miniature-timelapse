@@ -18,6 +18,7 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
     start_second = (scene["id"] - 1) * scene["seconds"]
     end_second = scene["id"] * scene["seconds"]
     first_frame_prompt = build_first_frame_prompt(project["topic"], scene["name"], project.get("building_type", "hanok"))
+    first_frame_note = first_frame_prompt if scene["id"] == 1 else "inherit from previous scene final frame"
     return (
         f"# Scene {scene['id']}: {scene['name']}\n\n"
         f"- Topic: {project['topic']}\n"
@@ -31,7 +32,7 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
         f"- Color Palette: {template.get('color_palette', '')}\n"
         f"- First frame image: `scenes/scene_{scene['id']:02d}_first_frame.png`\n"
         f"- Video output: `renders/scene_{scene['id']:02d}.mp4`\n\n"
-        f"## First Frame Prompt\n\n{first_frame_prompt}\n\n"
+        f"## First Frame Prompt\n\n{first_frame_note}\n\n"
         f"## Video Prompt\n\n{scene['prompt']}\n\n"
         f"## Negative Prompt\n\n{scene['negative_prompt']}\n"
     )

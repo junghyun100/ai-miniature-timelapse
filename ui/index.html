@@ -430,6 +430,74 @@
       border-radius: 16px;
     }
 
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .toggle-row::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      border: 1.5px solid rgba(31, 35, 40, 0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,239,229,0.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .toggle-row::after {
+      content: "✓";
+      position: absolute;
+      left: 17px;
+      top: 10px;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      color: transparent;
+      transition: color .18s ease, transform .18s ease;
+    }
+
+    .toggle-row:has(input:checked) {
+      border-color: rgba(143, 95, 52, 0.35);
+      background: linear-gradient(135deg, rgba(143, 95, 52, 0.14), rgba(255,255,255,0.92));
+      box-shadow: 0 8px 18px rgba(143, 95, 52, 0.08);
+    }
+
+    .toggle-row:has(input:checked)::before {
+      background: linear-gradient(135deg, var(--accent), #6f4521);
+      border-color: rgba(111, 69, 33, 0.95);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 6px 16px rgba(143, 95, 52, 0.22);
+      transform: scale(0.98);
+    }
+
+    .toggle-row:has(input:checked)::after {
+      color: white;
+      transform: scale(1.04);
+    }
+
+    .toggle-row span {
+      margin-left: 2px;
+      cursor: pointer;
+      line-height: 1.35;
+    }
+
     @media (max-width: 960px) {
       .hero, .workspace, .grid { grid-template-columns: 1fr; }
       .wrap { padding: 18px; }
@@ -490,17 +558,39 @@
           <label for="topic" id="topicLabel">Topic label</label>
           <input id="topic" value="Korean hanok" />
         </div>
+        <div class="field">
+          <label for="nimModel" id="nimModelLabel">NIM model</label>
+          <select id="nimModel">
+            <option value="meta/llama-3.1-8b-instruct" selected>Llama 3.1 8B Instruct</option>
+            <option value="meta/llama-3.3-70b-instruct">Llama 3.3 70B Instruct</option>
+            <option value="mistralai/mistral-7b-instruct-v03">Mistral 7B Instruct v0.3</option>
+            <option value="mistralai/mixtral-8x7b-instruct-v01">Mixtral 8x7B Instruct</option>
+            <option value="nvidia/nemotron-4-340b-instruct">Nemotron 4 340B Instruct</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nimApiKey" id="nimApiKeyLabel">NIM API key</label>
+          <input id="nimApiKey" type="password" placeholder="Paste your NGC or NIM API key" />
+        </div>
+        <label class="toggle-row" for="nimGenerate">
+          <input id="nimGenerate" type="checkbox" />
+          <span id="nimGenerateLabel">Generate prompts with NVIDIA NIM</span>
+        </label>
+        <label class="toggle-row" for="refinePrompts">
+          <input id="refinePrompts" type="checkbox" />
+          <span id="refinePromptsLabel">Refine prompts with NVIDIA NIM when key is available</span>
+        </label>
         <div class="button-row">
           <button class="primary" id="generate">Generate Command</button>
           <button class="secondary" id="copy">Copy Command</button>
         </div>
-        <div class="hint" id="commandHint">The command is prefilled for the Python runner. You can swap in a different genre/subtype anytime.</div>
+        <div class="hint" id="commandHint">The command is prefilled for the Python runner. If refinement is checked, the runner adds the NVIDIA NIM prompt polishing step.</div>
       </div>
     </section>
 
     <section class="workspace flow">
       <div class="card panel">
-        <h2 id="flowTitle">Flow Input Pack</h2>
+        <h2 id="flowTitle">Flow Input Pack <span id="flowEditedBadge" class="chip" style="display:none; margin-left:8px; padding:4px 8px; font-size:11px;">Edited</span></h2>
         <div class="chips" id="chips"></div>
         <div class="template-box" id="templateBox"></div>
         <div class="status-pill" id="statusPill">Ready to generate the prompt pack in browser.</div>
@@ -614,6 +704,10 @@
     const durationEl = document.getElementById('duration');
     const formatEl = document.getElementById('format');
     const topicEl = document.getElementById('topic');
+    const refinePromptsEl = document.getElementById('refinePrompts');
+    const nimModelEl = document.getElementById('nimModel');
+    const nimApiKeyEl = document.getElementById('nimApiKey');
+    const nimGenerateEl = document.getElementById('nimGenerate');
     const chipsEl = document.getElementById('chips');
     const templateBox = document.getElementById('templateBox');
     const flowPackEl = document.getElementById('flowPack');
@@ -627,7 +721,13 @@
     const copyAllScenesBtn = document.getElementById('copyAllScenes');
     const copyScenePreviewBtn = document.getElementById('copyScenePreview');
     const copyVideoPromptBtn = document.getElementById('copyVideoPrompt');
+    const flowEditedBadge = document.getElementById('flowEditedBadge');
     let activeSceneIndex = 0;
+    let nimFlowPackOverride = '';
+    let flowPackManualEdit = false;
+    const FLOW_PACK_STORAGE_KEY = 'miniature_timelapse_flow_pack';
+    const FLOW_PACK_MANUAL_KEY = 'miniature_timelapse_flow_pack_manual';
+    const NIM_API_KEY_STORAGE_KEY = 'miniature_timelapse_nim_api_key';
     function renderSubtypes() {
       const genre = templates[genreEl.value];
       subtypeEl.innerHTML = '';
@@ -640,6 +740,17 @@
       });
       topicEl.value = autoTopicLabel();
       render();
+    }
+
+    function loadStoredState() {
+      const storedFlowPack = localStorage.getItem(FLOW_PACK_STORAGE_KEY);
+      const storedManual = localStorage.getItem(FLOW_PACK_MANUAL_KEY) === '1';
+      const storedApiKey = localStorage.getItem(NIM_API_KEY_STORAGE_KEY) || '';
+      if (storedApiKey) nimApiKeyEl.value = storedApiKey;
+      if (storedFlowPack) {
+        flowPackEl.value = storedFlowPack;
+        flowPackManualEdit = storedManual;
+      }
     }
 
     function currentSubtype() {
@@ -835,7 +946,7 @@
       const scenes = sceneNamesFor(sub.type, duration).map((sceneName, index) => ({
         id: index + 1,
         name: sceneName,
-        first_frame_prompt: firstFramePrompt(topicEl.value, sceneName, sub.type),
+        first_frame_prompt: index === 0 ? firstFramePrompt(topicEl.value, sceneName, sub.type) : '',
         video_prompt: videoPrompt(sub, sceneName, duration),
         continuity_rule: continuityRule(),
         bridge: carryOverText(sceneName, sceneNamesFor(sub.type, duration)[index + 1]),
@@ -843,9 +954,14 @@
       }));
       return {
         topic: topicEl.value,
+        topic_label: `${genreEl.value.charAt(0).toUpperCase() + genreEl.value.slice(1)}-${sub.label}`,
         building_type: sub.type,
         duration,
         format: formatEl.value,
+        nim_generate: nimGenerateEl.checked,
+        refine_prompts: refinePromptsEl.checked,
+        nim_model: nimModelEl.value,
+        nim_api_key_provided: Boolean(nimApiKeyEl.value.trim()),
         building_style: {
           materials: sub.materials || sub.color,
           camera: sub.camera || 'macro lens, shallow depth of field',
@@ -857,35 +973,82 @@
     }
 
     function flowPackText() {
+      if (nimFlowPackOverride) return nimFlowPackOverride;
       const sub = currentSubtype();
       const duration = Number(durationEl.value);
       const scenes = sceneNamesFor(sub.type, duration);
       const blocks = scenes.map((sceneName, index) => {
         const transition = index < scenes.length - 1 ? 'hard cut to next scene' : 'cinematic reveal and hold';
         const nextSceneName = scenes[index + 1] || '';
-        return [
+        const lines = [
           `Scene ${index + 1}: ${sceneName}`,
           `Start From Previous Final Frame: ${index === 0 ? 'none' : scenes[index - 1]}`,
           `Carry Forward: ${sceneCarryText(sceneName, scenes[index - 1])}`,
-          `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, sub.type)}`,
           `Continuity Rule: ${continuityRule()}`,
           `Bridge: ${carryOverText(sceneName, nextSceneName)}`,
           `Video Prompt: ${videoPrompt(sub, sceneName, duration)}`,
           `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`,
           `Transition: ${transition}`
-        ].join('\n');
+        ];
+        if (index === 0) {
+          lines.splice(3, 0, `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, sub.type)}`);
+        }
+        return lines.join('\n');
       });
       return [
         `Topic: ${topicEl.value}`,
+        `Topic Label: ${genreEl.options[genreEl.selectedIndex].text}-${sub.label}`,
         `Building Type: ${sub.type}`,
         `Duration: ${durationEl.value}s`,
         `Format: ${formatEl.value}`,
+        `NIM Generate: ${nimGenerateEl.checked ? 'enabled' : 'disabled'}`,
+        `NIM Refine: ${refinePromptsEl.checked ? 'enabled' : 'disabled'}`,
+        `NIM Model: ${nimModelEl.value}`,
+        `NIM API Key: ${nimApiKeyEl.value.trim() ? 'provided' : 'not set'}`,
+        '',
+        'Core: You are a top-tier AI video production strategist, master prompt engineer, and viral content creator. Create a cinematic miniature timelapse workflow that always follows the same structure: topic selection, duration selection, first-frame image prompt, then continuous motion video prompt. The first scene must begin from an empty or untouched starting state. Every later scene must continue directly from the exact final frame of the previous scene. Do not introduce a new location, new table, new tray, or new composition. Keep camera angle, framing, scale, and lighting direction physically constant. Each scene must be a small incremental step, not a new reconstruction.',
         '',
         buildingStyleBlock(sub),
         '',
         '=== Flow Scenes ===',
         blocks.join('\n\n')
       ].join('\n');
+    }
+
+    async function generateFlowPackWithNIM(promptText) {
+      const apiKey = nimApiKeyEl.value.trim();
+      if (!nimGenerateEl.checked || !apiKey) return promptText;
+      const model = nimModelEl.value.trim() || 'meta/llama-3.1-8b-instruct';
+      const response = await fetch('http://127.0.0.1:8765/api/nim/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          api_key: apiKey,
+          model,
+          prompt_text: [
+            'Rewrite the following Google Flow prompt pack so it is cleaner and more publish-ready.',
+            'Keep the same section order, scene continuity rules, first-frame-only behavior, and negative prompt.',
+            '',
+            promptText,
+          ].join('\n'),
+        }),
+      });
+
+      if (!response.ok) {
+        let details = '';
+        try {
+          const errData = await response.json();
+          details = errData && errData.message ? `: ${errData.message}` : '';
+        } catch (err) {
+          details = '';
+        }
+        throw new Error(`NIM request failed (${response.status})${details}`);
+      }
+
+      const data = await response.json();
+      return (data && data.text && String(data.text).trim()) ? String(data.text).trim() : promptText;
     }
 
     async function copyText(text, okMessage) {
@@ -904,7 +1067,9 @@
       const sub = currentSubtype();
       const genre = templates[genreEl.value];
       const duration = Number(durationEl.value);
-      flowPackEl.value = flowPackText();
+      if (!flowPackManualEdit) {
+        flowPackEl.value = flowPackText();
+      }
       const scenes = sceneNamesFor(sub.type, Number(durationEl.value));
       if (activeSceneIndex >= scenes.length) activeSceneIndex = 0;
 
@@ -934,6 +1099,7 @@
         <div class="template-title">${sub.label}</div>
         <div class="template-meta">
           <div><strong>Genre:</strong> ${genre.label}</div>
+          <div><strong>Topic label:</strong> ${genre.label}-${sub.label}</div>
           <div><strong>Building key:</strong> ${sub.type}</div>
           <div><strong>Recommended color palette:</strong> ${sub.color}</div>
           <div><strong>Materials:</strong> ${sub.materials || sub.color}</div>
@@ -959,23 +1125,56 @@
 
       const sceneName = scenes[activeSceneIndex] || scenes[0];
       const sceneStyle = sceneStyleFor(sub.type);
+      const firstFramePreview = activeSceneIndex === 0
+        ? `<div><strong>First frame:</strong> ${firstFramePrompt(topicEl.value, sceneName, sub.type)}</div>`
+        : '';
       scenePreviewEl.innerHTML = `
         <div class="template-title">Scene ${activeSceneIndex + 1}: ${sceneName}</div>
         <div class="step-summary">
           <div><strong>Preview:</strong> ${sceneSummary(sub.type, sceneName)}</div>
           <div><strong>Start from:</strong> ${activeSceneIndex === 0 ? 'none' : scenes[activeSceneIndex - 1]}</div>
           <div><strong>Carry forward:</strong> ${sceneCarryText(sceneName, scenes[activeSceneIndex - 1])}</div>
-          <div><strong>First frame:</strong> ${firstFramePrompt(topicEl.value, sceneName, sub.type)}</div>
+          ${firstFramePreview}
           <div><strong>Video:</strong> available after Flow approval via the video prompt button.</div>
         </div>
       `;
-      statusPill.textContent = `Ready for ${sub.label} with ${scenes.length} scenes.`;
+      statusPill.textContent = flowPackManualEdit
+        ? `Flow pack edited manually for ${sub.label}; manual text is preserved.`
+        : `Ready for ${sub.label} with ${scenes.length} scenes.`;
+      flowEditedBadge.style.display = flowPackManualEdit ? 'inline-flex' : 'none';
+      if (!flowPackManualEdit) {
+        localStorage.setItem(FLOW_PACK_STORAGE_KEY, flowPackEl.value);
+        localStorage.setItem(FLOW_PACK_MANUAL_KEY, '0');
+      }
     }
 
-    document.getElementById('generate').addEventListener('click', render);
+    document.getElementById('generate').addEventListener('click', async () => {
+      flowPackManualEdit = false;
+      localStorage.setItem(FLOW_PACK_MANUAL_KEY, '0');
+      render();
+      const draft = flowPackText();
+      try {
+        const generated = await generateFlowPackWithNIM(draft);
+        nimFlowPackOverride = generated;
+        flowPackEl.value = generated;
+        localStorage.setItem(FLOW_PACK_STORAGE_KEY, generated);
+        statusPill.textContent = nimGenerateEl.checked ? 'Generated Flow text with NVIDIA NIM.' : 'Ready to generate the prompt pack in browser.';
+      } catch (error) {
+        nimFlowPackOverride = '';
+        flowPackEl.value = draft;
+        localStorage.setItem(FLOW_PACK_STORAGE_KEY, draft);
+        statusPill.textContent = error instanceof Error ? `NIM generation failed (${error.message}). Using local draft.` : 'NIM generation failed. Using local draft.';
+      }
+    });
     document.getElementById('copy').addEventListener('click', async () => {
       const sub = currentSubtype();
-      await copyText(`python3 src/watch_and_finalize.py "${topicEl.value}" --building-type ${sub.type} --duration ${durationEl.value} --format ${formatEl.value} --base-dir output`, 'Copied command.');
+      const nimGenerateFlag = nimGenerateEl.checked ? ' --use-nim-generate' : '';
+      const refineFlag = refinePromptsEl.checked ? ' --refine-prompts' : '';
+      const envParts = [];
+      if (refinePromptsEl.checked && nimModelEl.value.trim()) envParts.push(`NIM_MODEL=\"${nimModelEl.value.trim()}\"`);
+      if (refinePromptsEl.checked && nimApiKeyEl.value.trim()) envParts.push(`NIM_API_KEY=\"${nimApiKeyEl.value.trim()}\"`);
+      const envPrefix = envParts.length ? envParts.join(' ') + ' ' : '';
+      await copyText(`${envPrefix}python3 src/watch_and_finalize.py "${topicEl.value}" --building-type ${sub.type} --duration ${durationEl.value} --format ${formatEl.value} --base-dir output${nimGenerateFlag}${refineFlag}`, 'Copied command.');
     });
     genreEl.addEventListener('change', renderSubtypes);
     subtypeEl.addEventListener('input', () => {
@@ -983,7 +1182,22 @@
       render();
     });
     [durationEl, formatEl].forEach(el => el.addEventListener('input', render));
-    topicEl.addEventListener('input', render);
+    topicEl.addEventListener('input', () => { nimFlowPackOverride = ''; render(); });
+    nimGenerateEl.addEventListener('change', () => { nimFlowPackOverride = ''; render(); });
+    refinePromptsEl.addEventListener('change', () => { nimFlowPackOverride = ''; render(); });
+    nimModelEl.addEventListener('input', () => { nimFlowPackOverride = ''; render(); });
+    nimApiKeyEl.addEventListener('input', () => {
+      nimFlowPackOverride = '';
+      localStorage.setItem(NIM_API_KEY_STORAGE_KEY, nimApiKeyEl.value);
+      render();
+    });
+    flowPackEl.addEventListener('input', () => {
+      flowPackManualEdit = true;
+      nimFlowPackOverride = '';
+      localStorage.setItem(FLOW_PACK_STORAGE_KEY, flowPackEl.value);
+      localStorage.setItem(FLOW_PACK_MANUAL_KEY, '1');
+      statusPill.textContent = 'Flow pack is now manually editable.';
+    });
     copyFlowBtn.addEventListener('click', () => copyText(flowPackEl.value, 'Copied Flow pack.'));
     downloadFlowBtn.addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(promptPackJson(), null, 2)], { type: 'application/json' });
@@ -1006,15 +1220,17 @@
       const sub = currentSubtype();
       const duration = Number(durationEl.value);
       const scenes = sceneNamesFor(sub.type, duration);
-      const text = scenes.map((sceneName, index) => [
-        `Scene ${index + 1}: ${sceneName}`,
-        `Start From Previous Final Frame: ${index === 0 ? 'none' : scenes[index - 1]}`,
-        `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, currentSubtype().type)}`,
+      const sceneOneFirstFrame = `Scene 1: ${scenes[0]}\nStart From Previous Final Frame: none\nFirst Frame Prompt: ${firstFramePrompt(topicEl.value, scenes[0], currentSubtype().type)}\nContinuity Rule: ${continuityRule()}\nBridge: ${carryOverText(scenes[0], scenes[1])}\nVideo Prompt: ${videoPrompt(sub, scenes[0], duration)}\nNegative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`;
+      const rest = scenes.slice(1).map((sceneName, index) => [
+        `Scene ${index + 2}: ${sceneName}`,
+        `Start From Previous Final Frame: ${scenes[index]}`,
+        `Carry Forward: ${sceneCarryText(sceneName, scenes[index])}`,
         `Continuity Rule: ${continuityRule()}`,
-        `Bridge: ${carryOverText(sceneName, scenes[index + 1])}`,
+        `Bridge: ${carryOverText(sceneName, scenes[index + 2])}`,
         `Video Prompt: ${videoPrompt(sub, sceneName, duration)}`,
         `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`
       ].join('\n')).join('\n\n');
+      const text = [sceneOneFirstFrame, rest].filter(Boolean).join('\n\n');
       copyText(text, 'Copied all scene prompts.');
     });
     copyScenePreviewBtn.addEventListener('click', () => {
@@ -1025,7 +1241,7 @@
         `Scene ${activeSceneIndex + 1}: ${scene}`,
         `Start From Previous Final Frame: ${activeSceneIndex === 0 ? 'none' : sceneNamesFor(sub.type, duration)[activeSceneIndex - 1]}`,
         `Carry Forward: ${sceneCarryText(scene, sceneNamesFor(sub.type, duration)[activeSceneIndex - 1])}`,
-        `First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`
+        ...(activeSceneIndex === 0 ? [`First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`] : []),
       ].join('\n'), 'Copied selected scene.');
     });
     copyVideoPromptBtn.addEventListener('click', async () => {
@@ -1043,6 +1259,7 @@
       ].join('\n'), 'Copied next scene prompt.');
     });
 
+    loadStoredState();
     renderSubtypes();
   </script>
 </body>

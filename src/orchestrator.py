@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -14,6 +15,8 @@ from render_manifest import build_render_manifest
 from render_plan import build_render_plan
 from retry_selector import build_retry_selection
 from retry_plan import build_retry_plan
+from prompt_refiner import refine_prompt
+from nim_prompt_generator import generate_prompt as generate_nim_prompt
 from scene_md_export import export_scene_md
 from prompt_templates import format_building_type_choices, get_supported_building_types
 
@@ -53,7 +56,16 @@ def collect_render_status(project: Dict[str, Any], base_dir: Path) -> Dict[str, 
     }
 
 
-def run(topic: str, duration: int, format_: str, variant: str, base_dir: Path, building_type: str = "hanok") -> Dict[str, Any]:
+def run(
+    topic: str,
+    duration: int,
+    format_: str,
+    variant: str,
+    base_dir: Path,
+    building_type: str = "hanok",
+    refine_prompts: bool = False,
+    use_nim_generate: bool = False,
+) -> Dict[str, Any]:
     ensure_dirs(base_dir)
     scene_md_dir = base_dir / "scenes_md"
 
@@ -64,6 +76,14 @@ def run(topic: str, duration: int, format_: str, variant: str, base_dir: Path, b
     qc_report = build_report(project)
     retry_plan = build_retry_plan(project)
     prompt_bundle = export_text_bundle(project)
+    generated_prompt_bundle = generate_nim_prompt(
+        prompt_bundle,
+        os.environ.get("NIM_MODEL", "meta/llama-3.1-8b-instruct"),
+    ) if use_nim_generate else prompt_bundle
+    refined_prompt_bundle = refine_prompt(
+        generated_prompt_bundle,
+        "Preserve the prompt pack structure, scene continuity, negative prompt, and first-frame-vs-followup-scene distinction."
+    ) if refine_prompts else generated_prompt_bundle
     render_commands = build_commands(project, str(base_dir))
     render_status = collect_render_status(project, base_dir)
     retry_selection = build_retry_selection(render_status, retry_plan)
@@ -77,7 +97,8 @@ def run(topic: str, duration: int, format_: str, variant: str, base_dir: Path, b
     save_json(base_dir / "exports" / "render-commands.json", render_commands)
     save_json(base_dir / "exports" / "render-status.json", render_status)
     save_json(base_dir / "qc" / "qa-report.json", qc_report)
-    (base_dir / "prompts" / "google-flow-prompts.txt").write_text(prompt_bundle, encoding="utf-8")
+    final_prompt_bundle = refined_prompt_bundle if refine_prompts else generated_prompt_bundle
+    (base_dir / "prompts" / "google-flow-prompts.txt").write_text(final_prompt_bundle, encoding="utf-8")
     export_scene_md(project, scene_md_dir)
 
     summary = {
@@ -91,6 +112,8 @@ def run(topic: str, duration: int, format_: str, variant: str, base_dir: Path, b
         "render_status_json": str(base_dir / "exports" / "render-status.json"),
         "qc_report_json": str(base_dir / "qc" / "qa-report.json"),
         "prompt_bundle_txt": str(base_dir / "prompts" / "google-flow-prompts.txt"),
+        "nim_generation": "enabled" if use_nim_generate else "disabled",
+        "prompt_refinement": "enabled" if refine_prompts else "disabled",
         "scene_md_dir": str(scene_md_dir),
         "outputs": [
             "project.json",
@@ -119,6 +142,8 @@ def main() -> None:
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
     parser.add_argument("--variant", default="")
     parser.add_argument("--base-dir", default="output", help="Root directory for generated artifacts.")
+    parser.add_argument("--use-nim-generate", action="store_true", help="Generate the prompt bundle with NVIDIA NIM when an API key is available.")
+    parser.add_argument("--refine-prompts", action="store_true", help="Refine the prompt bundle through OpenAI if OPENAI_API_KEY is set.")
     parser.add_argument("--output", default="-", help="Print summary JSON to stdout or write to a file.")
     args = parser.parse_args()
 
@@ -126,7 +151,16 @@ def main() -> None:
         print(format_building_type_choices())
         return
 
-    summary = run(args.topic, args.duration, args.format_, args.variant, Path(args.base_dir), args.building_type)
+    summary = run(
+        args.topic,
+        args.duration,
+        args.format_,
+        args.variant,
+        Path(args.base_dir),
+        args.building_type,
+        args.refine_prompts,
+        args.use_nim_generate,
+    )
     payload = json.dumps(summary, ensure_ascii=False, indent=2)
     if args.output == "-":
         print(payload)

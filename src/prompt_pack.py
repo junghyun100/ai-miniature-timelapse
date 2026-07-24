@@ -38,7 +38,8 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
                     "start_second": (scene["id"] - 1) * scene["seconds"],
                     "end_second": scene["id"] * scene["seconds"],
                 },
-                "first_frame_prompt": first_frame_prompt,
+                "first_frame_prompt": first_frame_prompt if scene["id"] == 1 else "",
+                "first_frame_mode": "scene_1_only" if scene["id"] == 1 else "inherit_previous_scene_final_frame",
                 "scene_style": {
                     "materials": template["materials"],
                     "camera": template["camera"],
@@ -48,7 +49,7 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
                 "google_flow_input": (
                     f"Core: {common_core}\n"
                     f"Scene {scene['id']}\n"
-                    f"First Frame Prompt: {first_frame_prompt}\n"
+                    f"First Frame Prompt: {first_frame_prompt if scene['id'] == 1 else 'inherit from previous scene final frame'}\n"
                     f"Start From Previous Final Frame: {prev_scene or 'none'}\n"
                     f"Continuity Rule: {CONTINUITY_RULE}\n"
                     f"Materials: {template['materials']}\n"
