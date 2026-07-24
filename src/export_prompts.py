@@ -12,8 +12,10 @@ def load_project(path: str | Path) -> Dict[str, Any]:
 def export_text_bundle(project: Dict[str, Any]) -> str:
     lines = [
         f"Topic: {project['topic']}",
+        f"Topic Label: {project.get('topic_label', '')}",
         f"Duration: {project['duration']}s",
         f"Format: {project['format']}",
+        f"Core: {project.get('common_core', '')}",
         f"Negative Prompt: {project.get('negative_prompt', '')}",
         "",
     ]
@@ -42,4 +44,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

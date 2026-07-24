@@ -21,6 +21,7 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
     return (
         f"# Scene {scene['id']}: {scene['name']}\n\n"
         f"- Topic: {project['topic']}\n"
+        f"- Topic Label: {project.get('topic_label', '')}\n"
         f"- Building Type: {project.get('building_type', 'hanok')}\n"
         f"- Duration: {scene['seconds']} seconds\n"
         f"- Timing: {start_second} to {end_second}\n"

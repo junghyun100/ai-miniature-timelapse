@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from prompt_templates import build_first_frame_prompt
-from prompt_templates import CONTINUITY_RULE, get_building_template
+from prompt_templates import CONTINUITY_RULE, build_common_core, build_topic_label, get_building_template
 
 
 def load_json(path: str | Path) -> Dict[str, Any]:
@@ -15,6 +15,7 @@ def load_json(path: str | Path) -> Dict[str, Any]:
 
 def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
     template = get_building_template(project.get("building_type", "hanok"))
+    common_core = build_common_core()
     scenes: List[Dict[str, Any]] = []
     for scene in project["scenes"]:
         prev_scene = project["scenes"][scene["id"] - 2]["name"] if scene["id"] > 1 else ""
@@ -22,8 +23,9 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
         transition = "continuous carry-over into next scene" if scene["id"] < len(project["scenes"]) else "cinematic reveal and hold"
         first_frame_prompt = build_first_frame_prompt(project["topic"], scene["name"], project.get("building_type", "hanok"))
         continuity_bridge = (
-            f"Carry-over: continue directly from previous scene '{prev_scene}' without resetting the model, "
-            f"preserve the same build progress and camera perspective, and end by setting up '{next_scene}'."
+            f"Carry-over: continue directly from the exact final frame of previous scene '{prev_scene}' without resetting the model, "
+            f"treat that ending as the new starting frame, preserve the same build progress, camera perspective, and object placement, "
+            f"and end by setting up '{next_scene}' with no jump or restart."
             if prev_scene and next_scene
             else CONTINUITY_RULE
         )
@@ -44,8 +46,10 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
                     "color_palette": template.get("color_palette", ""),
                 },
                 "google_flow_input": (
+                    f"Core: {common_core}\n"
                     f"Scene {scene['id']}\n"
                     f"First Frame Prompt: {first_frame_prompt}\n"
+                    f"Start From Previous Final Frame: {prev_scene or 'none'}\n"
                     f"Continuity Rule: {CONTINUITY_RULE}\n"
                     f"Materials: {template['materials']}\n"
                     f"Camera: {template['camera']}\n"
@@ -65,10 +69,12 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "topic": project["topic"],
+        "topic_label": project.get("topic_label", build_topic_label(project.get("building_type", "hanok"))),
         "building_type": project.get("building_type", "hanok"),
         "duration": project["duration"],
         "format": project["format"],
         "global_style": project["style"],
+        "common_core": common_core,
         "global_negative_prompt": project["negative_prompt"],
         "continuity_rule": CONTINUITY_RULE,
         "building_style": {

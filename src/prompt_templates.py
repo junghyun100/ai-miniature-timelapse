@@ -14,6 +14,21 @@ CONTINUITY_RULE = (
     "without resets, jumps, or scene breaks."
 )
 
+COMMON_PROMPT_CORE = (
+    "You are a top-tier AI video production strategist, master prompt engineer, and viral content creator. "
+    "Create a cinematic miniature timelapse workflow that always follows the same structure: topic selection, duration selection, "
+    "first-frame image prompt, then continuous motion video prompt. Keep the output text-only and make every scene feel like it was "
+    "designed by the same person."
+)
+
+COMMON_CONTINUITY_LOCK = (
+    "The first scene must begin from an empty or untouched starting state. "
+    "Every later scene must continue directly from the exact final frame of the previous scene. "
+    "Do not introduce a new location, new table, new tray, or new composition. "
+    "Keep camera angle, framing, scale, and lighting direction physically constant. "
+    "Each scene must be a small incremental step, not a new reconstruction."
+)
+
 STYLE_BLOCK = (
     f"ultra realistic macro photography, miniature construction site, {HANDS_ONLY_RULE}, "
     "ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, "
@@ -21,21 +36,74 @@ STYLE_BLOCK = (
 )
 
 
+def _first_frame_style(
+    label: str,
+    surface: str,
+    starting_state: str,
+    tools: str,
+    topic: str,
+    scene_name: str,
+    lighting: str,
+) -> str:
+    return (
+        f"{label}, {surface}, {HANDS_ONLY_RULE}, {starting_state}, {tools}, "
+        f"8K detail, {lighting}, shallow depth of field, {topic}, scene: {scene_name}."
+    )
+
+
+def _standard_scene_action(opening: str, build: str, finish: str) -> str:
+    return f"{opening}, {build}, {finish}"
+
+
+def build_topic_label(genre: str, subtype_label: str) -> str:
+    return f"{genre.strip().title()}-{subtype_label.strip()}"
+
+
+def build_common_core() -> str:
+    return f"{COMMON_PROMPT_CORE} {COMMON_CONTINUITY_LOCK}"
+
+
 def build_first_frame_prompt(topic: str, scene_name: str, building_type: str | None = None) -> str:
     key = (building_type or "").strip().lower()
     if key == "watch":
-        return (
-            "Ultra realistic macro product photography, luxury watchmaker bench, pristine empty surface, "
-            f"{HANDS_ONLY_RULE}, giant human fingers placing the first precision watch components, tiny realistic watchmaking tools, "
-            "no parts assembled yet, untouched watch case and dial parts laid out separately, 8K detail, cinematic studio lighting, shallow depth of field, "
-            f"{topic}, scene: {scene_name}."
+        return _first_frame_style(
+            "Ultra realistic macro product photography",
+            "luxury watchmaker bench with a pristine empty surface",
+            "no parts assembled yet and watch case and dial parts laid out separately",
+            "giant human fingers placing the first precision watch components, tiny realistic watchmaking tools",
+            topic,
+            scene_name,
+            "cinematic studio lighting",
         )
     if key in {"camera", "sneaker", "product"}:
-        return (
-            "Ultra realistic macro product photography, premium tabletop product assembly, pristine empty studio surface, "
-            f"{HANDS_ONLY_RULE}, giant human fingers placing the first precision components, tiny realistic tools, "
-            "no parts assembled yet, untouched product components arranged separately, 8K detail, cinematic studio lighting, shallow depth of field, "
-            f"{topic}, scene: {scene_name}."
+        return _first_frame_style(
+            "Ultra realistic macro product photography",
+            "premium tabletop product assembly on a pristine empty studio surface",
+            "no parts assembled yet and untouched product components arranged separately",
+            "giant human fingers placing the first precision components, tiny realistic tools",
+            topic,
+            scene_name,
+            "cinematic studio lighting",
+        )
+    if key == "home_decor":
+        return _first_frame_style(
+            "Ultra realistic macro DIY craft photography",
+            "pristine empty craft desk with scattered raw materials only",
+            "nothing assembled yet and foam, paper, plastic, cloth, twigs, and string laid out separately",
+            "giant human fingers arranging the first craft materials, tiny scissors, glue, thread, and brush tools",
+            topic,
+            scene_name,
+            "bright studio lighting",
+        )
+    if key in {"car", "train", "airplane", "boat", "robot", "dinosaur", "mecha", "dragon", "wizard_house", "spaceship", "hoverbike", "mech"}:
+        return _first_frame_style(
+            "Hyper-realistic macro photo",
+            "100% disassembled miniature model parts neatly arranged on a wooden workbench",
+            "no completed model visible and all components separated clearly",
+            "giant human hands only, tweezers, mini screwdriver, soft brush, 85mm lens",
+            topic,
+            scene_name,
+            "bright workshop lighting",
         )
     return (
         "Ultra realistic macro photography, miniature construction site, empty sand or soil surface, no materials placed yet, "
@@ -470,10 +538,60 @@ BUILDING_TEMPLATES = {
     },
 }
 
+GENRE_BY_BUILDING_TYPE = {
+    "hanok": "Architecture",
+    "modern_house": "Architecture",
+    "cafe": "Architecture",
+    "church": "Architecture",
+    "castle": "Architecture",
+    "temple": "Architecture",
+    "villa": "Architecture",
+    "store": "Architecture",
+    "school": "Architecture",
+    "hotel": "Architecture",
+    "apartment": "Architecture",
+    "factory": "Architecture",
+    "barn": "Architecture",
+    "car": "Vehicle",
+    "train": "Vehicle",
+    "airplane": "Vehicle",
+    "boat": "Vehicle",
+    "motorcycle": "Vehicle",
+    "agricultural_machinery": "Vehicle",
+    "helicopter": "Vehicle",
+    "construction_vehicle": "Vehicle",
+    "spaceship": "Vehicle",
+    "tank": "Vehicle",
+    "bicycle": "Vehicle",
+    "watch": "Product",
+    "camera": "Product",
+    "sneaker": "Product",
+    "product": "Product",
+    "robot": "Character",
+    "dinosaur": "Character",
+    "mecha": "Character",
+    "dragon": "Fantasy",
+    "wizard_house": "Fantasy",
+    "hoverbike": "SciFi",
+    "mech": "SciFi",
+    "home_decor": "Home Decor",
+}
+
 
 def get_building_template(building_type: str) -> dict:
     key = building_type.strip().lower()
     return BUILDING_TEMPLATES.get(key, BUILDING_TEMPLATES["hanok"])
+
+
+def get_genre_for_building_type(building_type: str) -> str:
+    key = building_type.strip().lower()
+    return GENRE_BY_BUILDING_TYPE.get(key, "Architecture")
+
+
+def build_topic_label(building_type: str) -> str:
+    genre = get_genre_for_building_type(building_type)
+    subtype = get_building_template(building_type)["label"]
+    return f"{genre}-{subtype}"
 
 
 def get_supported_building_types() -> list[str]:
@@ -510,6 +628,28 @@ def _generic_template(
 
 BUILDING_TEMPLATES.update(
     {
+        "home_decor": _generic_template(
+            "DIY home decor craft",
+            "foam sheets, paper, plastic spoons and bottles, fabric scraps, twigs, thread, glue, ribbon",
+            "macro lens, top-down craft-table shots, gentle push-ins, shallow depth of field",
+            "bright even studio lighting, clean soft shadows, pastel highlights, jewel-tone accents",
+            "pastel pink, sage green, cream, coral, soft gold",
+            ["Material Prep", "Base Shape", "Layering", "Detailing", "Decor Finish", "Final Reveal"],
+            ["Material Prep and Base", "Layering and Details", "Decor Finish and Reveal"],
+            {
+                "Material Prep": "arrange the raw materials, separate foam, paper, plastic, cloth, twigs, and thread on a clean craft desk",
+                "Base Shape": "cut and shape the base form with continuous hand motion",
+                "Layering": "fold, wrap, and layer the craft materials into the main decorative structure",
+                "Detailing": "add flowers, ornaments, trims, and texture details with realistic tool motion",
+                "Decor Finish": "refine the edges, clean the surface, and add polished decorative accents",
+                "Final Reveal": "remove the extra materials, leave only the finished decor piece, and reveal it with a cinematic zoom out",
+            },
+            {
+                "Material Prep and Base": "arrange the raw materials, cut the base shape, and prepare the foundation of the decor piece in one continuous motion",
+                "Layering and Details": "wrap, fold, and layer the materials, then add decorative details and accents",
+                "Decor Finish and Reveal": "clean the edges, polish the piece, and reveal the finished home decor craft with a cinematic zoom out",
+            },
+        ),
         "car": _generic_template(
             "miniature car",
             "metal body panels, glass windows, rubber tires, chrome trim, dashboard components",

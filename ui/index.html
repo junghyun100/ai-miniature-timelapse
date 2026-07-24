@@ -203,6 +203,35 @@
       letter-spacing: -0.03em;
     }
 
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(143, 95, 52, 0.08);
+      border: 1px solid rgba(143, 95, 52, 0.14);
+      transition: transform .18s ease, background .18s ease;
+    }
+
+    .panel-link:hover {
+      transform: translateY(-1px);
+      background: rgba(143, 95, 52, 0.12);
+    }
+
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -348,9 +377,63 @@
       color: var(--muted);
     }
 
+    .stepper {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stepper-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .step-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .step-pill.active {
+      background: rgba(143, 95, 52, 0.14);
+      color: var(--accent);
+      border-color: rgba(143, 95, 52, 0.24);
+    }
+
+    .step-summary {
+      display: grid;
+      gap: 6px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .step-summary strong {
+      color: var(--text);
+    }
+
+    .cta-wide {
+      width: 100%;
+      padding: 15px 18px;
+      border-radius: 16px;
+    }
+
     @media (max-width: 960px) {
       .hero, .workspace, .grid { grid-template-columns: 1fr; }
       .wrap { padding: 18px; }
+      .cta-wide { width: 100%; }
     }
   </style>
 </head>
@@ -359,43 +442,44 @@
     <section class="hero">
       <div class="card intro">
         <div class="eyebrow">Miniature Timelapse Launcher</div>
-        <h1>Pick a genre, pick a type, and generate the scene kit.</h1>
+        <h1 id="heroTitle">Pick a genre, pick a type, and generate the scene kit.</h1>
         <p class="lede">
-          This screen lets you choose the visual lane for the video without touching the command line.
-          The engine still runs in Python; this page only handles selection and hands the result to the pipeline.
+          <span id="heroLede">This screen lets you choose the visual lane for the video without touching the command line.
+          The engine still runs in Python; this page only handles selection and hands the result to the pipeline.</span>
         </p>
         <div class="stats">
-          <div class="stat"><div class="label">Genres</div><div class="value">Architecture, Vehicle, Product, Fantasy</div></div>
-          <div class="stat"><div class="label">Outputs</div><div class="value">Scene kit, prompts, status, stitch</div></div>
-          <div class="stat"><div class="label">Workflow</div><div class="value">Choose → Generate → Render → Auto-finalize</div></div>
+          <div class="stat"><div class="label" id="statGenresLabel">Genres</div><div class="value" id="statGenresValue">Architecture, Vehicle, Product, Fantasy</div></div>
+          <div class="stat"><div class="label" id="statOutputsLabel">Outputs</div><div class="value" id="statOutputsValue">Scene kit, prompts, status, stitch</div></div>
+          <div class="stat"><div class="label" id="statWorkflowLabel">Workflow</div><div class="value" id="statWorkflowValue">Choose → Generate → Render → Auto-finalize</div></div>
         </div>
       </div>
       <div class="card launcher">
         <div class="grid">
           <div class="field">
-            <label for="genre">Genre</label>
+            <label for="genre" id="genreLabel">Genre</label>
             <select id="genre">
               <option value="architecture">Architecture</option>
               <option value="vehicle">Vehicle</option>
               <option value="product">Product</option>
+              <option value="home_decor">Home Decor</option>
               <option value="character">Character</option>
               <option value="fantasy">Fantasy</option>
               <option value="scifi">Sci-Fi</option>
             </select>
           </div>
           <div class="field">
-            <label for="subtype">Subtype</label>
+            <label for="subtype" id="subtypeLabel">Subtype</label>
             <select id="subtype"></select>
           </div>
           <div class="field">
-            <label for="duration">Duration</label>
+            <label for="duration" id="durationLabel">Duration</label>
             <select id="duration">
               <option value="30">30 seconds</option>
               <option value="60" selected>60 seconds</option>
             </select>
           </div>
           <div class="field">
-            <label for="format">Format</label>
+            <label for="format" id="formatLabel">Format</label>
             <select id="format">
               <option value="9:16" selected>9:16</option>
               <option value="16:9">16:9</option>
@@ -403,20 +487,20 @@
           </div>
         </div>
         <div class="field">
-          <label for="topic">Topic label</label>
+          <label for="topic" id="topicLabel">Topic label</label>
           <input id="topic" value="Korean hanok" />
         </div>
         <div class="button-row">
           <button class="primary" id="generate">Generate Command</button>
           <button class="secondary" id="copy">Copy Command</button>
         </div>
-        <div class="hint">The command is prefilled for the Python runner. You can swap in a different genre/subtype anytime.</div>
+        <div class="hint" id="commandHint">The command is prefilled for the Python runner. You can swap in a different genre/subtype anytime.</div>
       </div>
     </section>
 
     <section class="workspace flow">
       <div class="card panel">
-        <h2>Flow Input Pack</h2>
+        <h2 id="flowTitle">Flow Input Pack</h2>
         <div class="chips" id="chips"></div>
         <div class="template-box" id="templateBox"></div>
         <div class="status-pill" id="statusPill">Ready to generate the prompt pack in browser.</div>
@@ -428,25 +512,30 @@
         </div>
       </div>
       <div class="card panel">
-        <h2>Google Flow Text</h2>
+        <div class="panel-head">
+          <h2 id="flowTextTitle">Google Flow Text</h2>
+          <a class="panel-link" id="flowOpenLink" href="https://labs.google/fx/flow" target="_blank" rel="noreferrer noopener">Open Google Flow</a>
+        </div>
         <textarea id="flowPack" spellcheck="false"></textarea>
-        <div class="hint">This is the only part that needs to go into Flow manually. Everything else stays in this screen.</div>
+        <div class="hint" id="flowHint">Copy the first frame prompt into Flow first, approve it there, then come back here for the video prompt.</div>
       </div>
     </section>
 
     <section class="workspace">
       <div class="card panel">
-        <h2>Scene Outputs</h2>
+        <h2 id="sceneOutputsTitle">Scene Outputs</h2>
         <div class="scene-grid" id="sceneGrid"></div>
       </div>
       <div class="card panel">
-        <h2>Scene Preview</h2>
+        <h2 id="scenePreviewTitle">Scene Preview</h2>
+        <div class="stepper" id="stepper"></div>
         <div class="template-box" id="scenePreview">
-          <div class="template-title">Select a scene</div>
-          <div class="template-meta">Click a scene card to inspect the generated scene summary.</div>
+          <div class="template-title" id="scenePreviewHeader">Select a scene</div>
+          <div class="template-meta" id="scenePreviewBody">Click a scene card to inspect the generated scene summary.</div>
         </div>
         <div class="toolbar">
-          <button class="secondary" id="copyScenePreview">Copy Selected Scene</button>
+          <button class="secondary" id="copyScenePreview">Copy First Frame Prompt</button>
+          <button class="primary cta-wide" id="copyVideoPrompt">Copy Video Prompt</button>
         </div>
       </div>
     </section>
@@ -472,6 +561,12 @@
           barn: { label: "Barn", type: "barn", genre: "architecture", color: "barn red, hay gold, weathered brown" },
         }
       },
+        home_decor: {
+          label: "Home Decor",
+          subtypes: {
+            decor: { label: "DIY Craft Decor", type: "home_decor", genre: "home_decor", color: "pastel pink, sage green, cream, coral, soft gold" },
+          }
+        },
       vehicle: {
         label: "Vehicle",
         subtypes: {
@@ -524,14 +619,15 @@
     const flowPackEl = document.getElementById('flowPack');
     const sceneGrid = document.getElementById('sceneGrid');
     const scenePreviewEl = document.getElementById('scenePreview');
+    const stepperEl = document.getElementById('stepper');
     const statusPill = document.getElementById('statusPill');
     const copyFlowBtn = document.getElementById('copyFlow');
     const downloadFlowBtn = document.getElementById('downloadFlow');
     const copyScenesBtn = document.getElementById('copyScenes');
     const copyAllScenesBtn = document.getElementById('copyAllScenes');
     const copyScenePreviewBtn = document.getElementById('copyScenePreview');
+    const copyVideoPromptBtn = document.getElementById('copyVideoPrompt');
     let activeSceneIndex = 0;
-
     function renderSubtypes() {
       const genre = templates[genreEl.value];
       subtypeEl.innerHTML = '';
@@ -542,6 +638,7 @@
         if (index === 0) opt.selected = true;
         subtypeEl.appendChild(opt);
       });
+      topicEl.value = autoTopicLabel();
       render();
     }
 
@@ -550,11 +647,26 @@
       return Object.values(genre.subtypes).find(item => item.type === subtypeEl.value) || Object.values(genre.subtypes)[0];
     }
 
+    function autoTopicLabel() {
+      const genre = templates[genreEl.value];
+      const sub = currentSubtype();
+      return `${genre.label}-${sub.label}`;
+    }
+
     function sceneStyleFor(type) {
       for (const genre of Object.values(templates)) {
         if (genre.subtypes[type]) return genre.subtypes[type];
       }
       return Object.values(templates.architecture.subtypes)[0];
+    }
+
+    function sceneCarryText(sceneName, previousSceneName) {
+      if (!previousSceneName) return 'This is the starting scene.';
+      return `Continue directly from the exact final frame of '${previousSceneName}' into '${sceneName}', preserve the same layout, scale, camera angle, lighting direction, and object placement, and avoid any reset, jump, or scene break.`;
+    }
+
+    function isProductLike(type) {
+      return ['watch', 'camera', 'sneaker', 'car', 'train', 'airplane', 'boat', 'robot', 'dinosaur', 'mecha', 'dragon', 'wizard_house', 'spaceship', 'hoverbike', 'mech', 'home_decor'].includes(type);
     }
 
     function sceneNamesFor(type, duration) {
@@ -627,6 +739,10 @@
           60: ["Hull", "Deck Frame", "Sails or Cabin", "Rigging", "Finishing", "Harbor Reveal"],
           30: ["Hull and Deck", "Rigging and Exterior", "Finishing and Reveal"],
         },
+        home_decor: {
+          60: ["Material Prep", "Base Shape", "Layering", "Detailing", "Decor Finish", "Final Reveal"],
+          30: ["Material Prep and Base", "Layering and Details", "Decor Finish and Reveal"],
+        },
         watch: {
           60: ["Case Body", "Dial Assembly", "Hands and Crown", "Strap Attachment", "Polishing", "Luxury Reveal"],
           30: ["Case and Dial", "Hands and Strap", "Polish and Reveal"],
@@ -675,24 +791,33 @@
       if (type === 'watch') {
         return `Ultra realistic macro product photography, luxury watchmaker bench, pristine empty surface, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands placing the first precision watch components, giant human fingers setting watch parts, tiny realistic watchmaking tools, no parts assembled yet, untouched watch case and dial parts laid out separately, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
       }
-      if (type === 'camera' || type === 'sneaker') {
-        return `Ultra realistic macro product photography, premium tabletop product assembly, pristine empty studio surface, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands placing the first precision components, giant human fingers setting parts, tiny realistic tools, no parts assembled yet, untouched product components arranged separately, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+      if (type === 'home_decor') {
+        return `Ultra realistic macro DIY craft photography, pristine empty craft desk, scattered raw materials only, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, nothing assembled yet, foam, paper, plastic, cloth, twigs, and string laid out separately, tiny scissors, glue, thread, and brush tools, 8K detail, bright studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+      }
+      if (['camera', 'sneaker', 'car', 'train', 'airplane', 'boat', 'robot', 'dinosaur', 'mecha', 'dragon', 'wizard_house', 'spaceship', 'hoverbike', 'mech'].includes(type)) {
+        return `Hyper-realistic macro photo of 100% disassembled miniature model parts neatly arranged on a wooden workbench, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, chassis/body/frame components, wheels/engines/arms/wings/panels/components separated clearly, tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, ${topic}, scene: ${sceneName}.`;
       }
       return `Ultra realistic macro photography, miniature construction site, empty sand or soil surface, no materials placed yet, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands starting the first placement of miniature materials, giant human fingers interacting with miniature materials, tiny realistic construction tools, completely unstarted foundation area, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
     }
 
     function continuityRule() {
-      return 'The final frame of each scene must match the first frame of the next scene, maintain the same camera angle, scale, lighting direction, and object placement across transitions, and continue the exact construction state without resets, jumps, or scene breaks.';
+      return 'The final frame of each scene must become the exact starting frame of the next scene, maintain the same camera angle, scale, lighting direction, and object placement across transitions, and continue the exact construction state without resets, jumps, cuts, or scene breaks.';
     }
 
     function carryOverText(sceneName, nextSceneName) {
       if (!nextSceneName) return continuityRule();
-      return `Carry-over: continue directly from '${sceneName}' into '${nextSceneName}' without resetting the model, preserve the same build progress and camera perspective, and keep the construction state continuous.`;
+      return `Carry-over: continue directly from the exact final frame of '${sceneName}' into '${nextSceneName}', treat the previous ending as the new starting frame, preserve the same build progress, camera perspective, and object placement, and keep the construction state continuous with no reset or jump.`;
     }
 
     function videoPrompt(sub, sceneName, duration) {
       const speed = duration === 30 ? 'compressed timelapse' : 'continuous timelapse';
-      return `ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands visible, multiple rapid scene cuts, cinematic macro photography, ${speed}, ${sub.label.toLowerCase()}, scene: ${sceneName}. ${continuityRule()}`;
+      if (['watch', 'camera', 'sneaker', 'car', 'train', 'airplane', 'boat', 'robot', 'dinosaur', 'mecha', 'dragon', 'wizard_house', 'spaceship', 'hoverbike', 'mech'].includes(sub.type)) {
+        return `hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, 100% disassembled parts to fully assembled model, no floating or teleporting parts, parts attach in a realistic order and disappear from the workbench as they are installed, final step leaves only the fully assembled model on a clean workbench, tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting, ${sub.label.toLowerCase()}, scene: ${sceneName}.`;
+      }
+      if (sub.type === 'home_decor') {
+        return `10-second hyper-realistic macro DIY craft timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, clean top-down craft-table view, tactile mixed-media papercraft and craft ASMR style, specifically featuring 3D layered paper-cutting, origami folding, and organic material collage captured from a clean, top-down perspective, the video begins with a completely empty craft desk and scattered raw materials, then hands cut, fold, wrap, layer, and assemble foam, paper, fabric, twigs, thread, and plastic pieces into a beautiful home decor ornament, each added piece logically disappears from the workbench as it is attached, no floating or teleporting pieces, bright even studio lighting, pastel and jewel-tone palette, crisp shadows, gentle tool sounds, a bright friendly young female voice-over reading the narration directly to the viewer with no background music, and each new scene begins from the exact final frame of the previous scene with no reset or visual jump, ending with a clean final reveal of only the finished decorative piece on the tidy desk, ${sceneName}. Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry.`;
+      }
+      return `ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands visible, multiple rapid scene cuts, cinematic macro photography, ${speed}, ${sub.label.toLowerCase()}, scene: ${sceneName}. ${continuityRule()} The previous scene's final frame is the exact starting frame of this scene.`;
     }
 
     function buildingStyleBlock(sub) {
@@ -740,6 +865,8 @@
         const nextSceneName = scenes[index + 1] || '';
         return [
           `Scene ${index + 1}: ${sceneName}`,
+          `Start From Previous Final Frame: ${index === 0 ? 'none' : scenes[index - 1]}`,
+          `Carry Forward: ${sceneCarryText(sceneName, scenes[index - 1])}`,
           `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, sub.type)}`,
           `Continuity Rule: ${continuityRule()}`,
           `Bridge: ${carryOverText(sceneName, nextSceneName)}`,
@@ -780,6 +907,14 @@
       flowPackEl.value = flowPackText();
       const scenes = sceneNamesFor(sub.type, Number(durationEl.value));
       if (activeSceneIndex >= scenes.length) activeSceneIndex = 0;
+
+      stepperEl.innerHTML = '';
+      scenes.forEach((sceneName, index) => {
+        const pill = document.createElement('div');
+        pill.className = 'step-pill' + (index === activeSceneIndex ? ' active' : '');
+        pill.textContent = `Step ${index + 1}: ${sceneName}`;
+        stepperEl.appendChild(pill);
+      });
 
       chipsEl.innerHTML = '';
       [
@@ -826,11 +961,12 @@
       const sceneStyle = sceneStyleFor(sub.type);
       scenePreviewEl.innerHTML = `
         <div class="template-title">Scene ${activeSceneIndex + 1}: ${sceneName}</div>
-        <div class="template-meta">
+        <div class="step-summary">
           <div><strong>Preview:</strong> ${sceneSummary(sub.type, sceneName)}</div>
+          <div><strong>Start from:</strong> ${activeSceneIndex === 0 ? 'none' : scenes[activeSceneIndex - 1]}</div>
+          <div><strong>Carry forward:</strong> ${sceneCarryText(sceneName, scenes[activeSceneIndex - 1])}</div>
           <div><strong>First frame:</strong> ${firstFramePrompt(topicEl.value, sceneName, sub.type)}</div>
-          <div><strong>Video prompt:</strong> ${videoPrompt(sceneStyle, sceneName, duration)}</div>
-          <div><strong>Negative prompt:</strong> text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry</div>
+          <div><strong>Video:</strong> available after Flow approval via the video prompt button.</div>
         </div>
       `;
       statusPill.textContent = `Ready for ${sub.label} with ${scenes.length} scenes.`;
@@ -842,7 +978,12 @@
       await copyText(`python3 src/watch_and_finalize.py "${topicEl.value}" --building-type ${sub.type} --duration ${durationEl.value} --format ${formatEl.value} --base-dir output`, 'Copied command.');
     });
     genreEl.addEventListener('change', renderSubtypes);
-    [subtypeEl, durationEl, formatEl, topicEl].forEach(el => el.addEventListener('input', render));
+    subtypeEl.addEventListener('input', () => {
+      topicEl.value = autoTopicLabel();
+      render();
+    });
+    [durationEl, formatEl].forEach(el => el.addEventListener('input', render));
+    topicEl.addEventListener('input', render);
     copyFlowBtn.addEventListener('click', () => copyText(flowPackEl.value, 'Copied Flow pack.'));
     downloadFlowBtn.addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(promptPackJson(), null, 2)], { type: 'application/json' });
@@ -867,6 +1008,7 @@
       const scenes = sceneNamesFor(sub.type, duration);
       const text = scenes.map((sceneName, index) => [
         `Scene ${index + 1}: ${sceneName}`,
+        `Start From Previous Final Frame: ${index === 0 ? 'none' : scenes[index - 1]}`,
         `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, currentSubtype().type)}`,
         `Continuity Rule: ${continuityRule()}`,
         `Bridge: ${carryOverText(sceneName, scenes[index + 1])}`,
@@ -881,10 +1023,24 @@
       const scene = sceneNamesFor(sub.type, duration)[activeSceneIndex];
       copyText([
         `Scene ${activeSceneIndex + 1}: ${scene}`,
-        `First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`,
-        `Continuity Rule: ${continuityRule()}`,
-        `Video Prompt: ${videoPrompt(sub, scene, duration)}`
+        `Start From Previous Final Frame: ${activeSceneIndex === 0 ? 'none' : sceneNamesFor(sub.type, duration)[activeSceneIndex - 1]}`,
+        `Carry Forward: ${sceneCarryText(scene, sceneNamesFor(sub.type, duration)[activeSceneIndex - 1])}`,
+        `First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`
       ].join('\n'), 'Copied selected scene.');
+    });
+    copyVideoPromptBtn.addEventListener('click', async () => {
+      const sub = currentSubtype();
+      const duration = Number(durationEl.value);
+      const scenes = sceneNamesFor(sub.type, duration);
+      const scene = scenes[activeSceneIndex];
+      const previousScene = activeSceneIndex === 0 ? null : scenes[activeSceneIndex - 1];
+      await copyText([
+        `Scene ${activeSceneIndex + 1}: ${scene}`,
+        `Start From Previous Final Frame: ${previousScene || 'none'}`,
+        `Carry Forward: ${sceneCarryText(scene, previousScene)}`,
+        `Video Prompt: ${videoPrompt(sub, scene, duration)}`,
+        `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry`
+      ].join('\n'), 'Copied next scene prompt.');
     });
 
     renderSubtypes();

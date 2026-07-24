@@ -6,7 +6,14 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import List
 
-from prompt_templates import NEGATIVE_PROMPT, STYLE_BLOCK, get_building_template, get_supported_building_types
+from prompt_templates import (
+    NEGATIVE_PROMPT,
+    STYLE_BLOCK,
+    build_common_core,
+    build_topic_label,
+    get_building_template,
+    get_supported_building_types,
+)
 
 
 @dataclass
@@ -27,12 +34,23 @@ def build_scene_names(duration: int, building_type: str) -> List[str]:
 
 def build_scene_prompt(building_type: str, name: str, duration: int) -> str:
     template = get_building_template(building_type)
-    base = f"{STYLE_BLOCK}, miniature DIY construction timelapse of a {template['label']}, scene: {name},"
+    base = f"{build_common_core()}, {STYLE_BLOCK}, miniature DIY construction timelapse of a {template['label']}, scene: {name},"
     if duration == 30:
         action = template["scene_prompts_30"][name]
     else:
         action = template["scene_prompts_60"][name]
     return f"{base} {action}."
+
+
+def add_continuity(building_type: str, scene_name: str, prompt: str, previous_scene: str | None) -> str:
+    if not previous_scene:
+        return prompt
+    continuity = (
+        f" Continue directly from the exact final frame of the previous scene '{previous_scene}' without resetting the model, "
+        f"treat the previous scene ending as the new starting frame, preserve the same layout, scale, camera angle, and assembled state, "
+        f"and keep every visible part physically connected with no jump, no cut, and no scene restart."
+    )
+    return f"{prompt.rstrip('.')}.{continuity}"
 
 
 def build_project(
@@ -45,12 +63,16 @@ def build_project(
 ) -> dict:
     names = build_scene_names(duration, building_type)
     seconds = duration // len(names)
-    scenes = [
-        asdict(Scene(id=i + 1, name=name, seconds=seconds, prompt=build_scene_prompt(building_type, name, duration)))
-        for i, name in enumerate(names)
-    ]
+    scenes = []
+    previous_scene = None
+    for i, name in enumerate(names):
+        prompt = build_scene_prompt(building_type, name, duration)
+        prompt = add_continuity(building_type, name, prompt, previous_scene)
+        scenes.append(asdict(Scene(id=i + 1, name=name, seconds=seconds, prompt=prompt)))
+        previous_scene = name
     return {
         "topic": topic,
+        "topic_label": build_topic_label(building_type),
         "building_type": building_type,
         "duration": duration,
         "format": format_,
