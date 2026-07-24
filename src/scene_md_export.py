@@ -17,7 +17,7 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
     template = get_building_template(project.get("building_type", "hanok"))
     start_second = (scene["id"] - 1) * scene["seconds"]
     end_second = scene["id"] * scene["seconds"]
-    first_frame_prompt = build_first_frame_prompt(project["topic"], scene["name"])
+    first_frame_prompt = build_first_frame_prompt(project["topic"], scene["name"], project.get("building_type", "hanok"))
     return (
         f"# Scene {scene['id']}: {scene['name']}\n\n"
         f"- Topic: {project['topic']}\n"

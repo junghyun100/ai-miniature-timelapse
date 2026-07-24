@@ -3,18 +3,44 @@ from __future__ import annotations
 
 NEGATIVE_PROMPT = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
 
+HANDS_ONLY_RULE = (
+    "giant human hands only, no miniature people, no small people, no tiny workers, no human figures, "
+    "no characters, only hands interacting with the miniature site"
+)
+
+CONTINUITY_RULE = (
+    "The final frame of each scene must match the first frame of the next scene, maintain the same camera angle, "
+    "scale, lighting direction, and object placement across transitions, and continue the exact construction state "
+    "without resets, jumps, or scene breaks."
+)
+
 STYLE_BLOCK = (
-    "ultra realistic macro photography, miniature construction site, giant human hands only, "
+    f"ultra realistic macro photography, miniature construction site, {HANDS_ONLY_RULE}, "
     "ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, "
-    "cinematic studio lighting, shallow depth of field"
+    f"cinematic studio lighting, shallow depth of field, {CONTINUITY_RULE}"
 )
 
 
-def build_first_frame_prompt(topic: str, scene_name: str) -> str:
+def build_first_frame_prompt(topic: str, scene_name: str, building_type: str | None = None) -> str:
+    key = (building_type or "").strip().lower()
+    if key == "watch":
+        return (
+            "Ultra realistic macro product photography, luxury watchmaker bench, pristine empty surface, "
+            f"{HANDS_ONLY_RULE}, giant human fingers placing the first precision watch components, tiny realistic watchmaking tools, "
+            "no parts assembled yet, untouched watch case and dial parts laid out separately, 8K detail, cinematic studio lighting, shallow depth of field, "
+            f"{topic}, scene: {scene_name}."
+        )
+    if key in {"camera", "sneaker", "product"}:
+        return (
+            "Ultra realistic macro product photography, premium tabletop product assembly, pristine empty studio surface, "
+            f"{HANDS_ONLY_RULE}, giant human fingers placing the first precision components, tiny realistic tools, "
+            "no parts assembled yet, untouched product components arranged separately, 8K detail, cinematic studio lighting, shallow depth of field, "
+            f"{topic}, scene: {scene_name}."
+        )
     return (
-        "Ultra realistic macro photography, miniature construction site, sand or soil surface, "
-        "giant human fingers interacting with miniature materials, tiny realistic construction tools, "
-        "partially prepared foundation area, 8K detail, cinematic studio lighting, shallow depth of field, "
+        "Ultra realistic macro photography, miniature construction site, empty sand or soil surface, no materials placed yet, "
+        f"{HANDS_ONLY_RULE}, giant human fingers starting the first placement of miniature materials, tiny realistic construction tools, "
+        "completely unstarted foundation area, 8K detail, cinematic studio lighting, shallow depth of field, "
         f"{topic}, scene: {scene_name}."
     )
 

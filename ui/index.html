@@ -189,6 +189,10 @@
       margin-top: 20px;
     }
 
+    .workspace.flow {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
     .panel {
       padding: 20px;
     }
@@ -257,6 +261,50 @@
       gap: 8px;
       font-size: 14px;
       color: var(--muted);
+    }
+
+    .prompt-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .prompt-item {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.78);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .prompt-item h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .prompt-item p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(143, 95, 52, 0.1);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
     }
 
     .template-meta strong {
@@ -366,16 +414,23 @@
       </div>
     </section>
 
-    <section class="workspace">
+    <section class="workspace flow">
       <div class="card panel">
-        <h2>Selected Template</h2>
+        <h2>Flow Input Pack</h2>
         <div class="chips" id="chips"></div>
         <div class="template-box" id="templateBox"></div>
+        <div class="status-pill" id="statusPill">Ready to generate the prompt pack in browser.</div>
+        <div class="toolbar">
+          <button class="primary" id="copyFlow">Copy Flow Pack</button>
+          <button class="secondary" id="downloadFlow">Download JSON</button>
+          <button class="secondary" id="copyScenes">Copy Scene Prompts</button>
+          <button class="secondary" id="copyAllScenes">Copy All Scenes</button>
+        </div>
       </div>
       <div class="card panel">
-        <h2>Launch Command</h2>
-        <textarea id="command" spellcheck="false"></textarea>
-        <div class="hint">Run this in the project root. It will use the chosen subtype and feed the pipeline.</div>
+        <h2>Google Flow Text</h2>
+        <textarea id="flowPack" spellcheck="false"></textarea>
+        <div class="hint">This is the only part that needs to go into Flow manually. Everything else stays in this screen.</div>
       </div>
     </section>
 
@@ -389,6 +444,9 @@
         <div class="template-box" id="scenePreview">
           <div class="template-title">Select a scene</div>
           <div class="template-meta">Click a scene card to inspect the generated scene summary.</div>
+        </div>
+        <div class="toolbar">
+          <button class="secondary" id="copyScenePreview">Copy Selected Scene</button>
         </div>
       </div>
     </section>
@@ -461,9 +519,18 @@
     const durationEl = document.getElementById('duration');
     const formatEl = document.getElementById('format');
     const topicEl = document.getElementById('topic');
-    const commandEl = document.getElementById('command');
     const chipsEl = document.getElementById('chips');
     const templateBox = document.getElementById('templateBox');
+    const flowPackEl = document.getElementById('flowPack');
+    const sceneGrid = document.getElementById('sceneGrid');
+    const scenePreviewEl = document.getElementById('scenePreview');
+    const statusPill = document.getElementById('statusPill');
+    const copyFlowBtn = document.getElementById('copyFlow');
+    const downloadFlowBtn = document.getElementById('downloadFlow');
+    const copyScenesBtn = document.getElementById('copyScenes');
+    const copyAllScenesBtn = document.getElementById('copyAllScenes');
+    const copyScenePreviewBtn = document.getElementById('copyScenePreview');
+    let activeSceneIndex = 0;
 
     function renderSubtypes() {
       const genre = templates[genreEl.value];
@@ -481,6 +548,13 @@
     function currentSubtype() {
       const genre = templates[genreEl.value];
       return Object.values(genre.subtypes).find(item => item.type === subtypeEl.value) || Object.values(genre.subtypes)[0];
+    }
+
+    function sceneStyleFor(type) {
+      for (const genre of Object.values(templates)) {
+        if (genre.subtypes[type]) return genre.subtypes[type];
+      }
+      return Object.values(templates.architecture.subtypes)[0];
     }
 
     function sceneNamesFor(type, duration) {
@@ -597,6 +671,104 @@
       return (map[type] && map[type][duration]) || map.hanok[duration];
     }
 
+    function firstFramePrompt(topic, sceneName, type) {
+      if (type === 'watch') {
+        return `Ultra realistic macro product photography, luxury watchmaker bench, pristine empty surface, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands placing the first precision watch components, giant human fingers setting watch parts, tiny realistic watchmaking tools, no parts assembled yet, untouched watch case and dial parts laid out separately, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+      }
+      if (type === 'camera' || type === 'sneaker') {
+        return `Ultra realistic macro product photography, premium tabletop product assembly, pristine empty studio surface, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands placing the first precision components, giant human fingers setting parts, tiny realistic tools, no parts assembled yet, untouched product components arranged separately, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+      }
+      return `Ultra realistic macro photography, miniature construction site, empty sand or soil surface, no materials placed yet, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands starting the first placement of miniature materials, giant human fingers interacting with miniature materials, tiny realistic construction tools, completely unstarted foundation area, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+    }
+
+    function continuityRule() {
+      return 'The final frame of each scene must match the first frame of the next scene, maintain the same camera angle, scale, lighting direction, and object placement across transitions, and continue the exact construction state without resets, jumps, or scene breaks.';
+    }
+
+    function carryOverText(sceneName, nextSceneName) {
+      if (!nextSceneName) return continuityRule();
+      return `Carry-over: continue directly from '${sceneName}' into '${nextSceneName}' without resetting the model, preserve the same build progress and camera perspective, and keep the construction state continuous.`;
+    }
+
+    function videoPrompt(sub, sceneName, duration) {
+      const speed = duration === 30 ? 'compressed timelapse' : 'continuous timelapse';
+      return `ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands visible, multiple rapid scene cuts, cinematic macro photography, ${speed}, ${sub.label.toLowerCase()}, scene: ${sceneName}. ${continuityRule()}`;
+    }
+
+    function buildingStyleBlock(sub) {
+      return [
+        `Materials: ${sub.materials || sub.color}`,
+        `Camera: ${sub.camera || 'macro lens, shallow depth of field'}`,
+        `Lighting: ${sub.lighting || 'cinematic studio lighting'}`,
+        `Color Palette: ${sub.color}`
+      ].join('\n');
+    }
+
+    function promptPackJson() {
+      const sub = currentSubtype();
+      const duration = Number(durationEl.value);
+      const scenes = sceneNamesFor(sub.type, duration).map((sceneName, index) => ({
+        id: index + 1,
+        name: sceneName,
+        first_frame_prompt: firstFramePrompt(topicEl.value, sceneName, sub.type),
+        video_prompt: videoPrompt(sub, sceneName, duration),
+        continuity_rule: continuityRule(),
+        bridge: carryOverText(sceneName, sceneNamesFor(sub.type, duration)[index + 1]),
+        negative_prompt: 'text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures'
+      }));
+      return {
+        topic: topicEl.value,
+        building_type: sub.type,
+        duration,
+        format: formatEl.value,
+        building_style: {
+          materials: sub.materials || sub.color,
+          camera: sub.camera || 'macro lens, shallow depth of field',
+          lighting: sub.lighting || 'cinematic studio lighting',
+          color_palette: sub.color
+        },
+        scenes
+      };
+    }
+
+    function flowPackText() {
+      const sub = currentSubtype();
+      const duration = Number(durationEl.value);
+      const scenes = sceneNamesFor(sub.type, duration);
+      const blocks = scenes.map((sceneName, index) => {
+        const transition = index < scenes.length - 1 ? 'hard cut to next scene' : 'cinematic reveal and hold';
+        const nextSceneName = scenes[index + 1] || '';
+        return [
+          `Scene ${index + 1}: ${sceneName}`,
+          `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, sub.type)}`,
+          `Continuity Rule: ${continuityRule()}`,
+          `Bridge: ${carryOverText(sceneName, nextSceneName)}`,
+          `Video Prompt: ${videoPrompt(sub, sceneName, duration)}`,
+          `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`,
+          `Transition: ${transition}`
+        ].join('\n');
+      });
+      return [
+        `Topic: ${topicEl.value}`,
+        `Building Type: ${sub.type}`,
+        `Duration: ${durationEl.value}s`,
+        `Format: ${formatEl.value}`,
+        '',
+        buildingStyleBlock(sub),
+        '',
+        '=== Flow Scenes ===',
+        blocks.join('\n\n')
+      ].join('\n');
+    }
+
+    async function copyText(text, okMessage) {
+      await navigator.clipboard.writeText(text);
+      statusPill.textContent = okMessage || 'Copied to clipboard.';
+      window.setTimeout(() => {
+        statusPill.textContent = 'Ready to generate the prompt pack in browser.';
+      }, 1600);
+    }
+
     function sceneSummary(type, sceneName) {
       return `Scene: ${sceneName}. Materials, camera, lighting, and color palette are already bundled for ${type}.`;
     }
@@ -604,8 +776,8 @@
     function render() {
       const sub = currentSubtype();
       const genre = templates[genreEl.value];
-      const cmd = `python3 src/watch_and_finalize.py "${topicEl.value}" --building-type ${sub.type} --duration ${durationEl.value} --format ${formatEl.value} --base-dir output`;
-      commandEl.value = cmd;
+      const duration = Number(durationEl.value);
+      flowPackEl.value = flowPackText();
       const scenes = sceneNamesFor(sub.type, Number(durationEl.value));
       if (activeSceneIndex >= scenes.length) activeSceneIndex = 0;
 
@@ -629,7 +801,9 @@
           <div><strong>Genre:</strong> ${genre.label}</div>
           <div><strong>Building key:</strong> ${sub.type}</div>
           <div><strong>Recommended color palette:</strong> ${sub.color}</div>
-          <div><strong>Run command:</strong> chosen type is already injected into the pipeline</div>
+          <div><strong>Materials:</strong> ${sub.materials || sub.color}</div>
+          <div><strong>Camera:</strong> ${sub.camera || 'macro lens, shallow depth of field'}</div>
+          <div><strong>Lighting:</strong> ${sub.lighting || 'cinematic studio lighting'}</div>
         </div>
       `;
 
@@ -649,23 +823,69 @@
       });
 
       const sceneName = scenes[activeSceneIndex] || scenes[0];
-      document.getElementById('scenePreview').innerHTML = `
+      const sceneStyle = sceneStyleFor(sub.type);
+      scenePreviewEl.innerHTML = `
         <div class="template-title">Scene ${activeSceneIndex + 1}: ${sceneName}</div>
         <div class="template-meta">
           <div><strong>Preview:</strong> ${sceneSummary(sub.type, sceneName)}</div>
-          <div><strong>Color palette:</strong> ${sub.color}</div>
-          <div><strong>Command fragment:</strong> --building-type ${sub.type} --duration ${durationEl.value}</div>
-          <div><strong>Copy target:</strong> use the right-side command, then run the selected scene in the video tool.</div>
+          <div><strong>First frame:</strong> ${firstFramePrompt(topicEl.value, sceneName, sub.type)}</div>
+          <div><strong>Video prompt:</strong> ${videoPrompt(sceneStyle, sceneName, duration)}</div>
+          <div><strong>Negative prompt:</strong> text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry</div>
         </div>
       `;
+      statusPill.textContent = `Ready for ${sub.label} with ${scenes.length} scenes.`;
     }
 
     document.getElementById('generate').addEventListener('click', render);
     document.getElementById('copy').addEventListener('click', async () => {
-      await navigator.clipboard.writeText(commandEl.value);
+      const sub = currentSubtype();
+      await copyText(`python3 src/watch_and_finalize.py "${topicEl.value}" --building-type ${sub.type} --duration ${durationEl.value} --format ${formatEl.value} --base-dir output`, 'Copied command.');
     });
     genreEl.addEventListener('change', renderSubtypes);
     [subtypeEl, durationEl, formatEl, topicEl].forEach(el => el.addEventListener('input', render));
+    copyFlowBtn.addEventListener('click', () => copyText(flowPackEl.value, 'Copied Flow pack.'));
+    downloadFlowBtn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(promptPackJson(), null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentSubtype().type}-flow-pack.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      statusPill.textContent = 'Downloaded JSON prompt pack.';
+      window.setTimeout(() => {
+        statusPill.textContent = 'Ready to generate the prompt pack in browser.';
+      }, 1600);
+    });
+    copyScenesBtn.addEventListener('click', () => {
+      const scenes = sceneNamesFor(currentSubtype().type, Number(durationEl.value));
+      copyText(scenes.map((sceneName, index) => `Scene ${index + 1}: ${sceneName}`).join('\n'), 'Copied scene list.');
+    });
+    copyAllScenesBtn.addEventListener('click', () => {
+      const sub = currentSubtype();
+      const duration = Number(durationEl.value);
+      const scenes = sceneNamesFor(sub.type, duration);
+      const text = scenes.map((sceneName, index) => [
+        `Scene ${index + 1}: ${sceneName}`,
+        `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, currentSubtype().type)}`,
+        `Continuity Rule: ${continuityRule()}`,
+        `Bridge: ${carryOverText(sceneName, scenes[index + 1])}`,
+        `Video Prompt: ${videoPrompt(sub, sceneName, duration)}`,
+        `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`
+      ].join('\n')).join('\n\n');
+      copyText(text, 'Copied all scene prompts.');
+    });
+    copyScenePreviewBtn.addEventListener('click', () => {
+      const sub = currentSubtype();
+      const duration = Number(durationEl.value);
+      const scene = sceneNamesFor(sub.type, duration)[activeSceneIndex];
+      copyText([
+        `Scene ${activeSceneIndex + 1}: ${scene}`,
+        `First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`,
+        `Continuity Rule: ${continuityRule()}`,
+        `Video Prompt: ${videoPrompt(sub, scene, duration)}`
+      ].join('\n'), 'Copied selected scene.');
+    });
 
     renderSubtypes();
   </script>
