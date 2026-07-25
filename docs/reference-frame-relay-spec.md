@@ -812,6 +812,34 @@ Specialized copy actions are deterministic projections:
 No copy action reads stale DOM text or regenerates a local template. It receives
 the current canonical plan and current source revision.
 
+### 11.7 Unified Editorial Voice
+
+All profiles must read as if one production team authored them, without erasing
+their genre-specific logic. English prompt prose follows this order:
+
+1. exact subject and current physical state
+2. hands-only and scale relationship
+3. ordered physical actions
+4. fixed workspace, camera, lighting, palette, and quality
+5. continuity or final reveal instruction
+6. audio instruction
+7. template exclusions
+8. immutable negative line
+
+Style requirements:
+
+- direct production language, not conversational explanation
+- present tense and active physical verbs
+- concrete nouns instead of generic `parts`, `materials`, or `details`
+- no Korean UI translation, except the Korean home-decor narration embedded
+  verbatim as content
+- no model-facing meta phrases such as `as an AI`
+- no repeated continuity paragraph inside one scene
+- no claim that text can guarantee an exact generative result
+
+Profile-required source phrases remain verbatim even when their rhythm differs
+from the shared voice.
+
 ## 12. Hanok Identity and Construction Contract
 
 ### 12.1 Identity Lock
@@ -1088,7 +1116,8 @@ but it MUST preserve the same decision order:
 
 #### Topic Generation
 
-If the user requests ideas, generate exactly five items. Each item contains:
+When the user enters the Korean architecture profile without a selected custom
+topic, immediately generate exactly five items. Each item contains:
 
 - title
 - curiosity driver
@@ -1102,7 +1131,8 @@ Each item naturally uses:
 - Timelapse
 - Building
 
-The UI MAY also allow a user-entered topic that bypasses idea generation.
+The UI MAY also allow a user-entered topic that bypasses idea generation. This
+extra path does not remove the default five-idea behavior.
 
 #### First-Frame Source Conflict Resolution
 
@@ -1117,6 +1147,10 @@ The architecture master image MUST show:
 - all building materials still separate
 - hands beginning the first placement
 - no completed foundation, wall, or roof
+- ultra-realistic 8K macro-photography detail
+- giant human fingers interacting with subtype-correct miniature materials
+- tiny realistic construction tools
+- cinematic studio lighting and shallow depth of field
 
 This is a deliberate documented deviation from the older reference prompt.
 
@@ -1136,6 +1170,20 @@ Sixty seconds:
 4. Exterior Finishing
 5. Painting and Weathering
 6. Landscaping and Reveal
+
+The generic 60-second action contract is:
+
+| Scene | Must begin with | Ordered physical work | Must end with |
+| --- | --- | --- | --- |
+| Foundation | untouched approved site and separate foundation materials | measure footprint, tension guides, excavate or level, place footings/forms, apply subtype-correct mortar or concrete | foundation complete, no wall erected |
+| Wall and Windows | exact saved foundation frame | install sill/base, raise structural frame or wall units, connect joints, form door/window openings, install frames | wall system and openings complete, no roof |
+| Roofing | exact saved wall frame | place beams/trusses, purlins/rafters, underlayer, then subtype-correct tiles/panels in real order | watertight roof form complete, no finish reset |
+| Exterior Finishing | exact saved roof frame | add cladding/plaster, doors, windows, trim, drainage, and subtype details | exterior shell complete, no paint weathering or landscape |
+| Painting and Weathering | exact saved exterior frame | prime only where appropriate, apply palette-correct finish, seal, add restrained realistic wear | finish complete, site layout unchanged |
+| Landscaping and Reveal | exact saved painted frame | add soil, grass, path, fence, planting, remove tools, hands withdraw | completed building and landscape, then final restrained reveal |
+
+For 30 seconds, Scenes 1–2, 3–4, and 5–6 are compressed respectively.
+Compression removes intermediate holds, not required physical order.
 
 Each scene MUST have template-specific:
 
@@ -1271,6 +1319,10 @@ The selected model identity is stored separately from category:
 The app MUST NOT silently replace a user's exact selected model. Any
 brand-neutralization is explicit.
 
+After model selection, master image and video prompt fields are built in one
+atomic Applied Plan operation, as required by the source workflow. The Relay
+Runner still exposes the video only after the external master image is approved.
+
 #### Master Image Contract
 
 The source vehicle prompt is preserved:
@@ -1353,6 +1405,25 @@ Each category supplies an equivalence map. For example:
 | Wheels/suspension | Landing gear | Propeller/rudder | Wheels/fork |
 | Steering | Control surfaces | Helm/rudder controls | Handlebars/brakes |
 | Body panels | Fuselage skins | Hull/deck panels | Frame accessories |
+
+The implementation registry MUST provide all six ordered stages per category:
+
+| Category | Stage 1 → Stage 6 |
+| --- | --- |
+| Car | engine/gearbox → structural fasteners → suspension/wheels → steering/interior controls → glazing/body panels → brush polish |
+| Motorcycle | engine into frame → mounts/fasteners → swingarm/fork/wheels → handlebars/brakes/controls → tank/seat/fairings/exhaust → brush polish |
+| Airplane | engines/core into fuselage → spar and frame fasteners → wings/landing gear → tail and control surfaces → fuselage skins/cockpit glazing → surface brush |
+| Boat/ship | engine or mast base into keel/frame → rib/deck fasteners → propeller/rudder or rigging base → helm/control linkage → hull/deck/cabin panels → deck brush |
+| Agricultural machinery | diesel engine into chassis → mounts and hydraulic fasteners → axles/tracks/wheels → steering/cab controls → hood/cab/implement panels → debris brush |
+| Helicopter | engine/transmission into frame → mounts/fasteners → skids and rotor hubs → cyclic/control linkage and tail rotor → cockpit and fuselage shell → rotor/body brush |
+| Construction vehicle | engine into reinforced chassis → mounts/hydraulic fittings → tracks or wheels → operator and hydraulic controls → cab/boom/bucket/counterweight panels → brush polish |
+| Spaceship | propulsion/core into frame → structural fasteners/conduits → landing gear or maneuvering modules → cockpit/control and guidance modules → hull plates/thermal panels → clean-room brush |
+| Tank | engine into lower hull → suspension fasteners → road wheels/tracks → steering/control linkages and turret ring → armor/turret/barrel panels → dusting brush |
+| Bicycle | crankset into frame → bearing/fastener tightening → fork/wheels/chain → handlebars/brakes/derailleurs → saddle/pedals/accessories → frame brush |
+
+The planner rejects a sequence if a later shell blocks access needed by an
+earlier mechanical stage, for example closing car body panels before installing
+the engine.
 
 #### Parts-Depletion Rule
 
@@ -1465,9 +1536,15 @@ The home-decor master image shows:
 
 The first-frame prompt MUST not reveal the final design early.
 
+After idea selection, narration and the video prompt are generated in one atomic
+operation without another approval gate between them. Validation may block the
+operation, but the UI MUST NOT require a separate `Continue` click for narration
+and video.
+
 #### Idea Generation
 
-On request, generate exactly ten one-line ideas. Each idea uses the form:
+When the user enters the Home Decor profile without a selected custom idea,
+immediately generate exactly ten one-line ideas. Each idea uses the form:
 
 ```text
 [low-cost or discarded material] + [Korean material or motif] → [finished decor object]
@@ -1503,6 +1580,10 @@ Randomness MUST be seedable:
 
 The seed is stored for reproducibility. `Regenerate ideas` creates a new seed.
 
+If NIM is unavailable, a deterministic combinatorial generator still produces
+ten valid ideas from non-repeating material and object pools. NIM may improve
+novelty but is not required to enter the profile.
+
 #### Narration Contract
 
 After idea selection, generate one Korean spoken sentence:
@@ -1524,11 +1605,16 @@ The UI shows:
 [narration] (공백 제외 X자)
 ```
 
+The deterministic fallback uses profile-owned Korean sentence patterns and is
+subject to the same grapheme and grammar validator. Failure to generate a valid
+narration blocks the home-decor plan rather than omitting narration silently.
+
 #### Ten-Second Visual Timeline
 
 The six conceptual stages remain inside one clip:
 
-- 0.0–2.0s: object hook and immediate hand action
+- 0.0–2.0s: selected discarded object, an incredulous Korean spoken hook, and
+  immediate hand action
 - 2.0–3.0s: Korean and discarded materials become clearly identifiable
 - 3.0–5.0s: cutting, folding, or base formation
 - 5.0–7.0s: repeated layering or assembly
@@ -1610,6 +1696,15 @@ The cooking master image shows:
 - no chopped, cooked, plated, or garnished food
 - 100mm macro character, 9:16 framing, and the selected lighting
 
+Everything visible except the one or two giant real human hands is miniature:
+ingredients, knives, prep bowls, board station, cookware, heat source, serving
+vessel, and utensils. The planner rejects normal-scale kitchen objects mixed
+with miniature ones.
+
+After the dish draft is confirmed, the master prompt and all three video prompts
+are generated in one Applied Plan operation. Flow execution remains serial
+because later scenes require saved frames.
+
 #### User Input
 
 The only required creative input is:
@@ -1630,6 +1725,15 @@ The deterministic cooking resolver derives:
 - culturally correct presentation
 
 Derived values remain editable before plan generation.
+
+The first implementation SHOULD ship a tested resolver catalog for common dishes.
+For a dish outside the catalog:
+
+1. derive a candidate with NIM when enabled, otherwise use a generic editable
+   recipe draft
+2. mark all derived values `REVIEW_REQUIRED`
+3. require explicit user confirmation before Applied Plan generation
+4. never claim cultural or food-safety validation that did not occur
 
 #### Food-Knowledge Safety
 
@@ -1998,6 +2102,14 @@ Legacy UI names map as follows:
 The rename is semantic: Source Draft is editable input, while Applied Prompt is
 read-only generated output. The Google Flow launch link remains in the Applied
 Prompt and Relay Runner areas but is not part of copied prompt text.
+
+The link target is:
+
+```text
+https://labs.google/fx/flow
+```
+
+It opens in a new tab with `noopener,noreferrer`.
 
 ### 15.1 Initial and Resume Behavior
 
