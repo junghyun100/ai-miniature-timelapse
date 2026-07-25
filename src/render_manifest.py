@@ -13,6 +13,13 @@ def load_json(path: str | Path) -> Dict[str, Any]:
 def build_render_manifest(project: Dict[str, Any]) -> Dict[str, Any]:
     scenes: List[Dict[str, Any]] = []
     for scene in project["scenes"]:
+        input_mode = scene.get("input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME")
+        input_asset = scene.get(
+            "input_asset",
+            "scenes/scene_01_master.png"
+            if scene["id"] == 1
+            else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png",
+        )
         scenes.append(
             {
                 "id": scene["id"],
@@ -20,8 +27,10 @@ def build_render_manifest(project: Dict[str, Any]) -> Dict[str, Any]:
                 "duration_seconds": scene["seconds"],
                 "prompt": scene["prompt"],
                 "negative_prompt": scene["negative_prompt"],
-                "input_image": f"scenes/scene_{scene['id']:02d}_first_frame.png",
+                "input_mode": input_mode,
+                "input_image": input_asset,
                 "output_video": f"renders/scene_{scene['id']:02d}.mp4",
+                "handoff_image": scene.get("handoff_asset", f"scenes/scene_{scene['id']:02d}_last_frame.png"),
             }
         )
 
@@ -31,6 +40,7 @@ def build_render_manifest(project: Dict[str, Any]) -> Dict[str, Any]:
         "format": project["format"],
         "style": project["style"],
         "variant": project.get("variant", ""),
+        "workflow": "reference_frame_relay",
         "scenes": scenes,
     }
 
@@ -51,4 +61,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

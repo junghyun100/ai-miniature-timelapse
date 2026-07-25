@@ -15,10 +15,27 @@ def load_json(path: str | Path) -> Dict[str, Any]:
 
 def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
     template = get_building_template(project.get("building_type", "hanok"))
+    topic_context = project.get("topic_label") or project["topic"]
     start_second = (scene["id"] - 1) * scene["seconds"]
     end_second = scene["id"] * scene["seconds"]
-    first_frame_prompt = build_first_frame_prompt(project["topic"], scene["name"], project.get("building_type", "hanok"))
-    first_frame_note = first_frame_prompt if scene["id"] == 1 else "inherit from previous scene final frame"
+    first_frame_prompt = (
+        build_first_frame_prompt(topic_context, scene["name"], project.get("building_type", "hanok"))
+        if scene["id"] == 1
+        else ""
+    )
+    input_mode = scene.get("input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME")
+    input_asset = scene.get(
+        "input_asset",
+        "scenes/scene_01_master.png"
+        if scene["id"] == 1
+        else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png",
+    )
+    handoff_asset = scene.get("handoff_asset", f"scenes/scene_{scene['id']:02d}_last_frame.png")
+    first_frame_section = (
+        f"## Master First Frame Prompt\n\n{first_frame_prompt}\n\n"
+        if first_frame_prompt
+        else "## Start Image\n\nUse the exact previous scene final-frame image listed above. Do not generate a new first frame.\n\n"
+    )
     return (
         f"# Scene {scene['id']}: {scene['name']}\n\n"
         f"- Topic: {project['topic']}\n"
@@ -30,9 +47,11 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
         f"- Camera: {template['camera']}\n"
         f"- Lighting: {template['lighting']}\n"
         f"- Color Palette: {template.get('color_palette', '')}\n"
-        f"- First frame image: `scenes/scene_{scene['id']:02d}_first_frame.png`\n"
+        f"- Input mode: `{input_mode}`\n"
+        f"- Input image: `{input_asset}`\n"
         f"- Video output: `renders/scene_{scene['id']:02d}.mp4`\n\n"
-        f"## First Frame Prompt\n\n{first_frame_note}\n\n"
+        f"- Save final frame as: `{handoff_asset}`\n\n"
+        f"{first_frame_section}"
         f"## Video Prompt\n\n{scene['prompt']}\n\n"
         f"## Negative Prompt\n\n{scene['negative_prompt']}\n"
     )

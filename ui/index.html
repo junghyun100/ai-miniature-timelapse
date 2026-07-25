@@ -6,19 +6,20 @@
   <title>Miniature Timelapse Launcher</title>
   <style>
     :root {
-      --bg: #f3efe7;
-      --panel: rgba(255, 252, 246, 0.88);
-      --panel-strong: #fffaf0;
-      --text: #1f2328;
-      --muted: #65615a;
-      --line: rgba(31, 35, 40, 0.12);
-      --accent: #8f5f34;
-      --accent-2: #b78b5a;
-      --shadow: 0 18px 50px rgba(53, 37, 20, 0.12);
+      --bg: #f1ece4;
+      --panel: rgba(255, 252, 246, 0.96);
+      --panel-strong: #fffaf2;
+      --text: #1d211f;
+      --muted: #676159;
+      --line: rgba(29, 33, 31, 0.14);
+      --accent: #7a4f28;
+      --accent-2: #a87446;
+      --accent-soft: rgba(122, 79, 40, 0.1);
+      --shadow: 0 24px 60px rgba(53, 37, 20, 0.10);
       --radius: 22px;
       --radius-sm: 14px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --sans: "Segoe UI", "Avenir Next", Avenir, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -27,9 +28,9 @@
       font-family: var(--sans);
       color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(183, 139, 90, 0.24), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(143, 95, 52, 0.16), transparent 28%),
-        linear-gradient(180deg, #f7f2e9 0%, #efe7db 100%);
+        radial-gradient(circle at top left, rgba(183, 139, 90, 0.20), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(143, 95, 52, 0.12), transparent 30%),
+        linear-gradient(180deg, #f7f1e8 0%, #ece4d7 100%);
       min-height: 100vh;
     }
 
@@ -50,13 +51,25 @@
     .card {
       background: var(--panel);
       backdrop-filter: blur(14px);
-      border: 1px solid rgba(255,255,255,0.55);
+      border: 1px solid rgba(255,255,255,0.66);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
     }
 
     .intro {
-      padding: 28px;
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .intro::after {
+      content: "";
+      position: absolute;
+      inset: auto -18% -30% auto;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(168, 116, 70, 0.18), transparent 64%);
+      pointer-events: none;
     }
 
     .eyebrow {
@@ -70,16 +83,17 @@
 
     h1 {
       margin: 0 0 12px;
-      font-size: clamp(34px, 5vw, 68px);
-      line-height: 0.95;
-      letter-spacing: -0.05em;
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+      max-width: 11ch;
     }
 
     .lede {
-      max-width: 62ch;
+      max-width: 56ch;
       color: var(--muted);
       font-size: 16px;
-      line-height: 1.6;
+      line-height: 1.62;
     }
 
     .stats {
@@ -90,10 +104,10 @@
     }
 
     .stat {
-      background: rgba(255,255,255,0.55);
-      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.62);
+      border: 1px solid rgba(29, 33, 31, 0.08);
       border-radius: 18px;
-      padding: 14px;
+      padding: 14px 15px;
     }
 
     .stat .label {
@@ -110,19 +124,24 @@
     .launcher {
       padding: 22px;
       display: grid;
-      gap: 16px;
+      gap: 14px;
       align-content: start;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 16px;
     }
 
     .field {
       display: grid;
-      gap: 8px;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,248,238,0.98));
+      border: 1px solid rgba(122, 79, 40, 0.12);
+      box-shadow: 0 8px 20px rgba(53, 37, 20, 0.05);
     }
 
     label {
@@ -140,7 +159,7 @@
       appearance: none;
       border: 1px solid var(--line);
       background: var(--panel-strong);
-      border-radius: 14px;
+      border-radius: 12px;
       padding: 14px 14px;
       color: var(--text);
       outline: none;
@@ -160,7 +179,7 @@
 
     button {
       border: 0;
-      border-radius: 999px;
+      border-radius: 14px;
       padding: 13px 18px;
       font-weight: 700;
       cursor: pointer;
@@ -194,13 +213,15 @@
     }
 
     .panel {
-      padding: 20px;
+      padding: 18px;
     }
 
     .panel h2 {
       margin: 0 0 12px;
-      font-size: 18px;
-      letter-spacing: -0.03em;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--accent);
     }
 
     .panel-head {
@@ -221,7 +242,7 @@
       font-size: 13px;
       font-weight: 700;
       padding: 8px 12px;
-      border-radius: 999px;
+      border-radius: 12px;
       background: rgba(143, 95, 52, 0.08);
       border: 1px solid rgba(143, 95, 52, 0.14);
       transition: transform .18s ease, background .18s ease;
@@ -230,6 +251,88 @@
     .panel-link:hover {
       transform: translateY(-1px);
       background: rgba(143, 95, 52, 0.12);
+    }
+
+    .pill-success {
+      background: rgba(34, 139, 82, 0.14);
+      border-color: rgba(34, 139, 82, 0.24);
+      color: #0f5f36;
+    }
+
+    .pill-warning {
+      background: rgba(209, 130, 31, 0.14);
+      border-color: rgba(209, 130, 31, 0.24);
+      color: #8b5412;
+    }
+
+    .pill-neutral {
+      background: rgba(79, 90, 104, 0.12);
+      border-color: rgba(79, 90, 104, 0.18);
+      color: #3e4a59;
+    }
+
+    .micro-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(58, 45, 31, 0.72);
+      line-height: 1.5;
+    }
+
+    .preview-note {
+      margin-bottom: 12px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(143, 95, 52, 0.12), rgba(255, 248, 238, 0.98));
+      border: 1px solid rgba(143, 95, 52, 0.20);
+      box-shadow: 0 10px 22px rgba(143, 95, 52, 0.08);
+      font-size: 12px;
+      color: #4f321a;
+      line-height: 1.55;
+    }
+
+    .preview-note strong {
+      color: #2d1b0f;
+    }
+
+    .loading-wrap {
+      display: none;
+      margin-top: 12px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .loading-wrap.visible {
+      display: grid;
+    }
+
+    .loading-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(143, 95, 52, 0.18);
+      background: rgba(143, 95, 52, 0.08);
+      position: relative;
+    }
+
+    .loading-bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 40%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #e6c08d, var(--accent), #6f4521);
+      animation: loadSlide 1.05s ease-in-out infinite;
+    }
+
+    .loading-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    @keyframes loadSlide {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(260%); }
     }
 
     .chips {
@@ -246,6 +349,152 @@
       padding: 8px 12px;
       font-size: 12px;
       color: var(--muted);
+    }
+
+    .state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .state-badge::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.9;
+    }
+
+    .state-success {
+      background: rgba(34, 139, 82, 0.14);
+      border-color: rgba(34, 139, 82, 0.24);
+      color: #0f5f36;
+    }
+
+    .state-warning {
+      background: rgba(209, 130, 31, 0.14);
+      border-color: rgba(209, 130, 31, 0.24);
+      color: #8b5412;
+    }
+
+    .state-neutral {
+      background: rgba(79, 90, 104, 0.12);
+      border-color: rgba(79, 90, 104, 0.18);
+      color: #3e4a59;
+    }
+
+    .readonly-output {
+      min-height: 520px;
+      max-height: 760px;
+      resize: vertical;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #2a261f;
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,244,0.96));
+      border: 1px solid rgba(143, 95, 52, 0.18);
+      border-radius: 18px;
+      padding: 14px;
+      white-space: pre-wrap;
+      overflow: auto;
+      pointer-events: none;
+    }
+
+    .scroll-lock {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
+    .focus-mode {
+      border-color: rgba(143, 95, 52, 0.28);
+      box-shadow: inset 0 0 0 1px rgba(143, 95, 52, 0.08), 0 16px 36px rgba(143, 95, 52, 0.08);
+    }
+
+    .scene-prompt-block {
+      margin-top: 10px;
+      white-space: pre-wrap;
+      background: rgba(20, 18, 15, 0.94);
+      color: #f5efe5;
+      border-radius: 14px;
+      padding: 12px;
+      border: 1px solid rgba(143, 95, 52, 0.18);
+      max-height: 320px;
+      overflow: auto;
+      scrollbar-gutter: stable;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .scene-preview-applied {
+      border: 1px solid rgba(34, 139, 82, 0.32);
+      background: linear-gradient(180deg, rgba(247,255,250,0.98), rgba(239,252,245,0.98));
+      box-shadow: 0 18px 42px rgba(34, 139, 82, 0.12);
+    }
+
+    .scene-preview-source {
+      border: 1px solid rgba(143, 95, 52, 0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,250,244,0.98));
+      box-shadow: 0 14px 34px rgba(143, 95, 52, 0.08);
+    }
+
+    .scene-preview-source .preview-note {
+      background: linear-gradient(135deg, rgba(143, 95, 52, 0.14), rgba(255, 248, 238, 0.98));
+    }
+
+    .scene-preview-applied .preview-note {
+      background: linear-gradient(135deg, rgba(34, 139, 82, 0.14), rgba(244, 255, 248, 0.98));
+    }
+
+    .scene-frame-shell {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(31, 35, 40, 0.08);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .scene-frame-shell.applied-shell {
+      border-color: rgba(34, 139, 82, 0.18);
+      background: linear-gradient(180deg, rgba(247,255,250,0.92), rgba(239,252,245,0.98));
+    }
+
+    .scene-frame-shell.source-shell {
+      border-color: rgba(143, 95, 52, 0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,250,244,0.95));
+    }
+
+    .scene-mini-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-left: 8px;
+    }
+
+    .scene-mini-badge.source {
+      background: rgba(143, 95, 52, 0.12);
+      color: #7b4b21;
+      border: 1px solid rgba(143, 95, 52, 0.18);
+    }
+
+    .scene-mini-badge.applied {
+      background: rgba(34, 139, 82, 0.12);
+      color: #0f5f36;
+      border: 1px solid rgba(34, 139, 82, 0.2);
     }
 
     pre, textarea {
@@ -278,11 +527,14 @@
     .template-box {
       display: grid;
       gap: 10px;
+      border-top: 1px solid rgba(29, 33, 31, 0.08);
+      padding-top: 12px;
     }
 
     .template-title {
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
     .template-meta {
@@ -300,7 +552,7 @@
     .prompt-item {
       border: 1px solid var(--line);
       background: rgba(255,255,255,0.78);
-      border-radius: 16px;
+      border-radius: 14px;
       padding: 12px;
     }
 
@@ -329,8 +581,8 @@
       gap: 8px;
       margin-top: 12px;
       padding: 10px 12px;
-      border-radius: 999px;
-      background: rgba(143, 95, 52, 0.1);
+      border-radius: 12px;
+      background: var(--accent-soft);
       color: var(--accent);
       font-size: 13px;
       font-weight: 700;
@@ -348,7 +600,7 @@
     .scene-card {
       border: 1px solid var(--line);
       background: rgba(255,255,255,0.74);
-      border-radius: 18px;
+      border-radius: 16px;
       padding: 14px;
       text-align: left;
       width: 100%;
@@ -365,6 +617,21 @@
       border-color: rgba(143, 95, 52, 0.4);
       background: rgba(255, 245, 231, 0.92);
       box-shadow: 0 10px 24px rgba(143, 95, 52, 0.12);
+    }
+
+    .scene-card.locked {
+      opacity: 0.48;
+      cursor: not-allowed;
+      filter: saturate(0.45);
+    }
+
+    .scene-card.complete {
+      border-color: rgba(34, 139, 82, 0.28);
+      background: rgba(239, 252, 245, 0.92);
+    }
+
+    .scene-card.ready {
+      border-color: rgba(143, 95, 52, 0.32);
     }
 
     .scene-name {
@@ -393,7 +660,7 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      border-radius: 999px;
+      border-radius: 12px;
       padding: 8px 12px;
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid var(--line);
@@ -408,11 +675,21 @@
       border-color: rgba(143, 95, 52, 0.24);
     }
 
+    .step-pill.complete {
+      color: #0f5f36;
+      border-color: rgba(34, 139, 82, 0.24);
+      background: rgba(34, 139, 82, 0.12);
+    }
+
+    .step-pill.locked {
+      opacity: 0.48;
+    }
+
     .step-summary {
       display: grid;
       gap: 6px;
       padding: 14px;
-      border-radius: 16px;
+      border-radius: 14px;
       background: rgba(255, 255, 255, 0.66);
       border: 1px solid var(--line);
       color: var(--muted);
@@ -498,8 +775,95 @@
       line-height: 1.35;
     }
 
+    .source-field-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .source-field {
+      display: grid;
+      gap: 7px;
+      padding: 13px;
+      border: 1px solid rgba(122, 79, 40, 0.12);
+      background: rgba(255, 255, 255, 0.76);
+      border-radius: 14px;
+    }
+
+    .source-field.wide {
+      grid-column: 1 / -1;
+    }
+
+    .source-field textarea {
+      min-height: 92px;
+      background: var(--panel-strong);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 11px;
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .relay-action-box {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid rgba(122, 79, 40, 0.2);
+      border-left: 5px solid var(--accent);
+      background: linear-gradient(135deg, rgba(255, 248, 238, 0.98), rgba(255, 255, 255, 0.88));
+      border-radius: 14px;
+    }
+
+    .relay-action-box.complete {
+      border-color: rgba(34, 139, 82, 0.24);
+      border-left-color: #0f7b45;
+      background: linear-gradient(135deg, rgba(239, 252, 245, 0.98), rgba(255, 255, 255, 0.9));
+    }
+
+    .relay-kicker {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+    }
+
+    .relay-next {
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .relay-asset {
+      padding: 11px 12px;
+      border: 1px dashed rgba(122, 79, 40, 0.32);
+      background: rgba(255, 255, 255, 0.68);
+      border-radius: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.44;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #flowPack[readonly] {
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,244,0.96));
+      border-color: rgba(143, 95, 52, 0.18);
+      color: #2a261f;
+      cursor: default;
+    }
+
     @media (max-width: 960px) {
       .hero, .workspace, .grid { grid-template-columns: 1fr; }
+      .source-field-grid { grid-template-columns: 1fr; }
       .wrap { padding: 18px; }
       .cta-wide { width: 100%; }
     }
@@ -542,8 +906,8 @@
           <div class="field">
             <label for="duration" id="durationLabel">Duration</label>
             <select id="duration">
-              <option value="30">30 seconds</option>
-              <option value="60" selected>60 seconds</option>
+              <option value="30" selected>30 seconds</option>
+              <option value="60">60 seconds</option>
             </select>
           </div>
           <div class="field">
@@ -562,9 +926,6 @@
           <label for="nimModel" id="nimModelLabel">NIM model</label>
           <select id="nimModel">
             <option value="meta/llama-3.1-8b-instruct" selected>Llama 3.1 8B Instruct</option>
-            <option value="meta/llama-3.3-70b-instruct">Llama 3.3 70B Instruct</option>
-            <option value="mistralai/mistral-7b-instruct-v03">Mistral 7B Instruct v0.3</option>
-            <option value="mistralai/mixtral-8x7b-instruct-v01">Mixtral 8x7B Instruct</option>
             <option value="nvidia/nemotron-4-340b-instruct">Nemotron 4 340B Instruct</option>
           </select>
         </div>
@@ -572,6 +933,7 @@
           <label for="nimApiKey" id="nimApiKeyLabel">NIM API key</label>
           <input id="nimApiKey" type="password" placeholder="Paste your NGC or NIM API key" />
         </div>
+        <input id="nimBaseUrl" type="hidden" value="https://integrate.api.nvidia.com/v1" />
         <label class="toggle-row" for="nimGenerate">
           <input id="nimGenerate" type="checkbox" />
           <span id="nimGenerateLabel">Generate prompts with NVIDIA NIM</span>
@@ -581,21 +943,28 @@
           <span id="refinePromptsLabel">Refine prompts with NVIDIA NIM when key is available</span>
         </label>
         <div class="button-row">
-          <button class="primary" id="generate">Generate Command</button>
+          <button class="primary" id="generate">Build Relay Plan</button>
           <button class="secondary" id="copy">Copy Command</button>
         </div>
-        <div class="hint" id="commandHint">The command is prefilled for the Python runner. If refinement is checked, the runner adds the NVIDIA NIM prompt polishing step.</div>
+        <div class="loading-wrap" id="generateLoading">
+          <div class="loading-text" id="generateLoadingText">Generating with NVIDIA NIM...</div>
+          <div class="loading-track" aria-hidden="true">
+            <div class="loading-bar"></div>
+          </div>
+        </div>
+        <div class="hint" id="commandHint">Build Relay Plan creates every scene once, then unlocks execution in order: master image → video → saved final frame → next scene.</div>
+        <div class="micro-note" id="commandStatusNote">Status: Source Draft is ready for review.</div>
       </div>
     </section>
 
     <section class="workspace flow">
       <div class="card panel">
-        <h2 id="flowTitle">Flow Input Pack <span id="flowEditedBadge" class="chip" style="display:none; margin-left:8px; padding:4px 8px; font-size:11px;">Edited</span></h2>
+        <h2 id="flowTitle">Source Draft <span id="flowEditedBadge" class="chip" style="display:none; margin-left:8px; padding:4px 8px; font-size:11px;">Edited</span></h2>
         <div class="chips" id="chips"></div>
         <div class="template-box" id="templateBox"></div>
-        <div class="status-pill" id="statusPill">Ready to generate the prompt pack in browser.</div>
+        <div class="status-pill" id="statusPill">Source Draft is ready for review and editing.</div>
         <div class="toolbar">
-          <button class="primary" id="copyFlow">Copy Flow Pack</button>
+          <button class="primary" id="copyFlow">Copy Source Draft</button>
           <button class="secondary" id="downloadFlow">Download JSON</button>
           <button class="secondary" id="copyScenes">Copy Scene Prompts</button>
           <button class="secondary" id="copyAllScenes">Copy All Scenes</button>
@@ -603,11 +972,12 @@
       </div>
       <div class="card panel">
         <div class="panel-head">
-          <h2 id="flowTextTitle">Google Flow Text</h2>
+          <h2 id="flowTextTitle">Applied Prompt <span id="flowSourceBadge" class="chip" style="display:none; margin-left:8px; padding:4px 8px; font-size:11px;">Local Draft</span></h2>
           <a class="panel-link" id="flowOpenLink" href="https://labs.google/fx/flow" target="_blank" rel="noreferrer noopener">Open Google Flow</a>
         </div>
-        <textarea id="flowPack" spellcheck="false"></textarea>
-        <div class="hint" id="flowHint">Copy the first frame prompt into Flow first, approve it there, then come back here for the video prompt.</div>
+        <div class="micro-note" id="flowGeneratedNote">Last generated by: local draft.</div>
+        <textarea id="flowPack" class="readonly-output scroll-lock" spellcheck="false" readonly></textarea>
+        <div class="hint" id="flowHint">Applied Prompt, Scene Preview, and copy actions all use the same normalized relay plan.</div>
       </div>
     </section>
 
@@ -619,13 +989,16 @@
       <div class="card panel">
         <h2 id="scenePreviewTitle">Scene Preview</h2>
         <div class="stepper" id="stepper"></div>
-        <div class="template-box" id="scenePreview">
+        <div class="preview-note" id="sceneDraftSummary">Current Source Draft values will appear here.</div>
+        <div class="template-box focus-mode scene-preview-source" id="scenePreview">
           <div class="template-title" id="scenePreviewHeader">Select a scene</div>
           <div class="template-meta" id="scenePreviewBody">Click a scene card to inspect the generated scene summary.</div>
         </div>
         <div class="toolbar">
-          <button class="secondary" id="copyScenePreview">Copy First Frame Prompt</button>
+          <button class="secondary" id="copyScenePreview">Copy Master Image Prompt</button>
           <button class="primary cta-wide" id="copyVideoPrompt">Copy Video Prompt</button>
+          <button class="primary cta-wide" id="relayAdvance">Confirm Current Step</button>
+          <button class="secondary" id="relayReset">Reset Relay Progress</button>
         </div>
       </div>
     </section>
@@ -699,6 +1072,69 @@
       }
     };
 
+    const stylePresets = {
+      hanok: {
+        materials: 'natural stone footings, warm timber sill beams and columns, white hanji doors and windows, black curved giwa roof tiles',
+        camera: 'locked 85mm-equivalent macro camera, fixed 45-degree angle, unchanged subject scale and framing',
+        lighting: 'soft daylight from camera-left, warm rim light, natural shadows, unchanged through every scene',
+        identity: 'One coherent single-story Korean hanok with a rectangular timber bay plan, natural stone footings, warm post-and-beam woodwork, white hanji doors and windows, deep curved black giwa eaves, and restrained dancheong only on appropriate beam ends and eaves. Never a stone castle, Gothic church, European cottage, pagoda tower, palace tower, or fantasy fortress.'
+      },
+      modern_house: {
+        materials: 'smooth concrete, structural steel, aluminum window frames, clear glass panels, clean white trim',
+        camera: 'locked macro camera at a fixed three-quarter angle, stable architectural framing',
+        lighting: 'clean cool daylight from camera-left with controlled reflections',
+        identity: 'One coherent modern house with the same footprint, floor count, window grid, roofline, and neutral material palette in every scene.'
+      },
+      car: {
+        materials: 'separate chassis, engine block, suspension, wheels, steering, body panels, glass and trim',
+        camera: 'locked 85mm macro product camera above one wooden workbench',
+        lighting: 'bright workshop key light from camera-left with stable metal reflections',
+        identity: 'One coherent miniature car model with an unchanged wheelbase, body silhouette, paint color, glass shape, and component layout.'
+      },
+      train: {
+        materials: 'separate underframe, bogies, wheels, motor, carriage shells, windows, roof and trim',
+        camera: 'locked 85mm macro camera along one fixed workbench axis',
+        lighting: 'bright workshop light with stable steel reflections',
+        identity: 'One coherent miniature train with the same locomotive profile, carriage count, livery, track gauge, and proportions.'
+      },
+      airplane: {
+        materials: 'separate fuselage sections, wings, tail, engines, landing gear, cockpit glass and surface panels',
+        camera: 'locked 85mm macro camera over one clean assembly bench',
+        lighting: 'bright hangar-style workshop light with stable highlights',
+        identity: 'One coherent miniature airplane with the same fuselage length, wing geometry, engine count, livery, and landing-gear positions.'
+      },
+      boat: {
+        materials: 'separate hull sections, deck, cabin or mast, rails, ropes, fittings and trim',
+        camera: 'locked macro camera over one wooden dock-style workbench',
+        lighting: 'bright workshop daylight with warm wood reflections',
+        identity: 'One coherent miniature boat with the same hull profile, deck layout, cabin or mast arrangement, and color scheme.'
+      },
+      watch: {
+        materials: 'separate case, movement, dial, hands, crown, crystal, strap and microscopic fasteners',
+        camera: 'locked 85mm macro product camera above one watchmaker bench',
+        lighting: 'bright precision workshop lighting with stable polished-metal reflections',
+        identity: 'One coherent luxury watch with the same case diameter, dial design, hand set, crown position, metal finish, and strap.'
+      },
+      camera: {
+        materials: 'separate body shell, sensor block, shutter, lens elements, control dials, grip, screen and fasteners',
+        camera: 'locked 85mm macro product camera above one precision workbench',
+        lighting: 'bright workshop light with stable matte-black and chrome reflections',
+        identity: 'One coherent miniature camera with the same body silhouette, lens mount, controls, grip, and finish.'
+      },
+      sneaker: {
+        materials: 'separate sole layers, upper panels, lining, eyelets, laces, tongue, heel counter and trim',
+        camera: 'locked macro product camera above one clean craft bench',
+        lighting: 'bright even studio light with stable color rendering',
+        identity: 'One coherent sneaker with the same last shape, sole profile, panel pattern, lace system, and colorway.'
+      },
+      home_decor: {
+        materials: 'separate low-cost paper, fabric, plastic, thread, twigs, foam, glue and small craft tools',
+        camera: 'locked top-down macro camera over one clean craft desk',
+        lighting: 'bright even studio lighting with crisp soft-edged shadows',
+        identity: 'One coherent DIY decor object made only from the selected raw materials, preserving the same palette, scale, base position, and silhouette as it develops.'
+      }
+    };
+
     const genreEl = document.getElementById('genre');
     const subtypeEl = document.getElementById('subtype');
     const durationEl = document.getElementById('duration');
@@ -707,12 +1143,14 @@
     const refinePromptsEl = document.getElementById('refinePrompts');
     const nimModelEl = document.getElementById('nimModel');
     const nimApiKeyEl = document.getElementById('nimApiKey');
+    const nimBaseUrlEl = document.getElementById('nimBaseUrl');
     const nimGenerateEl = document.getElementById('nimGenerate');
     const chipsEl = document.getElementById('chips');
     const templateBox = document.getElementById('templateBox');
     const flowPackEl = document.getElementById('flowPack');
     const sceneGrid = document.getElementById('sceneGrid');
     const scenePreviewEl = document.getElementById('scenePreview');
+    const sceneDraftSummary = document.getElementById('sceneDraftSummary');
     const stepperEl = document.getElementById('stepper');
     const statusPill = document.getElementById('statusPill');
     const copyFlowBtn = document.getElementById('copyFlow');
@@ -721,13 +1159,30 @@
     const copyAllScenesBtn = document.getElementById('copyAllScenes');
     const copyScenePreviewBtn = document.getElementById('copyScenePreview');
     const copyVideoPromptBtn = document.getElementById('copyVideoPrompt');
+    const relayAdvanceBtn = document.getElementById('relayAdvance');
+    const relayResetBtn = document.getElementById('relayReset');
     const flowEditedBadge = document.getElementById('flowEditedBadge');
+    const flowSourceBadge = document.getElementById('flowSourceBadge');
+    const commandStatusNote = document.getElementById('commandStatusNote');
+    const flowGeneratedNote = document.getElementById('flowGeneratedNote');
+    const generateLoading = document.getElementById('generateLoading');
+    const generateLoadingText = document.getElementById('generateLoadingText');
     let activeSceneIndex = 0;
     let nimFlowPackOverride = '';
     let flowPackManualEdit = false;
+    let flowGenerationSource = 'local';
+    let flowHasContent = false;
+    let flowHadSuccessfulGeneration = false;
+    let canonicalAppliedPlan = null;
+    let relayStates = [];
+    let sourceOverrides = {};
     const FLOW_PACK_STORAGE_KEY = 'miniature_timelapse_flow_pack';
     const FLOW_PACK_MANUAL_KEY = 'miniature_timelapse_flow_pack_manual';
-    const NIM_API_KEY_STORAGE_KEY = 'miniature_timelapse_nim_api_key';
+    const FLOW_GENERATION_SOURCE_KEY = 'miniature_timelapse_flow_generation_source';
+    const NIM_BASE_URL_STORAGE_KEY = 'miniature_timelapse_nim_base_url';
+    const SOURCE_OVERRIDES_STORAGE_KEY = 'miniature_timelapse_source_overrides';
+    const RELAY_STATES_STORAGE_KEY = 'miniature_timelapse_relay_states';
+    const NEGATIVE_PROMPT = 'text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry';
     function renderSubtypes() {
       const genre = templates[genreEl.value];
       subtypeEl.innerHTML = '';
@@ -743,25 +1198,53 @@
     }
 
     function loadStoredState() {
-      const storedFlowPack = localStorage.getItem(FLOW_PACK_STORAGE_KEY);
-      const storedManual = localStorage.getItem(FLOW_PACK_MANUAL_KEY) === '1';
-      const storedApiKey = localStorage.getItem(NIM_API_KEY_STORAGE_KEY) || '';
-      if (storedApiKey) nimApiKeyEl.value = storedApiKey;
-      if (storedFlowPack) {
-        flowPackEl.value = storedFlowPack;
-        flowPackManualEdit = storedManual;
+      const storedSource = localStorage.getItem(FLOW_GENERATION_SOURCE_KEY) || 'local';
+      const storedBaseUrl = localStorage.getItem(NIM_BASE_URL_STORAGE_KEY) || 'https://integrate.api.nvidia.com/v1';
+      const storedOverrides = localStorage.getItem(SOURCE_OVERRIDES_STORAGE_KEY);
+      const allowedModels = new Set(Array.from(nimModelEl.options).map(option => option.value));
+      const storedModel = nimModelEl.value;
+      if (storedBaseUrl) nimBaseUrlEl.value = storedBaseUrl;
+      if (storedOverrides) {
+        try {
+          sourceOverrides = JSON.parse(storedOverrides) || {};
+        } catch (error) {
+          sourceOverrides = {};
+        }
       }
+      if (!allowedModels.has(storedModel)) {
+        nimModelEl.value = 'meta/llama-3.1-8b-instruct';
+      }
+      flowPackEl.value = '';
+      flowPackManualEdit = false;
+      flowHasContent = false;
+      flowHadSuccessfulGeneration = false;
+      canonicalAppliedPlan = null;
+      relayStates = [];
+      flowGenerationSource = storedSource === 'manual' ? 'manual' : 'local';
     }
 
     function currentSubtype() {
       const genre = templates[genreEl.value];
-      return Object.values(genre.subtypes).find(item => item.type === subtypeEl.value) || Object.values(genre.subtypes)[0];
+      const item = Object.values(genre.subtypes).find(candidate => candidate.type === subtypeEl.value) || Object.values(genre.subtypes)[0];
+      const preset = stylePresets[item.type] || {
+        materials: `${item.color} miniature-scale components appropriate to a ${item.label.toLowerCase()}`,
+        camera: 'locked 85mm-equivalent macro camera at one fixed three-quarter angle',
+        lighting: 'cinematic studio key light from camera-left, unchanged through every scene',
+        identity: `One coherent ${item.label.toLowerCase()} with the same silhouette, proportions, materials, palette, and workspace through every scene. Never transform it into another subject type.`
+      };
+      return { ...item, ...preset, ...(sourceOverrides[item.type] || {}) };
     }
 
     function autoTopicLabel() {
       const genre = templates[genreEl.value];
       const sub = currentSubtype();
-      return `${genre.label}-${sub.label}`;
+      const detail = [sub.color, sub.materials, sub.camera, sub.lighting].filter(Boolean).join(' | ');
+      return detail ? `${genre.label}-${sub.label}-${detail}` : `${genre.label}-${sub.label}`;
+    }
+
+    function topicDetail() {
+      const sub = currentSubtype();
+      return [sub.color, sub.materials, sub.camera, sub.lighting].filter(Boolean).join(' | ');
     }
 
     function sceneStyleFor(type) {
@@ -772,12 +1255,67 @@
     }
 
     function sceneCarryText(sceneName, previousSceneName) {
-      if (!previousSceneName) return 'This is the starting scene.';
-      return `Continue directly from the exact final frame of '${previousSceneName}' into '${sceneName}', preserve the same layout, scale, camera angle, lighting direction, and object placement, and avoid any reset, jump, or scene break.`;
+      if (!previousSceneName) return 'Generate and approve one master image, then use it as the Scene 1 video start image.';
+      return `Upload the exact saved final-frame image from '${previousSceneName}' as the sole visual input for '${sceneName}'. The opening frame must match that image before motion begins.`;
     }
 
     function isProductLike(type) {
       return ['watch', 'camera', 'sneaker', 'car', 'train', 'airplane', 'boat', 'robot', 'dinosaur', 'mecha', 'dragon', 'wizard_house', 'spaceship', 'hoverbike', 'mech', 'home_decor'].includes(type);
+    }
+
+    function inputModeFor(sceneIndex) {
+      return sceneIndex === 0 ? 'MASTER_IMAGE' : 'PREVIOUS_FINAL_FRAME';
+    }
+
+    function inputAssetFor(sceneIndex) {
+      return sceneIndex === 0
+        ? 'scenes/scene_01_master.png'
+        : `scenes/scene_${String(sceneIndex).padStart(2, '0')}_last_frame.png`;
+    }
+
+    function handoffAssetFor(sceneIndex) {
+      return `scenes/scene_${String(sceneIndex + 1).padStart(2, '0')}_last_frame.png`;
+    }
+
+    function identityLock(sub) {
+      return `Identity Lock: ${sub.identity}`;
+    }
+
+    function sceneActionFor(sub, sceneName) {
+      if (sub.type === 'hanok') {
+        const actions = {
+          'Foundation': 'On the completely untouched compacted-earth footprint, hands tension guide strings, place natural stone footings in a precise rectangular bay grid, level them, and seat warm timber sill beams. Stop with only the stone-and-sill foundation complete; every column, wall, and roof part remains separate.',
+          'Wall and Windows': 'From the uploaded foundation frame, hands raise warm timber columns into visible mortise-and-tenon joints, connect lower and upper beams, and insert white hanji door and window frames. Stop with a single-story timber wall frame complete and no roof structure present.',
+          'Roofing': 'From the uploaded timber-frame image, hands place crossbeams, purlins, evenly spaced rafters, deep curved eave supports, and black giwa roof tiles row by row. Stop with the traditional roof complete and no landscaping, tower, extra wing, or second floor.',
+          'Exterior Finishing': 'From the uploaded roofed hanok, hands install white hanji doors and windows, finish exposed timber joinery, add restrained wooden trim, and remove only newly produced debris without moving the building.',
+          'Painting and Weathering': 'From the uploaded finished shell, hands brush a subtle protective finish over warm wood and apply restrained dancheong only to architecturally correct beam ends and eaves, preserving white hanji and black giwa colors. Stop before landscaping.',
+          'Landscaping and Reveal': 'From the uploaded painted hanok, hands add a stone path, low wall, moss, grass, and one small pine without moving the building, remove every tool, then leave the frame.',
+          'Foundation and Walls': 'On the completely untouched compacted-earth footprint, hands tension guide strings, place natural stone footings in a rectangular bay grid, seat timber sill beams, raise warm timber columns with visible mortise-and-tenon joints, connect the beams, and insert white hanji door and window frames. Stop with one single-story timber wall frame complete and the roof entirely absent.',
+          'Roofing and Exterior': 'Starting from the uploaded exact Scene 1 final frame, hands place crossbeams, purlins, rafters, deep curved eave supports, and black giwa tiles row by row, then fit white hanji doors and windows and finish the exposed timber joinery. Stop with the roof and exterior complete and no landscape, tower, second floor, or new wing.',
+          'Painting, Landscaping, and Reveal': 'Starting from the uploaded exact Scene 2 final frame, hands apply a subtle protective wood finish and restrained dancheong only to correct beam ends and eaves, then add a stone path, low wall, moss, grass, and one small pine without moving the hanok. Remove all tools and let the hands leave.'
+        };
+        return actions[sceneName] || actions['Foundation and Walls'];
+      }
+
+      if (sub.type === 'home_decor') {
+        return `Hands perform only the '${sceneName}' craft stage in a physically ordered sequence: measure, cut, fold, layer, glue, and finish the selected low-cost materials. Every attached piece remains attached, loose supplies reduce logically, and the object keeps the same position and silhouette.`;
+      }
+
+      if (isProductLike(sub.type)) {
+        return `Hands perform only the '${sceneName}' assembly stage using realistic mechanical order and visible tool contact. Parts move from their staged positions into the same model, fasteners visibly tighten, installed parts remain installed, and the workbench becomes cleaner only as those exact parts are attached.`;
+      }
+
+      const lower = sceneName.toLowerCase();
+      if (lower.includes('foundation')) {
+        return `Hands measure the untouched site, establish the exact footprint, place the subtype-appropriate foundation materials, and raise only the structural elements named by '${sceneName}'. Stop before any roof, paint, or landscaping not named in this scene.`;
+      }
+      if (lower.includes('roof') || lower.includes('tower') || lower.includes('upper') || lower.includes('window')) {
+        return `Starting from the uploaded previous final frame, hands add only the structural and envelope work named by '${sceneName}' in real construction order. Preserve the established footprint, floor count, openings, and silhouette; stop before finish or landscape work not named here.`;
+      }
+      if (lower.includes('paint') || lower.includes('detail') || lower.includes('finish')) {
+        return `Starting from the uploaded previous final frame, hands apply subtype-correct surface finish, trim, and details named by '${sceneName}' without replacing or moving completed structure. Preserve the established palette and material boundaries.`;
+      }
+      return `Starting from the uploaded previous final frame, hands complete only '${sceneName}' with subtype-correct materials and physically plausible tool motion, preserving every established structural and visual feature.`;
     }
 
     function sceneNamesFor(type, duration) {
@@ -899,40 +1437,64 @@
     }
 
     function firstFramePrompt(topic, sceneName, type) {
+      const sub = currentSubtype();
+      const detail = topicDetail();
+      const topicSuffix = detail ? `${topic} | ${detail}` : topic;
+      if (type === 'hanok') {
+        return `Ultra realistic macro photography of a completely unstarted miniature Korean hanok construction site, an untouched compacted-earth tray with an empty rectangular footprint and taut guide strings, every natural stone footing, timber sill beam, timber column, white hanji frame, rafter, and black giwa roof tile still separate and neatly staged outside the footprint, no foundation or wall already built, no completed hanok visible, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers beginning the very first action by lifting one natural stone footing toward its marked position, tiny traditional measuring and woodworking tools, ${sub.camera}, 8K detail, ${sub.lighting}, shallow depth of field, ${identityLock(sub)}, ${topicSuffix}, scene: ${sceneName}.`;
+      }
       if (type === 'watch') {
-        return `Ultra realistic macro product photography, luxury watchmaker bench, pristine empty surface, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands placing the first precision watch components, giant human fingers setting watch parts, tiny realistic watchmaking tools, no parts assembled yet, untouched watch case and dial parts laid out separately, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+        return `Ultra realistic macro product photography, luxury watchmaker bench, pristine empty surface, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands placing the first precision watch component, ${sub.materials}, no parts assembled yet, no completed watch visible, tiny realistic watchmaking tools, ${sub.camera}, 8K detail, ${sub.lighting}, shallow depth of field, ${identityLock(sub)}, ${topicSuffix}, scene: ${sceneName}.`;
       }
       if (type === 'home_decor') {
-        return `Ultra realistic macro DIY craft photography, pristine empty craft desk, scattered raw materials only, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, nothing assembled yet, foam, paper, plastic, cloth, twigs, and string laid out separately, tiny scissors, glue, thread, and brush tools, 8K detail, bright studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+        return `Ultra realistic macro DIY craft photography, pristine empty craft desk, raw materials separated and untouched, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, nothing assembled yet, ${sub.materials}, tiny scissors, glue, thread, and brush tools, ${sub.camera}, 8K detail, ${sub.lighting}, shallow depth of field, ${identityLock(sub)}, ${topicSuffix}, scene: ${sceneName}.`;
       }
       if (['camera', 'sneaker', 'car', 'train', 'airplane', 'boat', 'robot', 'dinosaur', 'mecha', 'dragon', 'wizard_house', 'spaceship', 'hoverbike', 'mech'].includes(type)) {
-        return `Hyper-realistic macro photo of 100% disassembled miniature model parts neatly arranged on a wooden workbench, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, chassis/body/frame components, wheels/engines/arms/wings/panels/components separated clearly, tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, ${topic}, scene: ${sceneName}.`;
+        return `Hyper-realistic macro photo of 100% disassembled miniature ${sub.label.toLowerCase()} parts neatly arranged on one untouched workbench, ${sub.materials}, every component clearly separated, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, no part assembled yet, tweezers, mini screwdriver, soft brush, ${sub.camera}, shallow depth of field, 8K product photo quality, ${sub.lighting}, ${identityLock(sub)}, ${topicSuffix}, scene: ${sceneName}.`;
       }
-      return `Ultra realistic macro photography, miniature construction site, empty sand or soil surface, no materials placed yet, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands starting the first placement of miniature materials, giant human fingers interacting with miniature materials, tiny realistic construction tools, completely unstarted foundation area, 8K detail, cinematic studio lighting, shallow depth of field, ${topic}, scene: ${sceneName}.`;
+      return `Ultra realistic macro photography of a completely unstarted miniature ${sub.label.toLowerCase()} build site, untouched empty footprint, all ${sub.materials} separated outside the footprint, no foundation, walls, or completed structure visible, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands beginning the very first physically plausible material placement, tiny realistic construction tools, ${sub.camera}, 8K detail, ${sub.lighting}, shallow depth of field, ${identityLock(sub)}, ${topicSuffix}, scene: ${sceneName}.`;
     }
 
     function continuityRule() {
-      return 'The final frame of each scene must become the exact starting frame of the next scene, maintain the same camera angle, scale, lighting direction, and object placement across transitions, and continue the exact construction state without resets, jumps, cuts, or scene breaks.';
+      return 'For every scene after Scene 1, upload the exact saved final-frame image from the previous scene as the sole visual start reference. The opening frame must match that uploaded image before motion begins. Preserve the same camera, framing, scale, lighting direction, workspace, object placement, installed parts, and loose materials; do not redesign, reset, rebuild, clean up, or reinterpret the visible state.';
     }
 
     function carryOverText(sceneName, nextSceneName) {
-      if (!nextSceneName) return continuityRule();
-      return `Carry-over: continue directly from the exact final frame of '${sceneName}' into '${nextSceneName}', treat the previous ending as the new starting frame, preserve the same build progress, camera perspective, and object placement, and keep the construction state continuous with no reset or jump.`;
+      if (!nextSceneName) return 'Save the final frame for QA and thumbnail use.';
+      const scenes = sceneNamesFor(currentSubtype().type, Number(durationEl.value));
+      const sceneIndex = Math.max(0, scenes.indexOf(sceneName));
+      return `After render, save the exact final frame as ${handoffAssetFor(sceneIndex)} and upload that file as the sole start image for '${nextSceneName}'.`;
     }
 
     function videoPrompt(sub, sceneName, duration) {
-      const speed = duration === 30 ? 'compressed timelapse' : 'continuous timelapse';
-      if (['watch', 'camera', 'sneaker', 'car', 'train', 'airplane', 'boat', 'robot', 'dinosaur', 'mecha', 'dragon', 'wizard_house', 'spaceship', 'hoverbike', 'mech'].includes(sub.type)) {
-        return `hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, 100% disassembled parts to fully assembled model, no floating or teleporting parts, parts attach in a realistic order and disappear from the workbench as they are installed, final step leaves only the fully assembled model on a clean workbench, tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting, ${sub.label.toLowerCase()}, scene: ${sceneName}.`;
-      }
-      if (sub.type === 'home_decor') {
-        return `10-second hyper-realistic macro DIY craft timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, clean top-down craft-table view, tactile mixed-media papercraft and craft ASMR style, specifically featuring 3D layered paper-cutting, origami folding, and organic material collage captured from a clean, top-down perspective, the video begins with a completely empty craft desk and scattered raw materials, then hands cut, fold, wrap, layer, and assemble foam, paper, fabric, twigs, thread, and plastic pieces into a beautiful home decor ornament, each added piece logically disappears from the workbench as it is attached, no floating or teleporting pieces, bright even studio lighting, pastel and jewel-tone palette, crisp shadows, gentle tool sounds, a bright friendly young female voice-over reading the narration directly to the viewer with no background music, and each new scene begins from the exact final frame of the previous scene with no reset or visual jump, ending with a clean final reveal of only the finished decorative piece on the tidy desk, ${sceneName}. Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry.`;
-      }
-      return `ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, only hands visible, multiple rapid scene cuts, cinematic macro photography, ${speed}, ${sub.label.toLowerCase()}, scene: ${sceneName}. ${continuityRule()} The previous scene's final frame is the exact starting frame of this scene.`;
+      const scenes = sceneNamesFor(sub.type, duration);
+      const sceneIndex = Math.max(0, scenes.indexOf(sceneName));
+      const isFinal = sceneIndex === scenes.length - 1;
+      const inputContract = sceneIndex === 0
+        ? 'Start from the uploaded approved master image. The opening frame must match the uploaded image exactly before the hands begin moving.'
+        : `Start from the uploaded file ${inputAssetFor(sceneIndex)}, the exact saved final frame from Scene ${sceneIndex}. Treat it as immutable visual ground truth. The opening frame must match it exactly before motion begins; do not generate a new first frame.`;
+      const finish = isFinal
+        ? 'After construction is complete, the hands leave the frame. Hold the completed subject, then perform one subtle cinematic pull-back without changing the subject design.'
+        : `End on a clean, stable, motionless hold for the final 0.5 seconds. Keep every installed part, tool, loose material, camera parameter, and light direction unchanged so this exact frame can be saved as ${handoffAssetFor(sceneIndex)} and reused as the next scene input.`;
+      const audio = sub.type === 'home_decor'
+        ? 'Tactile craft ASMR only with no background music.'
+        : 'Detailed tool and material ASMR only, no dialogue and no background music.';
+      return [
+        identityLock(sub),
+        inputContract,
+        `10-second hyper-realistic macro timelapse, giant human hands only; no miniature people, tiny workers, human figures, faces, characters, or full bodies.`,
+        `${sub.camera}. ${sub.lighting}. Color palette: ${sub.color}. Materials: ${sub.materials}.`,
+        'Rapid procedural timelapse with fast hand motion in one locked camera composition; no camera cuts, no new establishing shot, no workspace replacement.',
+        sceneActionFor(sub, sceneName),
+        'Every part moves only through visible contact with the hands or their tools; no floating, teleporting, duplication, or unexplained disappearance. Installed work remains installed.',
+        audio,
+        finish
+      ].join(' ');
     }
 
     function buildingStyleBlock(sub) {
       return [
+        `Identity Lock: ${sub.identity}`,
         `Materials: ${sub.materials || sub.color}`,
         `Camera: ${sub.camera || 'macro lens, shallow depth of field'}`,
         `Lighting: ${sub.lighting || 'cinematic studio lighting'}`,
@@ -940,21 +1502,30 @@
       ].join('\n');
     }
 
-    function promptPackJson() {
+    function buildLocalPlan() {
       const sub = currentSubtype();
       const duration = Number(durationEl.value);
       const scenes = sceneNamesFor(sub.type, duration).map((sceneName, index) => ({
         id: index + 1,
         name: sceneName,
+        input_mode: inputModeFor(index),
+        input_asset: inputAssetFor(index),
+        handoff_asset: handoffAssetFor(index),
         first_frame_prompt: index === 0 ? firstFramePrompt(topicEl.value, sceneName, sub.type) : '',
         video_prompt: videoPrompt(sub, sceneName, duration),
         continuity_rule: continuityRule(),
         bridge: carryOverText(sceneName, sceneNamesFor(sub.type, duration)[index + 1]),
-        negative_prompt: 'text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures'
+        negative_prompt: NEGATIVE_PROMPT,
+        status: index === 0 ? 'awaiting_master_image' : 'locked'
       }));
       return {
+        schema_version: '2.0',
+        workflow: 'reference_frame_relay',
         topic: topicEl.value,
-        topic_label: `${genreEl.value.charAt(0).toUpperCase() + genreEl.value.slice(1)}-${sub.label}`,
+        topic_label: autoTopicLabel(),
+        topic_detail: topicDetail(),
+        genre: genreEl.value,
+        subtype: sub.type,
         building_type: sub.type,
         duration,
         format: formatEl.value,
@@ -963,6 +1534,7 @@
         nim_model: nimModelEl.value,
         nim_api_key_provided: Boolean(nimApiKeyEl.value.trim()),
         building_style: {
+          identity_lock: sub.identity,
           materials: sub.materials || sub.color,
           camera: sub.camera || 'macro lens, shallow depth of field',
           lighting: sub.lighting || 'cinematic studio lighting',
@@ -972,53 +1544,122 @@
       };
     }
 
-    function flowPackText() {
-      if (nimFlowPackOverride) return nimFlowPackOverride;
-      const sub = currentSubtype();
-      const duration = Number(durationEl.value);
-      const scenes = sceneNamesFor(sub.type, duration);
-      const blocks = scenes.map((sceneName, index) => {
-        const transition = index < scenes.length - 1 ? 'hard cut to next scene' : 'cinematic reveal and hold';
-        const nextSceneName = scenes[index + 1] || '';
+    function promptPackJson() {
+      return canonicalAppliedPlan || buildLocalPlan();
+    }
+
+    function serializePlan(plan) {
+      if (!plan) return '';
+      const blocks = plan.scenes.map((scene, index) => {
         const lines = [
-          `Scene ${index + 1}: ${sceneName}`,
-          `Start From Previous Final Frame: ${index === 0 ? 'none' : scenes[index - 1]}`,
-          `Carry Forward: ${sceneCarryText(sceneName, scenes[index - 1])}`,
-          `Continuity Rule: ${continuityRule()}`,
-          `Bridge: ${carryOverText(sceneName, nextSceneName)}`,
-          `Video Prompt: ${videoPrompt(sub, sceneName, duration)}`,
-          `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`,
-          `Transition: ${transition}`
+          `Scene ${scene.id}: ${scene.name}`,
+          `Input Mode: ${scene.input_mode}`,
+          `Input Asset: ${scene.input_asset}`,
+          ...(index === 0 ? [`Master First Frame Prompt: ${scene.first_frame_prompt}`] : []),
+          `Video Prompt: ${scene.video_prompt}`,
+          `After Render: ${scene.bridge}`,
+          `Handoff Asset: ${scene.handoff_asset}`,
+          `Negative Prompt: ${NEGATIVE_PROMPT}`,
         ];
-        if (index === 0) {
-          lines.splice(3, 0, `First Frame Prompt: ${firstFramePrompt(topicEl.value, sceneName, sub.type)}`);
-        }
         return lines.join('\n');
       });
       return [
-        `Topic: ${topicEl.value}`,
-        `Topic Label: ${genreEl.options[genreEl.selectedIndex].text}-${sub.label}`,
-        `Building Type: ${sub.type}`,
-        `Duration: ${durationEl.value}s`,
-        `Format: ${formatEl.value}`,
-        `NIM Generate: ${nimGenerateEl.checked ? 'enabled' : 'disabled'}`,
-        `NIM Refine: ${refinePromptsEl.checked ? 'enabled' : 'disabled'}`,
-        `NIM Model: ${nimModelEl.value}`,
-        `NIM API Key: ${nimApiKeyEl.value.trim() ? 'provided' : 'not set'}`,
+        `Workflow: Reference-Frame Relay`,
+        `Topic: ${plan.topic}`,
+        `Topic Label: ${plan.topic_label}`,
+        `Genre: ${plan.genre}`,
+        `Subtype: ${plan.subtype}`,
+        `Duration: ${plan.duration}s`,
+        `Format: ${plan.format}`,
         '',
-        'Core: You are a top-tier AI video production strategist, master prompt engineer, and viral content creator. Create a cinematic miniature timelapse workflow that always follows the same structure: topic selection, duration selection, first-frame image prompt, then continuous motion video prompt. The first scene must begin from an empty or untouched starting state. Every later scene must continue directly from the exact final frame of the previous scene. Do not introduce a new location, new table, new tray, or new composition. Keep camera angle, framing, scale, and lighting direction physically constant. Each scene must be a small incremental step, not a new reconstruction.',
+        'Execution Rule: Generate and approve one master image for Scene 1 only. After every video, save its exact final frame and upload that saved image as the sole visual start input for the next scene.',
         '',
-        buildingStyleBlock(sub),
+        `Identity Lock: ${plan.building_style.identity_lock}`,
+        `Materials: ${plan.building_style.materials}`,
+        `Camera: ${plan.building_style.camera}`,
+        `Lighting: ${plan.building_style.lighting}`,
+        `Color Palette: ${plan.building_style.color_palette}`,
         '',
-        '=== Flow Scenes ===',
+        '=== Relay Scenes ===',
         blocks.join('\n\n')
       ].join('\n');
+    }
+
+    function flowPackText() {
+      return serializePlan(canonicalAppliedPlan || buildLocalPlan());
+    }
+
+    function extractPromptField(block, labels) {
+      if (!block) return '';
+      const lines = block.split(/\r?\n/);
+      const normalizedLabels = labels.map(label => label.toLowerCase());
+      const stopPattern = /^(Scene\s*\d+|Input Mode|Input Asset|Master First Frame Prompt|First Frame Prompt|Video Prompt|After Render|Handoff Asset|Negative Prompt|Continuity Rule|Bridge)\s*:/i;
+      for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+        const separator = line.indexOf(':');
+        if (separator < 0) continue;
+        const label = line.slice(0, separator).trim().toLowerCase();
+        if (!normalizedLabels.includes(label)) continue;
+        const collected = [line.slice(separator + 1).trim()];
+        for (let cursor = index + 1; cursor < lines.length; cursor++) {
+          if (stopPattern.test(lines[cursor].trim())) break;
+          collected.push(lines[cursor].trim());
+        }
+        return collected.filter(Boolean).join(' ').trim();
+      }
+      return '';
+    }
+
+    function normalizeNimPlan(rawText, localPlan) {
+      const fallbackScenes = [];
+      const normalizedScenes = localPlan.scenes.map((scene, index) => {
+        const block = sceneBlockFromText(rawText, index, scene.name);
+        const nimVideo = extractPromptField(block, ['Video Prompt']);
+        const nimFirst = index === 0
+          ? extractPromptField(block, ['Master First Frame Prompt', 'First Frame Prompt'])
+          : '';
+        if (!nimVideo) fallbackScenes.push(scene.id);
+        return {
+          ...scene,
+          first_frame_prompt: index === 0 ? (nimFirst || scene.first_frame_prompt) : '',
+          video_prompt: nimVideo || scene.video_prompt,
+          input_mode: inputModeFor(index),
+          input_asset: inputAssetFor(index),
+          handoff_asset: handoffAssetFor(index),
+          negative_prompt: NEGATIVE_PROMPT
+        };
+      });
+      return {
+        plan: {
+          ...localPlan,
+          prompt_source: 'nim',
+          normalized: true,
+          scenes: normalizedScenes
+        },
+        fallbackScenes
+      };
+    }
+
+    function validatePlan(plan) {
+      const errors = [];
+      if (!plan || !Array.isArray(plan.scenes) || !plan.scenes.length) return ['No scenes were generated.'];
+      plan.scenes.forEach((scene, index) => {
+        if (index === 0 && !scene.first_frame_prompt) errors.push('Scene 1 is missing its master first-frame prompt.');
+        if (index > 0 && scene.first_frame_prompt) errors.push(`Scene ${index + 1} must not contain a first-frame prompt.`);
+        if (scene.input_mode !== inputModeFor(index)) errors.push(`Scene ${index + 1} has the wrong input mode.`);
+        if (scene.input_asset !== inputAssetFor(index)) errors.push(`Scene ${index + 1} has the wrong input asset.`);
+        if (scene.negative_prompt !== NEGATIVE_PROMPT) errors.push(`Scene ${index + 1} changed the fixed negative prompt.`);
+        if (!scene.video_prompt || !scene.video_prompt.includes('giant human hands only')) errors.push(`Scene ${index + 1} is missing the hands-only rule.`);
+        if (scene.video_prompt && scene.video_prompt.includes('multiple rapid scene cuts')) errors.push(`Scene ${index + 1} contains a conflicting camera-cut instruction.`);
+      });
+      return errors;
     }
 
     async function generateFlowPackWithNIM(promptText) {
       const apiKey = nimApiKeyEl.value.trim();
       if (!nimGenerateEl.checked || !apiKey) return promptText;
       const model = nimModelEl.value.trim() || 'meta/llama-3.1-8b-instruct';
+      const baseUrl = nimBaseUrlEl.value.trim() || 'https://integrate.api.nvidia.com/v1';
       const response = await fetch('http://127.0.0.1:8765/api/nim/generate', {
         method: 'POST',
         headers: {
@@ -1027,9 +1668,16 @@
         body: JSON.stringify({
           api_key: apiKey,
           model,
+          base_url: baseUrl,
           prompt_text: [
-            'Rewrite the following Google Flow prompt pack so it is cleaner and more publish-ready.',
-            'Keep the same section order, scene continuity rules, first-frame-only behavior, and negative prompt.',
+            'Rewrite only the descriptive Master First Frame Prompt and Video Prompt values in the following Google Flow relay pack.',
+            'Return the same Scene N: headers and the same labeled fields.',
+            'Do not add, remove, merge, reorder, or rename scenes.',
+            'Scene 1 is the only scene allowed to have Master First Frame Prompt.',
+            'Scene 2 and later must begin from the uploaded previous-scene final-frame file and must not generate a new first frame.',
+            'Preserve the exact subject identity, input assets, handoff assets, locked camera, hands-only rule, physical assembly order, and final-frame hold.',
+            `Every scene must end with this exact line: Negative Prompt: ${NEGATIVE_PROMPT}`,
+            'Do not use "multiple rapid scene cuts". Return English prompt text only with no commentary.',
             '',
             promptText,
           ].join('\n'),
@@ -1051,6 +1699,11 @@
       return (data && data.text && String(data.text).trim()) ? String(data.text).trim() : promptText;
     }
 
+    function setGenerateLoading(visible, text) {
+      generateLoading.classList.toggle('visible', Boolean(visible));
+      if (text) generateLoadingText.textContent = text;
+    }
+
     async function copyText(text, okMessage) {
       await navigator.clipboard.writeText(text);
       statusPill.textContent = okMessage || 'Copied to clipboard.';
@@ -1063,23 +1716,205 @@
       return `Scene: ${sceneName}. Materials, camera, lighting, and color palette are already bundled for ${type}.`;
     }
 
+    function sceneBlockFromText(text, sceneIndex, sceneName) {
+      if (!text) return '';
+      const lines = text.split(/\r?\n/);
+      const escapedName = sceneName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const startMarkers = [
+        new RegExp(`^Scene\\s*${sceneIndex + 1}\\s*[:\\-]\\s*${escapedName}\\s*$`, 'i'),
+        new RegExp(`^Scene\\s*${sceneIndex + 1}\\b`, 'i'),
+        new RegExp(`^###\\s*Scene\\s*${sceneIndex + 1}\\b`, 'i'),
+      ];
+      let start = -1;
+      for (let i = 0; i < lines.length; i++) {
+        const current = lines[i].trim();
+        if (startMarkers.some(pattern => pattern.test(current))) {
+          start = i;
+          break;
+        }
+      }
+      if (start === -1) return '';
+      const fallbackMarkers = [
+        /^Scene\s*\d+\s*[:\-]/i,
+        /^###\s*Scene\s*\d+/i,
+        /^##\s*Scene\s*\d+/i,
+        /^Scene\s+Prompt/i,
+      ];
+      let end = lines.length;
+      for (let i = start + 1; i < lines.length; i++) {
+        const current = lines[i].trim();
+        if (fallbackMarkers.some(pattern => pattern.test(current))) {
+          end = i;
+          break;
+        }
+      }
+      return lines.slice(start, end).join('\n').trim();
+    }
+
+    function promptTextOnly(text) {
+      if (!text) return '';
+      return text
+        .replace(/^\s*Applied Prompt\s*[:\-]?\s*/i, '')
+        .replace(/^\s*Local Draft\s*[:\-]?\s*/i, '')
+        .replace(/^\s*Scene\s*Prompt\s*[:\-]?\s*/i, '')
+        .trim();
+    }
+
+    function sceneBlockStartLine(text, sceneIndex, sceneName) {
+      if (!text) return -1;
+      const lines = text.split(/\r?\n/);
+      const escapedName = sceneName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const markers = [
+        new RegExp(`^Scene\\s*${sceneIndex + 1}\\s*[:\\-]\\s*${escapedName}\\s*$`, 'i'),
+        new RegExp(`^Scene\\s*${sceneIndex + 1}\\b`, 'i'),
+        new RegExp(`^###\\s*Scene\\s*${sceneIndex + 1}\\b`, 'i'),
+        new RegExp(`^##\\s*Scene\\s*${sceneIndex + 1}\\b`, 'i'),
+      ];
+      for (let i = 0; i < lines.length; i++) {
+        if (markers.some(pattern => pattern.test(lines[i].trim()))) return i;
+      }
+      return -1;
+    }
+
+    function scrollFlowPackToScene(sceneIndex, sceneName) {
+      const startLine = sceneBlockStartLine(promptTextOnly(flowPackEl.value), sceneIndex, sceneName);
+      if (startLine < 0) return;
+      const lineHeight = 18;
+      flowPackEl.scrollTop = Math.max(0, (startLine - 2) * lineHeight);
+    }
+
+    function initializeRelayStates(plan) {
+      relayStates = plan.scenes.map((scene, index) => index === 0 ? 'awaiting_master_image' : 'locked');
+      localStorage.setItem(RELAY_STATES_STORAGE_KEY, JSON.stringify(relayStates));
+      activeSceneIndex = 0;
+    }
+
+    function relayStateFor(index) {
+      return relayStates[index] || (index === 0 ? 'awaiting_master_image' : 'locked');
+    }
+
+    function relayStateLabel(state) {
+      const labels = {
+        locked: 'Locked',
+        awaiting_master_image: 'Master image required',
+        video_ready: 'Video prompt ready',
+        complete: 'Complete'
+      };
+      return labels[state] || state;
+    }
+
+    function relayInstruction(index, state) {
+      if (!canonicalAppliedPlan) return 'Build a relay plan to begin.';
+      const scene = canonicalAppliedPlan.scenes[index];
+      if (state === 'awaiting_master_image') {
+        return {
+          title: 'Generate one master image in Google Flow',
+          detail: 'Copy the master image prompt, generate candidates, choose one image, and add that approved image to the Flow prompt.',
+          asset: scene.input_asset,
+          action: 'Mark Master Image Approved',
+          disabled: false
+        };
+      }
+      if (state === 'video_ready') {
+        return {
+          title: index === 0 ? 'Generate Scene 1 from the approved master image' : `Upload the previous final frame and generate Scene ${index + 1}`,
+          detail: index === 0
+            ? `After rendering, save the exact final frame as ${scene.handoff_asset}.`
+            : `Use ${scene.input_asset} as the only start image. After rendering, save the exact final frame as ${scene.handoff_asset}.`,
+          asset: `Input: ${scene.input_asset} · Save: ${scene.handoff_asset}`,
+          action: 'Video Generated + Final Frame Saved',
+          disabled: false
+        };
+      }
+      if (state === 'complete') {
+        return {
+          title: 'This scene handoff is complete',
+          detail: index === canonicalAppliedPlan.scenes.length - 1
+            ? 'All relay scenes are complete. The clips are ready for stitching and visual QA.'
+            : `The next scene can now use ${scene.handoff_asset}.`,
+          asset: scene.handoff_asset,
+          action: 'Scene Complete',
+          disabled: true
+        };
+      }
+      return {
+        title: 'Complete the previous scene first',
+        detail: `Scene ${index + 1} stays locked until ${scene.input_asset} has been confirmed.`,
+        asset: scene.input_asset,
+        action: 'Locked',
+        disabled: true
+      };
+    }
+
+    function advanceRelay() {
+      if (!canonicalAppliedPlan) return;
+      const state = relayStateFor(activeSceneIndex);
+      if (state === 'awaiting_master_image') {
+        relayStates[activeSceneIndex] = 'video_ready';
+      } else if (state === 'video_ready') {
+        relayStates[activeSceneIndex] = 'complete';
+        if (activeSceneIndex < relayStates.length - 1) {
+          relayStates[activeSceneIndex + 1] = 'video_ready';
+          activeSceneIndex += 1;
+        }
+      }
+      localStorage.setItem(RELAY_STATES_STORAGE_KEY, JSON.stringify(relayStates));
+      render();
+    }
+
+    function resetRelay() {
+      if (!canonicalAppliedPlan) return;
+      initializeRelayStates(canonicalAppliedPlan);
+      render();
+    }
+
+    function invalidateAppliedPlan(message) {
+      canonicalAppliedPlan = null;
+      nimFlowPackOverride = '';
+      flowHasContent = false;
+      flowHadSuccessfulGeneration = false;
+      relayStates = [];
+      activeSceneIndex = 0;
+      flowPackEl.value = '';
+      localStorage.removeItem(FLOW_PACK_STORAGE_KEY);
+      localStorage.removeItem(RELAY_STATES_STORAGE_KEY);
+      if (message) commandStatusNote.textContent = message;
+    }
+
+    function bindSourceDraftFields(sub) {
+      templateBox.querySelectorAll('[data-source-field]').forEach(field => {
+        field.addEventListener('change', () => {
+          const fieldName = field.dataset.sourceField;
+          sourceOverrides[sub.type] = {
+            ...(sourceOverrides[sub.type] || {}),
+            [fieldName]: field.value.trim()
+          };
+          localStorage.setItem(SOURCE_OVERRIDES_STORAGE_KEY, JSON.stringify(sourceOverrides));
+          invalidateAppliedPlan('Status: Source Draft changed. Build a new relay plan to apply it.');
+          render();
+        });
+      });
+    }
+
     function render() {
       const sub = currentSubtype();
       const genre = templates[genreEl.value];
       const duration = Number(durationEl.value);
-      if (!flowPackManualEdit) {
-        flowPackEl.value = flowPackText();
-      }
-      const scenes = sceneNamesFor(sub.type, Number(durationEl.value));
+      const plan = canonicalAppliedPlan;
+      flowPackEl.value = flowHasContent && plan ? serializePlan(plan) : '';
+      const scenes = plan ? plan.scenes.map(scene => scene.name) : sceneNamesFor(sub.type, duration);
       if (activeSceneIndex >= scenes.length) activeSceneIndex = 0;
 
       stepperEl.innerHTML = '';
-      scenes.forEach((sceneName, index) => {
-        const pill = document.createElement('div');
-        pill.className = 'step-pill' + (index === activeSceneIndex ? ' active' : '');
-        pill.textContent = `Step ${index + 1}: ${sceneName}`;
-        stepperEl.appendChild(pill);
-      });
+      if (flowHasContent && plan) {
+        scenes.forEach((sceneName, index) => {
+          const state = relayStateFor(index);
+          const pill = document.createElement('div');
+          pill.className = `step-pill ${index === activeSceneIndex ? 'active' : ''} ${state}`;
+          pill.textContent = `Scene ${index + 1}: ${sceneName} · ${relayStateLabel(state)}`;
+          stepperEl.appendChild(pill);
+        });
+      }
 
       chipsEl.innerHTML = '';
       [
@@ -1096,74 +1931,176 @@
       });
 
       templateBox.innerHTML = `
-        <div class="template-title">${sub.label}</div>
-        <div class="template-meta">
-          <div><strong>Genre:</strong> ${genre.label}</div>
-          <div><strong>Topic label:</strong> ${genre.label}-${sub.label}</div>
-          <div><strong>Building key:</strong> ${sub.type}</div>
-          <div><strong>Recommended color palette:</strong> ${sub.color}</div>
-          <div><strong>Materials:</strong> ${sub.materials || sub.color}</div>
-          <div><strong>Camera:</strong> ${sub.camera || 'macro lens, shallow depth of field'}</div>
-          <div><strong>Lighting:</strong> ${sub.lighting || 'cinematic studio lighting'}</div>
+        <div class="template-title">${sub.label} Source Draft</div>
+        <div class="source-field-grid">
+          <label class="source-field wide">
+            <span>Subject Identity Lock</span>
+            <textarea data-source-field="identity">${sub.identity}</textarea>
+          </label>
+          <label class="source-field wide">
+            <span>Materials</span>
+            <textarea data-source-field="materials">${sub.materials}</textarea>
+          </label>
+          <label class="source-field">
+            <span>Camera</span>
+            <textarea data-source-field="camera">${sub.camera}</textarea>
+          </label>
+          <label class="source-field">
+            <span>Lighting</span>
+            <textarea data-source-field="lighting">${sub.lighting}</textarea>
+          </label>
+          <label class="source-field wide">
+            <span>Color Palette</span>
+            <textarea data-source-field="color">${sub.color}</textarea>
+          </label>
         </div>
       `;
+      bindSourceDraftFields(sub);
 
       sceneGrid.innerHTML = '';
-      scenes.forEach((sceneName, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'scene-card' + (index === activeSceneIndex ? ' active' : '');
-        btn.innerHTML = `
-          <div class="scene-name">Scene ${index + 1}: ${sceneName}</div>
-          <div class="scene-note">Tap to preview the generated scene summary.</div>
+      if (!flowHasContent) {
+        sceneDraftSummary.textContent = '';
+        scenePreviewEl.innerHTML = '';
+        flowPackEl.value = '';
+      } else {
+        const previewSourceLabel = flowGenerationSource === 'nim' ? 'Normalized NIM Applied Plan' : 'Local Deterministic Applied Plan';
+        sceneDraftSummary.innerHTML = `
+          <strong>${previewSourceLabel}:</strong> ${genre.label} / ${sub.label} / ${durationEl.value}s / ${formatEl.value} / ${autoTopicLabel()}
         `;
-        btn.addEventListener('click', () => {
-          activeSceneIndex = index;
-          render();
+        scenes.forEach((sceneName, index) => {
+          const state = relayStateFor(index);
+          const btn = document.createElement('button');
+          btn.className = `scene-card ${index === activeSceneIndex ? 'active' : ''} ${state}`;
+          btn.disabled = state === 'locked';
+          btn.innerHTML = `
+            <div class="scene-name">Scene ${index + 1}: ${sceneName}</div>
+            <div class="scene-note">${relayStateLabel(state)} · ${plan.scenes[index].input_asset}</div>
+          `;
+          btn.addEventListener('click', () => {
+            if (relayStateFor(index) === 'locked') return;
+            activeSceneIndex = index;
+            render();
+            scrollFlowPackToScene(index, sceneName);
+          });
+          sceneGrid.appendChild(btn);
         });
-        sceneGrid.appendChild(btn);
-      });
+      }
 
       const sceneName = scenes[activeSceneIndex] || scenes[0];
-      const sceneStyle = sceneStyleFor(sub.type);
-      const firstFramePreview = activeSceneIndex === 0
-        ? `<div><strong>First frame:</strong> ${firstFramePrompt(topicEl.value, sceneName, sub.type)}</div>`
-        : '';
-      scenePreviewEl.innerHTML = `
-        <div class="template-title">Scene ${activeSceneIndex + 1}: ${sceneName}</div>
-        <div class="step-summary">
-          <div><strong>Preview:</strong> ${sceneSummary(sub.type, sceneName)}</div>
-          <div><strong>Start from:</strong> ${activeSceneIndex === 0 ? 'none' : scenes[activeSceneIndex - 1]}</div>
-          <div><strong>Carry forward:</strong> ${sceneCarryText(sceneName, scenes[activeSceneIndex - 1])}</div>
-          ${firstFramePreview}
-          <div><strong>Video:</strong> available after Flow approval via the video prompt button.</div>
-        </div>
-      `;
-      statusPill.textContent = flowPackManualEdit
-        ? `Flow pack edited manually for ${sub.label}; manual text is preserved.`
-        : `Ready for ${sub.label} with ${scenes.length} scenes.`;
-      flowEditedBadge.style.display = flowPackManualEdit ? 'inline-flex' : 'none';
-      if (!flowPackManualEdit) {
+      const previewModeLabel = flowGenerationSource === 'nim' ? 'Following normalized NIM Applied Plan' : 'Following local deterministic Applied Plan';
+      const appliedPromptText = plan ? serializePlan(plan) : '';
+      const previewSceneBlock = plan ? sceneBlockFromText(appliedPromptText, activeSceneIndex, sceneName) : '';
+      const appliedMode = Boolean(plan);
+      if (!flowHasContent) {
+        scenePreviewEl.innerHTML = '';
+      } else {
+        const relayState = relayStateFor(activeSceneIndex);
+        const relay = relayInstruction(activeSceneIndex, relayState);
+        scenePreviewEl.innerHTML = `
+          <div class="scene-frame-shell applied-shell">
+            <div class="template-title">Scene ${activeSceneIndex + 1}: ${sceneName}<span class="scene-mini-badge applied">Applied Prompt</span></div>
+            <div class="preview-note focus-spot">${previewModeLabel}: <strong>${genre.label}</strong> · <strong>${sub.label}</strong> · <strong>${durationEl.value}s</strong> · <strong>${formatEl.value}</strong></div>
+            <div class="relay-action-box ${relayState === 'complete' ? 'complete' : ''}">
+              <div class="relay-kicker">Next manual action · ${relayStateLabel(relayState)}</div>
+              <div class="relay-next">${relay.title}</div>
+              <div class="hint">${relay.detail}</div>
+              <div class="relay-asset">${relay.asset}</div>
+            </div>
+            <div class="step-summary">
+              <div><strong>Input mode:</strong> ${plan.scenes[activeSceneIndex].input_mode}</div>
+              <div><strong>Input asset:</strong> ${plan.scenes[activeSceneIndex].input_asset}</div>
+              <div><strong>Scene prompt:</strong><div class="scene-prompt-block">${previewSceneBlock}</div></div>
+            </div>
+          </div>
+        `;
+        copyScenePreviewBtn.style.display = activeSceneIndex === 0 ? 'inline-flex' : 'none';
+        copyScenePreviewBtn.disabled = activeSceneIndex !== 0;
+        copyVideoPromptBtn.disabled = relayState !== 'video_ready';
+        relayAdvanceBtn.disabled = relay.disabled;
+        relayAdvanceBtn.textContent = relay.action;
+      }
+      statusPill.className = 'status-pill ' + (
+        flowGenerationSource === 'nim' ? 'state-success' : 'state-neutral'
+      );
+      statusPill.textContent = !flowHasContent
+        ? 'Source Draft is ready. Build a relay plan when the inputs are correct.'
+        : flowGenerationSource === 'nim'
+          ? `NIM generated text is applied for ${sub.label}.`
+          : `Local deterministic relay plan is active for ${sub.label} with ${scenes.length} scenes.`;
+      flowEditedBadge.style.display = 'none';
+      flowSourceBadge.style.display = flowHasContent ? 'inline-flex' : 'none';
+      flowSourceBadge.className = 'state-badge ' + (
+        flowGenerationSource === 'nim' ? 'state-success' : 'state-neutral'
+      );
+      flowSourceBadge.textContent = flowGenerationSource === 'nim'
+          ? 'NIM Applied'
+          : 'Local Deterministic';
+      commandStatusNote.textContent = !flowHasContent
+        ? 'Status: Source Draft is ready for review.'
+        : flowGenerationSource === 'nim'
+          ? `Status: NVIDIA NIM output is currently applied from ${nimModelEl.value.trim() || 'default model'} at ${nimBaseUrlEl.value.trim() || 'default base URL'}.`
+          : 'Status: local deterministic relay plan is currently applied.';
+      flowGeneratedNote.textContent = !flowHasContent
+        ? 'No applied plan yet.'
+        : flowGenerationSource === 'nim'
+          ? 'Applied from NIM response.'
+          : 'Applied from local deterministic planner.';
+      scenePreviewEl.classList.toggle('focus-mode', appliedMode);
+      scenePreviewEl.classList.toggle('scene-preview-applied', appliedMode);
+      scenePreviewEl.classList.toggle('scene-preview-source', !appliedMode);
+      if (flowHasContent) {
         localStorage.setItem(FLOW_PACK_STORAGE_KEY, flowPackEl.value);
         localStorage.setItem(FLOW_PACK_MANUAL_KEY, '0');
+        localStorage.setItem(FLOW_GENERATION_SOURCE_KEY, flowGenerationSource);
+      }
+      if (flowHasContent) {
+        window.setTimeout(() => scrollFlowPackToScene(activeSceneIndex, sceneName), 0);
+      } else {
+        copyScenePreviewBtn.style.display = 'none';
+        copyVideoPromptBtn.disabled = true;
+        relayAdvanceBtn.disabled = true;
+        relayAdvanceBtn.textContent = 'Build a relay plan first';
       }
     }
 
     document.getElementById('generate').addEventListener('click', async () => {
       flowPackManualEdit = false;
       localStorage.setItem(FLOW_PACK_MANUAL_KEY, '0');
+      setGenerateLoading(true, nimGenerateEl.checked ? 'Generating with NVIDIA NIM...' : 'Building local draft...');
       render();
       const draft = flowPackText();
       try {
         const generated = await generateFlowPackWithNIM(draft);
         nimFlowPackOverride = generated;
         flowPackEl.value = generated;
+        flowHasContent = true;
+        flowHadSuccessfulGeneration = true;
         localStorage.setItem(FLOW_PACK_STORAGE_KEY, generated);
-        statusPill.textContent = nimGenerateEl.checked ? 'Generated Flow text with NVIDIA NIM.' : 'Ready to generate the prompt pack in browser.';
+        flowGenerationSource = nimGenerateEl.checked ? 'nim' : 'local';
+        localStorage.setItem(FLOW_GENERATION_SOURCE_KEY, flowGenerationSource);
+        statusPill.className = 'status-pill ' + (nimGenerateEl.checked ? 'state-success' : 'state-neutral');
+        statusPill.textContent = nimGenerateEl.checked ? 'NIM generated text is applied.' : 'Local draft is active.';
+        commandStatusNote.textContent = nimGenerateEl.checked
+          ? `Status: NIM generation succeeded and the Flow text was replaced from ${nimModelEl.value.trim() || 'default model'} at ${nimBaseUrlEl.value.trim() || 'default base URL'}.`
+          : 'Status: local draft is active.';
+        render();
+        scrollFlowPackToScene(activeSceneIndex, sceneNamesFor(currentSubtype().type, Number(durationEl.value))[activeSceneIndex]);
       } catch (error) {
         nimFlowPackOverride = '';
         flowPackEl.value = draft;
+        flowHasContent = true;
+        flowHadSuccessfulGeneration = false;
         localStorage.setItem(FLOW_PACK_STORAGE_KEY, draft);
-        statusPill.textContent = error instanceof Error ? `NIM generation failed (${error.message}). Using local draft.` : 'NIM generation failed. Using local draft.';
+        flowGenerationSource = 'local';
+        localStorage.setItem(FLOW_GENERATION_SOURCE_KEY, flowGenerationSource);
+        statusPill.className = 'status-pill state-warning';
+        statusPill.textContent = error instanceof Error ? `NIM generation failed (${error.message}). Local draft is active.` : 'NIM generation failed. Local draft is active.';
+        commandStatusNote.textContent = error instanceof Error
+          ? `Status: NIM generation failed and local draft was restored. ${error.message} Model: ${nimModelEl.value.trim() || 'default model'} Base URL: ${nimBaseUrlEl.value.trim() || 'default base URL'}`
+          : 'Status: NIM generation failed and local draft was restored.';
+        render();
+      } finally {
+        setGenerateLoading(false);
       }
     });
     document.getElementById('copy').addEventListener('click', async () => {
@@ -1191,14 +2128,26 @@
       localStorage.setItem(NIM_API_KEY_STORAGE_KEY, nimApiKeyEl.value);
       render();
     });
+    nimBaseUrlEl.addEventListener('input', () => {
+      localStorage.setItem(NIM_BASE_URL_STORAGE_KEY, nimBaseUrlEl.value);
+      nimFlowPackOverride = '';
+      render();
+    });
     flowPackEl.addEventListener('input', () => {
       flowPackManualEdit = true;
+      flowHasContent = Boolean(flowPackEl.value.trim());
+      flowHadSuccessfulGeneration = flowHasContent;
       nimFlowPackOverride = '';
+      flowGenerationSource = 'manual';
       localStorage.setItem(FLOW_PACK_STORAGE_KEY, flowPackEl.value);
       localStorage.setItem(FLOW_PACK_MANUAL_KEY, '1');
+      localStorage.setItem(FLOW_GENERATION_SOURCE_KEY, flowGenerationSource);
+      statusPill.className = 'status-pill state-warning';
       statusPill.textContent = 'Flow pack is now manually editable.';
+      commandStatusNote.textContent = 'Status: manual edits are active.';
+      flowGeneratedNote.textContent = 'Last generated by: manual edit.';
     });
-    copyFlowBtn.addEventListener('click', () => copyText(flowPackEl.value, 'Copied Flow pack.'));
+    copyFlowBtn.addEventListener('click', () => copyText(flowHasContent ? flowPackEl.value : '', 'Copied Flow pack.'));
     downloadFlowBtn.addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(promptPackJson(), null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -1220,7 +2169,7 @@
       const sub = currentSubtype();
       const duration = Number(durationEl.value);
       const scenes = sceneNamesFor(sub.type, duration);
-      const sceneOneFirstFrame = `Scene 1: ${scenes[0]}\nStart From Previous Final Frame: none\nFirst Frame Prompt: ${firstFramePrompt(topicEl.value, scenes[0], currentSubtype().type)}\nContinuity Rule: ${continuityRule()}\nBridge: ${carryOverText(scenes[0], scenes[1])}\nVideo Prompt: ${videoPrompt(sub, scenes[0], duration)}\nNegative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`;
+      const sceneOneFirstFrame = `Scene 1: ${scenes[0]}\nStart From Previous Final Frame: none\nFirst Frame Prompt: ${firstFramePrompt(topicEl.value, scenes[0], currentSubtype().type)}\nContinuity Rule: ${continuityRule()}\nBridge: ${carryOverText(scenes[0], scenes[1])}\nVideo Prompt: ${videoPrompt(sub, scenes[0], duration)}\nNegative Prompt: ${NEGATIVE_PROMPT}`;
       const rest = scenes.slice(1).map((sceneName, index) => [
         `Scene ${index + 2}: ${sceneName}`,
         `Start From Previous Final Frame: ${scenes[index]}`,
@@ -1228,22 +2177,23 @@
         `Continuity Rule: ${continuityRule()}`,
         `Bridge: ${carryOverText(sceneName, scenes[index + 2])}`,
         `Video Prompt: ${videoPrompt(sub, sceneName, duration)}`,
-        `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures`
+        `Negative Prompt: ${NEGATIVE_PROMPT}`
       ].join('\n')).join('\n\n');
       const text = [sceneOneFirstFrame, rest].filter(Boolean).join('\n\n');
       copyText(text, 'Copied all scene prompts.');
     });
-    copyScenePreviewBtn.addEventListener('click', () => {
-      const sub = currentSubtype();
-      const duration = Number(durationEl.value);
-      const scene = sceneNamesFor(sub.type, duration)[activeSceneIndex];
-      copyText([
-        `Scene ${activeSceneIndex + 1}: ${scene}`,
-        `Start From Previous Final Frame: ${activeSceneIndex === 0 ? 'none' : sceneNamesFor(sub.type, duration)[activeSceneIndex - 1]}`,
-        `Carry Forward: ${sceneCarryText(scene, sceneNamesFor(sub.type, duration)[activeSceneIndex - 1])}`,
-        ...(activeSceneIndex === 0 ? [`First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`] : []),
-      ].join('\n'), 'Copied selected scene.');
-    });
+      copyScenePreviewBtn.addEventListener('click', () => {
+        const sub = currentSubtype();
+        const duration = Number(durationEl.value);
+        const scene = sceneNamesFor(sub.type, duration)[activeSceneIndex];
+        copyText([
+          `Scene ${activeSceneIndex + 1}: ${scene}`,
+          `Start From Previous Final Frame: ${activeSceneIndex === 0 ? 'none' : sceneNamesFor(sub.type, duration)[activeSceneIndex - 1]}`,
+          `Carry Forward: ${sceneCarryText(scene, sceneNamesFor(sub.type, duration)[activeSceneIndex - 1])}`,
+          ...(activeSceneIndex === 0 ? [`First Frame Prompt: ${firstFramePrompt(topicEl.value, scene, sub.type)}`] : []),
+          `Negative Prompt: ${NEGATIVE_PROMPT}`,
+        ].join('\n'), 'Copied selected scene.');
+      });
     copyVideoPromptBtn.addEventListener('click', async () => {
       const sub = currentSubtype();
       const duration = Number(durationEl.value);
@@ -1255,7 +2205,7 @@
         `Start From Previous Final Frame: ${previousScene || 'none'}`,
         `Carry Forward: ${sceneCarryText(scene, previousScene)}`,
         `Video Prompt: ${videoPrompt(sub, scene, duration)}`,
-        `Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry`
+        `Negative Prompt: ${NEGATIVE_PROMPT}`
       ].join('\n'), 'Copied next scene prompt.');
     });
 

@@ -9,9 +9,10 @@ HANDS_ONLY_RULE = (
 )
 
 CONTINUITY_RULE = (
-    "The final frame of each scene must match the first frame of the next scene, maintain the same camera angle, "
-    "scale, lighting direction, and object placement across transitions, and continue the exact construction state "
-    "without resets, jumps, or scene breaks."
+    "For every scene after Scene 1, upload the exact saved final-frame image from the previous scene as the sole "
+    "visual start reference. The opening frame must match that uploaded image before motion begins. Preserve the "
+    "same camera, framing, scale, lighting direction, workspace, object placement, installed parts, and loose "
+    "materials; do not redesign, reset, rebuild, clean up, or reinterpret the visible state."
 )
 
 COMMON_PROMPT_CORE = (
@@ -22,17 +23,28 @@ COMMON_PROMPT_CORE = (
 )
 
 COMMON_CONTINUITY_LOCK = (
-    "The first scene must begin from an empty or untouched starting state. "
-    "Every later scene must continue directly from the exact final frame of the previous scene. "
-    "Do not introduce a new location, new table, new tray, or new composition. "
-    "Keep camera angle, framing, scale, and lighting direction physically constant. "
-    "Each scene must be a small incremental step, not a new reconstruction."
+    "Scene 1 begins from one approved master image showing a completely unstarted subject. "
+    "Every later scene uses the exact saved final-frame image from the previous video as its only start image. "
+    "Do not introduce a new location, table, tray, composition, floor plan, model, or color scheme. "
+    "Keep the camera physically locked until the final reveal. Each scene advances the existing object by one "
+    "mechanically plausible step and never reconstructs an earlier step."
 )
 
 STYLE_BLOCK = (
-    f"ultra realistic macro photography, miniature construction site, {HANDS_ONLY_RULE}, "
-    "ultra fast timelapse speed, multiple rapid scene cuts, cinematic macro photography, "
+    f"ultra realistic macro photography, one fixed miniature-scale build workspace, {HANDS_ONLY_RULE}, "
+    "ultra fast procedural timelapse speed in one locked camera composition, cinematic macro photography, "
     f"cinematic studio lighting, shallow depth of field, {CONTINUITY_RULE}"
+)
+
+FINAL_FRAME_HANDOFF = (
+    "End on a clean, stable, motionless hold for the final 0.5 seconds. Keep every installed part, tool, loose "
+    "material, camera parameter, and light direction unchanged so this exact frame can be saved and reused as "
+    "the next scene input."
+)
+
+FINAL_REVEAL = (
+    "After construction is complete, the hands leave the frame. Hold the completed subject, then perform one "
+    "subtle cinematic pull-back without changing the subject design."
 )
 
 
@@ -55,24 +67,60 @@ def _standard_scene_action(opening: str, build: str, finish: str) -> str:
     return f"{opening}, {build}, {finish}"
 
 
-def build_topic_label(genre: str, subtype_label: str) -> str:
-    return f"{genre.strip().title()}-{subtype_label.strip()}"
+def build_topic_label_from_parts(genre: str, subtype_label: str, detail: str | None = None) -> str:
+    label = f"{genre.strip().title()}-{subtype_label.strip()}"
+    detail_text = (detail or "").strip()
+    return f"{label}-{detail_text}" if detail_text else label
 
 
 def build_common_core() -> str:
     return f"{COMMON_PROMPT_CORE} {COMMON_CONTINUITY_LOCK}"
 
 
+def build_identity_lock(building_type: str) -> str:
+    key = (building_type or "hanok").strip().lower()
+    if key == "hanok":
+        return (
+            "Identity lock: one coherent single-story Korean hanok with a rectangular timber bay plan, natural "
+            "stone footings, warm post-and-beam woodwork, white hanji doors and windows, deep curved black giwa "
+            "eaves, and restrained dancheong only on appropriate beam ends and eaves. Never transform it into a "
+            "stone castle, Gothic church, European cottage, pagoda tower, palace tower, or fantasy fortress."
+        )
+    template = get_building_template(key)
+    return (
+        f"Identity lock: preserve one coherent {template['label']} with the same silhouette, footprint, proportions, "
+        f"materials, openings, and color palette through every scene. Never transform it into another subject type, "
+        "add an unrequested floor or body section, or replace the established design."
+    )
+
+
+def build_input_frame_contract(scene_id: int) -> str:
+    if scene_id == 1:
+        return (
+            "Start from the uploaded approved master image. The opening frame must match the uploaded image exactly "
+            "before the hands begin moving."
+        )
+    previous_id = scene_id - 1
+    return (
+        f"Start from the uploaded file scenes/scene_{previous_id:02d}_last_frame.png, the exact saved final frame "
+        f"from Scene {previous_id}. Treat it as immutable visual ground truth. The opening frame must match it exactly "
+        "before motion begins; do not generate a new first frame."
+    )
+
+
 def build_first_frame_prompt(topic: str, scene_name: str, building_type: str | None = None) -> str:
     key = (building_type or "").strip().lower()
     if key == "hanok":
         return (
-            "Ultra realistic macro photography, miniature Korean hanok construction site, packed soil base with a few "
-            "weathered stone foundation blocks already marked in place, empty timber frame footprint, thin guide strings, "
-            "bare clay and gravel surface, giant human hands only, no miniature people, no small people, no tiny workers, "
-            "no human figures, no characters, giant human fingers carefully setting the first hanok foundation stones, "
-            "tiny traditional construction tools, 8K detail, soft daylight, warm rim light, natural shadows, cinematic studio lighting, "
-            "shallow depth of field, Korean hanok, scene: "
+            "Ultra realistic macro photography of a completely unstarted miniature Korean hanok construction site, "
+            "an untouched compacted-earth tray with an empty rectangular footprint and taut guide strings, every natural "
+            "stone footing, timber sill beam, timber column, white hanji frame, rafter, and black giwa roof tile still "
+            "separate and neatly staged outside the footprint, no foundation or wall already built, no completed hanok "
+            "visible, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, "
+            "no characters, giant human fingers beginning the very first action by lifting one natural stone footing "
+            "toward its marked position, tiny traditional measuring and woodworking tools, locked 85mm-equivalent macro "
+            "camera at a fixed 45-degree angle, 8K detail, soft daylight from camera-left, warm rim light, natural shadows, "
+            "cinematic studio lighting, shallow depth of field, one single-story Korean hanok, scene: "
             f"{scene_name}."
         )
     if key == "modern_house":
@@ -327,17 +375,54 @@ BUILDING_TEMPLATES = {
             "Painting, Landscaping, and Reveal",
         ],
         "scene_prompts_60": {
-            "Foundation": "survey the ground, apply miniature cement, place foundation stones, and prepare the base",
-            "Wall and Windows": "build wooden walls, insert paper window frames, and align door openings with continuous hand movement",
-            "Roofing": "assemble the curved roof frame and install traditional roof tiles in a smooth timelapse sequence",
-            "Exterior Finishing": "finish exterior walls, install doors and windows, and add fine traditional wooden details",
-            "Painting and Weathering": "apply primer, paint coats, and subtle weathering effects with realistic tool motion",
-            "Landscaping and Reveal": "add grass, soil, fences, and landscaping, then remove the hands and reveal the completed hanok with a cinematic zoom out",
+            "Foundation": (
+                "On the untouched compacted-earth footprint, hands tension the guide strings, place natural stone footings "
+                "in a precise rectangular bay grid, level each footing, and seat warm timber sill beams; stop with only the "
+                "stone-and-sill foundation complete and every column, wall, and roof part still separate"
+            ),
+            "Wall and Windows": (
+                "From the uploaded foundation frame, hands raise warm timber columns into visible mortise-and-tenon joints, "
+                "connect lower and upper beams, and insert white hanji door and window frames; stop with a single-story timber "
+                "wall frame complete, the original footprint unchanged, and no roof structure present"
+            ),
+            "Roofing": (
+                "From the uploaded timber-frame image, hands place the main crossbeams, purlins, evenly spaced rafters, and "
+                "deep curved eave supports, then install black giwa roof tiles row by row; stop with the traditional roof "
+                "fully seated and no landscaping, tower, extra wing, or second floor added"
+            ),
+            "Exterior Finishing": (
+                "From the uploaded roofed hanok frame, hands install white hanji doors and windows, finish exposed timber "
+                "joinery, add restrained wooden trim, and clean only newly produced debris without moving the building or "
+                "changing any opening, roof curve, footprint, camera, or workspace"
+            ),
+            "Painting and Weathering": (
+                "From the uploaded finished shell, hands brush a subtle protective finish over the warm wood and apply "
+                "restrained dancheong only to architecturally appropriate beam ends and eaves, preserving white hanji and "
+                "black giwa colors; stop before any landscape elements are added"
+            ),
+            "Landscaping and Reveal": (
+                "From the uploaded painted hanok, hands add a stone path, low wall, moss, grass, and one small pine without "
+                "moving the building, remove every tool, then leave the frame and reveal the completed hanok"
+            ),
         },
         "scene_prompts_30": {
-            "Foundation and Walls": "survey the ground, pour miniature foundation, build wooden walls, and insert paper window frames in one continuous motion",
-            "Roofing and Exterior": "assemble the curved roof frame, install roof tiles, finish exterior walls, and add doors and windows",
-            "Painting, Landscaping, and Reveal": "apply paint and weathering, add grass and fencing, then reveal the finished hanok with a cinematic zoom out",
+            "Foundation and Walls": (
+                "On the completely untouched compacted-earth footprint, hands tension guide strings, place natural stone "
+                "footings in a rectangular bay grid, seat timber sill beams, raise warm timber columns with visible "
+                "mortise-and-tenon joints, connect the beams, and insert white hanji door and window frames; stop with one "
+                "single-story timber wall frame complete, the roof entirely absent, and every unused roof part still staged"
+            ),
+            "Roofing and Exterior": (
+                "Starting from the uploaded exact Scene 1 final frame, hands place crossbeams, purlins, rafters, and deep "
+                "curved eave supports, install black giwa tiles row by row, fit white hanji doors and windows, and finish the "
+                "exposed timber joinery; stop with the roof and exterior complete and no landscape, tower, second floor, or "
+                "new wing added"
+            ),
+            "Painting, Landscaping, and Reveal": (
+                "Starting from the uploaded exact Scene 2 final frame, hands apply a subtle protective wood finish and "
+                "restrained dancheong only to correct beam ends and eaves, then add a stone path, low wall, moss, grass, and "
+                "one small pine without moving the hanok; remove all tools, let the hands leave, and reveal the finished hanok"
+            ),
         },
     },
     "modern_house": {
@@ -782,10 +867,22 @@ def get_genre_for_building_type(building_type: str) -> str:
     return GENRE_BY_BUILDING_TYPE.get(key, "Architecture")
 
 
-def build_topic_label(building_type: str) -> str:
+def build_topic_label(building_type: str, detail: str | None = None) -> str:
     genre = get_genre_for_building_type(building_type)
     subtype = get_building_template(building_type)["label"]
-    return f"{genre}-{subtype}"
+    return build_topic_label_from_parts(genre, subtype, detail)
+
+
+def build_topic_detail(building_type: str) -> str:
+    template = get_building_template(building_type)
+    parts = [
+        template.get("color_palette", ""),
+        template.get("materials", ""),
+        template.get("camera", ""),
+        template.get("lighting", ""),
+    ]
+    compact = " | ".join(part for part in parts if part)
+    return compact if compact else template["label"]
 
 
 def get_supported_building_types() -> list[str]:

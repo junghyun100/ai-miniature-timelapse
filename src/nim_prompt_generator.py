@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict
-from urllib import request
+from urllib import error, request
 
 
 DEFAULT_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
@@ -62,8 +62,14 @@ def generate_prompt(prompt_brief: str, model: str = "meta/llama-3.1-8b-instruct"
         method="POST",
     )
 
-    with request.urlopen(req, timeout=120) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {exc.code} {exc.reason}: {body or 'empty response body'}") from exc
+    except error.URLError as exc:
+        raise RuntimeError(f"URL error: {exc.reason}") from exc
 
     return _extract_text(data) or prompt_brief
 

@@ -7,9 +7,14 @@ from pathlib import Path
 from typing import List
 
 from prompt_templates import (
+    FINAL_FRAME_HANDOFF,
+    FINAL_REVEAL,
     NEGATIVE_PROMPT,
     STYLE_BLOCK,
     build_common_core,
+    build_identity_lock,
+    build_input_frame_contract,
+    build_topic_detail,
     build_topic_label,
     get_building_template,
     get_supported_building_types,
@@ -22,6 +27,9 @@ class Scene:
     name: str
     seconds: int
     prompt: str
+    input_mode: str
+    input_asset: str
+    handoff_asset: str
     negative_prompt: str = NEGATIVE_PROMPT
 
 
@@ -32,23 +40,40 @@ def build_scene_names(duration: int, building_type: str) -> List[str]:
     return template["scene_names_60"]
 
 
-def build_scene_prompt(building_type: str, name: str, duration: int) -> str:
+def build_scene_prompt(
+    building_type: str,
+    name: str,
+    duration: int,
+    scene_id: int = 1,
+    total_scenes: int = 1,
+) -> str:
     template = get_building_template(building_type)
-    base = f"{build_common_core()}, {STYLE_BLOCK}, miniature DIY construction timelapse of a {template['label']}, scene: {name},"
     if duration == 30:
         action = template["scene_prompts_30"][name]
     else:
         action = template["scene_prompts_60"][name]
-    return f"{base} {action}."
+    end_contract = FINAL_REVEAL if scene_id == total_scenes else FINAL_FRAME_HANDOFF
+    return " ".join(
+        [
+            build_identity_lock(building_type),
+            build_input_frame_contract(scene_id),
+            STYLE_BLOCK,
+            f"Scene {scene_id}, {name}:",
+            action.rstrip(".") + ".",
+            "All parts move only through visible contact with the giant hands or their tools; no floating, teleporting, "
+            "duplicating, or disappearing unattached parts. Installed work remains installed.",
+            end_contract,
+        ]
+    )
 
 
 def add_continuity(building_type: str, scene_name: str, prompt: str, previous_scene: str | None) -> str:
     if not previous_scene:
         return prompt
     continuity = (
-        f" Continue directly from the exact final frame of the previous scene '{previous_scene}' without resetting the model, "
-        f"treat the previous scene ending as the new starting frame, preserve the same layout, scale, camera angle, and assembled state, "
-        f"and keep every visible part physically connected with no jump, no cut, and no scene restart."
+        f" Continue from the uploaded saved final-frame image of '{previous_scene}' as immutable visual ground truth. "
+        "Preserve the same layout, scale, camera angle, lighting, assembled state, and loose materials; do not create "
+        "a new establishing image or restart the scene."
     )
     return f"{prompt.rstrip('.')}.{continuity}"
 
@@ -66,13 +91,32 @@ def build_project(
     scenes = []
     previous_scene = None
     for i, name in enumerate(names):
-        prompt = build_scene_prompt(building_type, name, duration)
-        prompt = add_continuity(building_type, name, prompt, previous_scene)
-        scenes.append(asdict(Scene(id=i + 1, name=name, seconds=seconds, prompt=prompt)))
+        scene_id = i + 1
+        prompt = build_scene_prompt(building_type, name, duration, scene_id, len(names))
+        input_mode = "MASTER_IMAGE" if scene_id == 1 else "PREVIOUS_FINAL_FRAME"
+        input_asset = (
+            "scenes/scene_01_master.png"
+            if scene_id == 1
+            else f"scenes/scene_{scene_id - 1:02d}_last_frame.png"
+        )
+        scenes.append(
+            asdict(
+                Scene(
+                    id=scene_id,
+                    name=name,
+                    seconds=seconds,
+                    prompt=prompt,
+                    input_mode=input_mode,
+                    input_asset=input_asset,
+                    handoff_asset=f"scenes/scene_{scene_id:02d}_last_frame.png",
+                )
+            )
+        )
         previous_scene = name
     return {
         "topic": topic,
-        "topic_label": build_topic_label(building_type),
+        "topic_label": build_topic_label(building_type, build_topic_detail(building_type)),
+        "topic_detail": build_topic_detail(building_type),
         "building_type": building_type,
         "duration": duration,
         "format": format_,
@@ -92,7 +136,7 @@ def main() -> None:
         choices=get_supported_building_types(),
         help="Building template to use for scene structure and prompt wording.",
     )
-    parser.add_argument("--duration", type=int, choices=[30, 60], default=60)
+    parser.add_argument("--duration", type=int, choices=[30, 60], default=30)
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
     parser.add_argument("--variant", default="")
     parser.add_argument("--output", default="-", help="Output JSON path, or - for stdout")
