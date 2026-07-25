@@ -257,14 +257,14 @@ class NimClient:
 
         # Build provenance per Section 14.6
         provenance = Provenance(
-            source=ProvenanceSource.NIM if not warnings else ProvenanceSource.FALLBACK,
+            source=ProvenanceSource.NIM,
             provider="NVIDIA",
             model_id=nim_model_id,
             base_url_label=self._url_label,
             generated_at=datetime.utcnow(),
             request_id=req_id,
             source_revision=source_revision,
-            fallback_scene_ids=[w for w in warnings if "falling back" in w.lower()] if warnings else [],
+            fallback_scene_ids=[],
             validation_warnings=warnings,
         )
 

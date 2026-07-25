@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,127 +7,309 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="wrap" id="app">
-    <!-- Loading state -->
+  <div class="app" id="app">
+    <!-- Loading State -->
     <div class="loading-screen" id="loadingScreen" role="status" aria-live="polite">
       <div class="loading-spinner"></div>
-      <p>Loading Relay Runner...</p>
+      <p>Relay Runner 로딩 중...</p>
     </div>
 
     <!-- Main Application -->
-    <header class="hero" hidden>
-      <div class="card intro">
-        <div class="eyebrow">Miniature Timelapse</div>
-        <h1 id="heroTitle">Relay Runner — Generate, Execute, Complete</h1>
-        <p class="lede" id="heroLede">Pick a profile, build the relay plan, then execute scenes in order. Each scene unlocks only when its predecessor is confirmed complete.</p>
-        <div class="stats" id="stats"></div>
+    <header class="header" hidden id="header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🏗️</span>
+        <div>
+          <h1>Relay Runner</h1>
+          <span class="subtitle">Reference-Frame Relay v2.0</span>
+        </div>
       </div>
-      <div class="card launcher" id="launcherPanel">
-        <div class="grid" id="configGrid"></div>
-        <div class="field">
-          <label for="topic" id="topicLabel">Topic Label</label>
-          <input id="topic" type="text" placeholder="e.g., Korean hanok construction" />
-        </div>
-        <div class="field">
-          <label for="ideaSeed" id="ideaSeedLabel">Idea Seed (optional)</label>
-          <input id="ideaSeed" type="text" placeholder="Leave blank for auto-generation" />
-        </div>
-        <div class="field">
-          <label for="flowProfile" id="flowProfileLabel">Flow Execution Profile</label>
-          <select id="flowProfile"></select>
-        </div>
-        <div class="nim-section">
-          <h3>NVIDIA NIM Integration</h3>
-          <label class="toggle-row" for="nimEnabled">
-            <input id="nimEnabled" type="checkbox" />
-            <span>Generate prompts with NVIDIA NIM</span>
-          </label>
-          <div class="source-field-grid" id="nimFields" hidden>
-            <div class="source-field">
-              <label>Model</label>
-              <select id="nimModel"></select>
-            </div>
-            <div class="source-field">
-              <label>Base URL</label>
-              <input id="nimBaseUrl" type="url" placeholder="https://integrate.api.nvidia.com/v1" />
-            </div>
-            <div class="source-field wide">
-              <label>API Key</label>
-              <input id="nimApiKey" type="password" placeholder="Paste your NGC or NIM API key" />
-            </div>
-            <label class="toggle-row" for="nimRefinementPolicy">
-              <input id="nimRefinementPolicy" type="checkbox" checked />
-              <span>Refine prompts with NIM (mutable fields only)</span>
-            </label>
-          </div>
-        </div>
-        <div class="button-row">
-          <button class="primary" id="buildPlan">Build Relay Plan</button>
-          <button class="secondary" id="resumeProject" disabled>Resume Last Project</button>
-        </div>
-        <div class="loading-wrap" id="buildLoading" hidden>
-          <div class="loading-text" id="buildLoadingText">Building relay plan...</div>
-          <div class="loading-track" aria-hidden="true">
-            <div class="loading-bar"></div>
-          </div>
-        </div>
-        <div class="hint" id="buildHint">Select a profile and topic, then click Build Relay Plan.</div>
-        <div class="micro-note" id="buildStatus">Ready.</div>
+      <div class="header-actions">
+        <button class="btn-ghost" id="newProjectBtn" title="새 프로젝트">새 프로젝트</button>
+        <button class="btn-ghost" id="resumeProjectBtn" disabled title="마지막 프로젝트 이어하기">이어하기</button>
       </div>
     </header>
 
-    <!-- Relay Runner Workspace -->
-    <section class="workspace relay-runner" hidden id="relayRunner">
-      <div class="card panel relay-plan-panel">
-        <div class="panel-head">
-          <h2>Relay Plan <span id="planBadge" class="chip" hidden>Active</span></h2>
-          <div class="plan-actions">
-            <button class="secondary" id="copyAllBtn" title="Copy All (full canonical plan)">Copy All</button>
-            <button class="secondary" id="downloadJsonBtn" title="Download JSON">Download JSON</button>
-            <button class="secondary" id="newProjectBtn" title="Start New Project">New Project</button>
+    <main class="main" id="main">
+      <!-- Phase 1: Project Setup -->
+      <section class="phase phase-setup" id="phaseSetup" aria-labelledby="setupTitle">
+        <div class="phase-header">
+          <span class="phase-number">1</span>
+          <h2 id="setupTitle">프로젝트 설정</h2>
+          <p class="phase-desc">프로파일, 실행 프로파일, 기간을 선택하고 릴레이 플랜을 생성하세요</p>
+        </div>
+
+        <div class="setup-grid">
+          <!-- Profile Selection -->
+          <div class="setup-card">
+            <h3>워크플로우 프로파일</h3>
+            <p class="card-desc">작업할 미니어처 유형을 선택하세요</p>
+            <div class="profile-grid" id="profileGrid" role="radiogroup" aria-label="워크플로우 프로파일 선택"></div>
+            <input type="hidden" id="selectedProfile" />
+          </div>
+
+          <!-- Vehicle Category & Model Selection (shown when Vehicle Assembly selected) -->
+          <div class="setup-card" id="vehicleCard" hidden>
+            <h3>차량 상세 설정</h3>
+            <p class="card-desc">차량 카테고리와 모델을 선택하세요</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="vehicleCategory">카테고리</label>
+                <select id="vehicleCategory"></select>
+              </div>
+              <div class="field">
+                <label for="vehicleModel">모델</label>
+                <select id="vehicleModel"></select>
+              </div>
+            </div>
+            <input type="hidden" id="selectedVehicleCategory" />
+            <input type="hidden" id="selectedVehicleModel" />
+          </div>
+
+          <!-- Flow Execution Profile -->
+          <div class="setup-card">
+            <h3>Flow 실행 프로파일</h3>
+            <p class="card-desc">Google Flow에서 사용할 비디오 생성 모델</p>
+            <div class="exec-profile-list" id="execProfileList" role="radiogroup" aria-label="Flow 실행 프로파일 선택"></div>
+            <input type="hidden" id="selectedExecProfile" />
+          </div>
+
+          <!-- Duration & Format -->
+          <div class="setup-card">
+            <h3>영상 설정</h3>
+            <p class="card-desc">총 길이와 화면비를 설정하세요</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="duration">총 길이</label>
+                <select id="duration"></select>
+              </div>
+              <div class="field">
+                <label for="aspectRatio">화면비</label>
+                <select id="aspectRatio">
+                  <option value="9:16">9:16 (세로 / Shorts/Reels)</option>
+                  <option value="16:9">16:9 (가로 / YouTube)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Topic Input -->
+          <div class="setup-card topic-card">
+            <h3>주제 및 아이디어</h3>
+            <div class="field">
+              <label for="topic">주제 <span class="required" aria-hidden="true">*</span></label>
+              <input id="topic" type="text" placeholder="예: 한국 한옥 건축, 자동차 조립, 한지 공예, 김치찌개 요리" />
+            </div>
+            <div class="field">
+              <label for="ideaSeed">아이디어 시드 (선택)</label>
+              <input id="ideaSeed" type="text" placeholder="비워두면 자동 생성됨" />
+            </div>
+          </div>
+
+          <!-- Vehicle Subtype Selection (shown when vehicle.assembly selected) -->
+          <div class="setup-card vehicle-subtype-card" id="vehicleSubtypeCard" hidden>
+            <h3>차량 종류 및 모델 선택</h3>
+            <p class="card-desc">차량 조립 프로파일은 10가지 카테고리 중 하나를 선택하세요</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="vehicleCategory">차량 카테고리</label>
+                <select id="vehicleCategory">
+                  <option value="car">자동차 (Car)</option>
+                  <option value="motorcycle">오토바이 (Motorcycle)</option>
+                  <option value="airplane">비행기 (Airplane)</option>
+                  <option value="boat">보트/선박 (Boat)</option>
+                  <option value="agricultural">농기계 (Agricultural)</option>
+                  <option value="helicopter">헬리콥터 (Helicopter)</option>
+                  <option value="construction">건설장비 (Construction)</option>
+                  <option value="spaceship">우주선 (Spaceship)</option>
+                  <option value="tank">전차 (Tank)</option>
+                  <option value="bicycle">자전거 (Bicycle)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="vehicleModel">구체적 모델</label>
+                <select id="vehicleModel"></select>
+              </div>
+            </div>
+            <input type="hidden" id="selectedVehicleCategory" />
+            <input type="hidden" id="selectedVehicleModel" />
           </div>
         </div>
-        <div class="chips" id="planChips"></div>
-        <div class="template-box" id="planSummary"></div>
-        <textarea id="flowPack" class="readonly-output scroll-lock" spellcheck="false" readonly aria-label="Full canonical relay plan"></textarea>
-      </div>
-      <div class="card panel relay-execute-panel">
-        <div class="panel-head">
-          <h2>Scene Execution <span id="execBadge" class="chip" hidden>Running</span></h2>
-          <a class="panel-link" id="flowOpenLink" href="https://labs.google/fx/flow" target="_blank" rel="noreferrer noopener">Open Google Flow</a>
-        </div>
-        <div class="micro-note" id="execNote">Select a scene to begin execution.</div>
-        <div class="stepper" id="stepper" role="tablist" aria-label="Relay stepper"></div>
-        <div id="sceneDetail" class="scene-detail" aria-live="polite"></div>
-        <div class="toolbar" id="sceneToolbar">
-          <button class="secondary" id="copyMasterImageBtn" title="Copy Master Image Prompt" disabled>Copy Master Image Prompt</button>
-          <button class="secondary" id="copySceneVideoBtn" title="Copy Scene Video Prompt" disabled>Copy Scene Video Prompt</button>
-          <button class="secondary" id="copyFullSceneBtn" title="Copy Full Scene" disabled>Copy Full Scene</button>
-          <button class="primary cta-wide" id="confirmStepBtn" disabled>Confirm Step Complete</button>
-          <button class="secondary" id="resetRelayBtn" disabled>Reset Relay</button>
-        </div>
-      </div>
-    </section>
 
-    <!-- Scene Grid Panel (bottom) -->
-    <section class="workspace scene-grid-section" hidden id="sceneGridSection">
-      <div class="card panel">
-        <h2>Scene Timeline</h2>
-        <div class="scene-grid" id="sceneGrid" role="list" aria-label="Scene timeline"></div>
-      </div>
-      <div class="card panel">
-        <h2>Scene Preview</h2>
-        <div class="template-box focus-mode scene-preview-source" id="scenePreview">
-          <div class="template-title" id="scenePreviewTitle">Select a scene</div>
-          <div class="template-meta" id="scenePreviewBody">Click a scene card to inspect details.</div>
+        <!-- NIM Integration - Always Visible -->
+        <div class="setup-card nim-card" id="nimCard">
+          <div class="nim-header">
+            <h3>NVIDIA NIM 연동</h3>
+            <label class="toggle" for="nimEnabled">
+              <input type="checkbox" id="nimEnabled" />
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">프롬프트 생성에 NIM 사용</span>
+            </label>
+          </div>
+          <div class="nim-fields" id="nimFields" hidden>
+            <div class="field-row">
+              <div class="field">
+                <label for="nimModel">모델</label>
+                <select id="nimModel">
+                  <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
+                  <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="nimBaseUrl">API 엔드포인트</label>
+                <input id="nimBaseUrl" type="url" placeholder="https://integrate.api.nvidia.com/v1" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="nimApiKey">API 키</label>
+              <input id="nimApiKey" type="password" placeholder="NGC 또는 NIM API 키 입력" />
+            </div>
+            <label class="toggle inline" for="nimRefinementPolicy">
+              <input type="checkbox" id="nimRefinementPolicy" checked />
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">가변 필드만 NIM으로 정제 (불변 필드 보호)</span>
+            </label>
+          </div>
         </div>
-      </div>
-    </section>
+
+        <!-- Build Button -->
+        <div class="build-action">
+          <button class="btn-primary btn-lg" id="buildPlan" disabled>
+            <span class="btn-icon" aria-hidden="true">⚡</span>
+            <span>릴레이 플랜 생성</span>
+          </button>
+          <p class="build-hint" id="buildHint">왼쪽에서 프로파일을 선택하고 주제를 입력하세요</p>
+        </div>
+      </section>
+
+      <!-- Phase 2: Relay Plan Overview -->
+      <section class="phase phase-plan hidden" id="phasePlan" aria-labelledby="planTitle">
+        <div class="phase-header">
+          <span class="phase-number">2</span>
+          <h2 id="planTitle">릴레이 플랜 검토</h2>
+          <p class="phase-desc">생성된 씬 구성과 프롬프트를 확인하고 실행 단계로 진행하세요</p>
+        </div>
+
+        <div class="plan-overview">
+          <!-- Plan Summary -->
+          <div class="plan-summary">
+            <div class="plan-chips" id="planChips"></div>
+            <div class="plan-meta" id="planMeta"></div>
+          </div>
+
+          <!-- Scene Timeline -->
+          <div class="scene-timeline" id="sceneTimeline" role="list" aria-label="씬 타임라인"></div>
+
+          <!-- Full Plan Output -->
+          <div class="plan-output">
+            <div class="output-header">
+              <h3>전체 표준 플랜</h3>
+              <div class="output-actions">
+                <button class="btn-secondary" id="copyAllBtn">전체 복사</button>
+                <button class="btn-secondary" id="downloadJsonBtn">JSON 다운로드</button>
+              </div>
+            </div>
+            <textarea id="flowPack" class="readonly-output" spellcheck="false" readonly aria-label="전체 표준 릴레이 플랜"></textarea>
+          </div>
+
+          <!-- Proceed to Execute -->
+          <div class="proceed-action">
+            <button class="btn-primary btn-lg" id="proceedExecute">
+              <span class="btn-icon" aria-hidden="true">▶️</span>
+              <span>실행 단계로 진행</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Phase 3: Execution -->
+      <section class="phase phase-execute hidden" id="phaseExecute" aria-labelledby="executeTitle">
+        <div class="phase-header">
+          <span class="phase-number">3</span>
+          <h2 id="executeTitle">씬 실행</h2>
+          <p class="phase-desc">Google Flow에서 각 씬을 순차적으로 생성하고 완료를 확인하세요</p>
+        </div>
+
+        <div class="execute-layout">
+          <!-- Left: Stepper + Scene Grid -->
+          <aside class="execute-sidebar" id="executeSidebar">
+            <!-- Stepper -->
+            <div class="stepper-panel">
+              <div class="stepper-header">
+                <h3>릴레이 진행</h3>
+                <a href="https://labs.google/fx/flow" target="_blank" rel="noopener noreferrer" class="flow-link">
+                  <span class="flow-icon" aria-hidden="true">🌊</span>
+                  Flow 열기
+                </a>
+              </div>
+              <nav class="stepper" id="stepper" role="tablist" aria-label="릴레이 스테퍼"></nav>
+            </div>
+
+            <!-- Scene Grid -->
+            <div class="scene-grid-panel">
+              <h3>씬 타임라인</h3>
+              <div class="scene-grid-mini" id="sceneGridMini" role="list" aria-label="씬 미니 그리드"></div>
+            </div>
+          </aside>
+
+          <!-- Right: Active Scene Detail -->
+          <div class="execute-main">
+            <div class="scene-detail-panel" id="sceneDetailPanel">
+              <div class="scene-header" id="sceneHeader"></div>
+
+              <div class="scene-instruction" id="sceneInstruction" role="alert" aria-live="polite"></div>
+
+              <div class="action-buttons" id="actionButtons">
+                <button class="btn-secondary copy-btn" id="copyMasterBtn" title="Master Image Prompt 복사" disabled>
+                  <span class="btn-icon" aria-hidden="true">📋</span>
+                  Master Image Prompt
+                </button>
+                <button class="btn-secondary copy-btn" id="copyVideoBtn" title="Scene Video Prompt 복사" disabled>
+                  <span class="btn-icon" aria-hidden="true">📋</span>
+                  Scene Video Prompt
+                </button>
+                <button class="btn-secondary copy-btn" id="copyFullSceneBtn" title="Full Scene 복사" disabled>
+                  <span class="btn-icon" aria-hidden="true">📋</span>
+                  Full Scene
+                </button>
+                <button class="btn-primary btn-confirm" id="confirmStepBtn" disabled>
+                  <span class="btn-icon" aria-hidden="true">✓</span>
+                  <span id="confirmBtnText">완료 확인</span>
+                </button>
+                <button class="btn-danger" id="resetRelayBtn" disabled>릴레이 초기화</button>
+              </div>
+
+              <!-- Source / Target Prompts -->
+              <div class="prompt-panels">
+                <div class="prompt-panel">
+                  <div class="prompt-header">
+                    <h4>Video Prompt → Flow "Frames to Video"용</h4>
+                    <button class="btn-copy-small" data-target="videoPrompt">복사</button>
+                  </div>
+                  <pre id="videoPrompt" class="prompt-content"></pre>
+                </div>
+                <div class="prompt-panel" id="masterPromptPanel" hidden>
+                  <div class="prompt-header">
+                    <h4>Master Image Prompt (Scene 1만) → 정지 이미지 생성기용</h4>
+                    <button class="btn-copy-small" data-target="masterPrompt">복사</button>
+                  </div>
+                  <pre id="masterPrompt" class="prompt-content"></pre>
+                </div>
+              </div>
+
+              <div class="asset-info" id="assetInfo"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <footer class="footer">
       <p>Miniature Timelapse Relay Runner v2.0 · Spec: Reference-Frame Relay v2.0</p>
     </footer>
   </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
   <script type="module">
     import {
@@ -141,6 +323,7 @@
       serializeMasterImagePrompt,
       serializeSceneVideoPrompt,
       serializeFullScene,
+      serializeAssetRef,
       performCopyAction,
       createInitialRelayBranch,
       getNextActionableScene,
@@ -158,314 +341,343 @@
     } from './app.js';
 
     // ============================================================================
-    // Profile Registry (sync with src/profiles)
+    // Profile Registry & Execution Profiles
     // ============================================================================
-    const PROFILES = {
-      'architecture.korean': {
-        id: 'architecture.korean',
-        version: '2.0.0',
-        display_name: 'Architecture (Korean Hanok)',
-        workflow_mode: WorkflowMode.REFERENCE_FRAME_RELAY,
-        allowed_total_durations: [30, 60],
-        default_total_duration: 30,
-        clip_duration_seconds: 10,
-        scene_plans: {
-          30: [
-            { scene_id: 1, name: "Foundation and Walls", start_state: "compacted earth, stone footings, sill beams, columns, hanji frames", ordered_actions: ["place stone footings", "seat sill beams", "raise columns", "fit hanji frames"], end_state: "single-story timber wall frame complete", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
-            { scene_id: 2, name: "Roofing and Exterior", start_state: "Scene 1 final frame", ordered_actions: ["crossbeams", "purlins", "rafters", "eave supports", "giwa tiles", "hanji doors/windows"], end_state: "roof and exterior complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
-            { scene_id: 3, name: "Painting, Landscaping, and Reveal", start_state: "Scene 2 final frame", ordered_actions: ["wood finish", "dancheong on beam ends", "stone path", "low wall", "moss", "grass", "small pine", "remove tools"], end_state: "coherent hanok revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
-          ],
-          60: [
-            { scene_id: 1, name: "Foundation", start_state: "compacted earth", ordered_actions: ["tension guide strings", "place natural stone footings", "level footings", "seat sill beams"], end_state: "stone foundation and sill beams complete", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
-            { scene_id: 2, name: "Wall and Windows", start_state: "Scene 1 final frame", ordered_actions: ["raise columns", "mortise-and-tenon joints", "connect beams", "fit hanji door/window frames"], end_state: "single-story timber wall frame complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
-            { scene_id: 3, name: "Roofing", start_state: "Scene 2 final frame", ordered_actions: ["crossbeams", "purlins", "rafters", "eave supports", "giwa tiles row by row"], end_state: "traditional roof complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
-            { scene_id: 4, name: "Exterior Finishing", start_state: "Scene 3 final frame", ordered_actions: ["install hanji doors/windows", "finish exposed timber", "add wooden trim", "remove debris"], end_state: "roof and exterior complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
-            { scene_id: 5, name: "Painting and Weathering", start_state: "Scene 4 final frame", ordered_actions: ["protective wood finish", "restrained dancheong on beam ends", "preserve hanji and giwa colors"], end_state: "painted hanok shell complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
-            { scene_id: 6, name: "Landscaping and Reveal", start_state: "Scene 5 final frame", ordered_actions: ["stone path", "low wall", "moss", "grass", "small pine", "remove tools"], end_state: "coherent hanok revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
-          ]
-        },
-        identity_lock: "One coherent single-story Korean hanok with a rectangular timber bay plan, natural stone footings, warm post-and-beam woodwork, white hanji doors and windows, deep curved black giwa eaves, and restrained dancheong only on appropriate beam ends and eaves. Never a stone castle, Gothic church, European cottage, pagoda tower, palace tower, or fantasy fortress.",
-        style_bible: {
-          materials: { primary: ["wood", "stone"], secondary: ["moss"], tools: ["chisel", "trowel"] },
-          camera: { lens: "85mm", angle: "45", movement: "locked", distance: "fixed" },
-          lighting: { key: "soft daylight", fill: "ambient", mood: "warm", consistency: "locked" },
-          color_palette: ["warm wood", "terracotta", "stone gray"],
-          workspace: "compacted earth tray",
-          hands_rule: "giant human hands only",
-          motion_rule: "rapid procedural timelapse"
-        },
-        first_frame_prompt_factory: (topic, detail) => `Ultra realistic macro photography of a completely unstarted miniature Korean hanok construction site, an untouched compacted-earth tray with an empty rectangular footprint and taut guide strings, every natural stone footing, timber sill beam, timber column, white hanji frame, rafter, and black giwa roof tile still separate and neatly staged outside the footprint, no foundation or wall already built, no completed hanok visible, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers beginning the very first action by lifting one natural stone footing toward its marked position, tiny traditional measuring and woodworking tools, locked 85mm-equivalent macro camera, fixed 45-degree angle, unchanged subject scale and framing, 8K detail, soft daylight from camera-left, warm rim light, natural shadows, unchanged through every scene, shallow depth of field, Identity Lock: One coherent single-story Korean hanok with a rectangular timber bay plan, natural stone footings, warm post-and-beam woodwork, white hanji doors and windows, deep curved black giwa eaves, and restrained dancheong only on appropriate beam ends and eaves. Never a stone castle, Gothic church, European cottage, pagoda tower, palace tower, or fantasy fortress., ${topic} | ${detail}, scene: Foundation and Walls.`
-      },
-      'vehicle.assembly': {
-        id: 'vehicle.assembly',
-        version: '2.0.0',
-        display_name: 'Vehicle Assembly',
-        workflow_mode: WorkflowMode.SINGLE_CLIP_FROM_MASTER,
-        allowed_total_durations: [10],
-        default_total_duration: 10,
-        clip_duration_seconds: 10,
-        scene_plans: {
-          10: [
-            { scene_id: 1, name: "Complete Assembly", start_state: "all parts disassembled on workbench", ordered_actions: ["chassis", "powertrain", "body panels", "glass", "interior", "wheels", "trim"], end_state: "complete vehicle revealed", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE }
-          ]
-        },
-        identity_lock: "One coherent miniature vehicle with unchanged wheelbase, body silhouette, paint color, glass shape, and component layout throughout.",
-        style_bible: {
-          materials: { primary: ["metal", "plastic", "glass"], secondary: [], tools: ["tweezers", "mini screwdriver", "soft brush"] },
-          camera: { lens: "85mm", angle: "macro", movement: "locked", distance: "fixed" },
-          lighting: { key: "bright workshop", fill: "controlled", mood: "clean", consistency: "locked" },
-          color_palette: ["metallic silver", "black glass", "red accents"],
-          workspace: "wooden workbench",
-          hands_rule: "giant human hands only",
-          motion_rule: "rapid procedural timelapse"
-        },
-        first_frame_prompt_factory: (topic, detail) => `Hyper-realistic macro photo of 100% disassembled miniature vehicle parts neatly arranged on one untouched workbench, every component clearly separated, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, no part assembled yet, tweezers, mini screwdriver, soft brush, locked 85mm macro product camera, shallow depth of field, 8K product photo quality, bright workshop light with stable metal reflections, Identity Lock: One coherent miniature vehicle with an unchanged wheelbase, body silhouette, paint color, glass shape, and component layout., ${topic} | ${detail}, scene: Complete Assembly.`
-      }
-      // Additional profiles (home_decor, cooking) can be loaded dynamically or added here
-    };
+    const PROFILES = DEFAULT_PROFILES;
+
+    const EXECUTION_PROFILES = [
+      { id: 'flow.frames_first.10s', label: 'Frames to Video: First, 10s', provider: 'google_flow', clipDuration: 10 },
+      { id: 'flow.frames_then_video.10s', label: 'Frames then Video, 10s', provider: 'google_flow', clipDuration: 10 }
+    ];
 
     // ============================================================================
     // State
     // ============================================================================
     let currentProfileId = 'architecture.korean';
-    let currentScenePlans = [];
+    let currentExecProfileId = 'flow.frames_first.10s';
     let project = null;
     let relayBranch = null;
     let activeSceneIndex = 0;
-    let planSource = 'local'; // 'local' | 'nim'
+    let currentPhase = 'setup'; // 'setup' | 'plan' | 'execute'
 
     // DOM Elements
     const loadingScreen = document.getElementById('loadingScreen');
-    const hero = document.querySelector('.hero');
-    const relayRunner = document.getElementById('relayRunner');
-    const sceneGridSection = document.getElementById('sceneGridSection');
-    const configGrid = document.getElementById('configGrid');
+    const header = document.getElementById('header');
+    const main = document.getElementById('main');
+    const phaseSetup = document.getElementById('phaseSetup');
+    const phasePlan = document.getElementById('phasePlan');
+    const phaseExecute = document.getElementById('phaseExecute');
+    const profileGrid = document.getElementById('profileGrid');
+    const execProfileList = document.getElementById('execProfileList');
+    const durationEl = document.getElementById('duration');
+    const aspectRatioEl = document.getElementById('aspectRatio');
     const topicEl = document.getElementById('topic');
     const ideaSeedEl = document.getElementById('ideaSeed');
-    const flowProfileEl = document.getElementById('flowProfile');
+    const selectedProfileEl = document.getElementById('selectedProfile');
+    const selectedExecProfileEl = document.getElementById('selectedExecProfile');
     const buildPlanBtn = document.getElementById('buildPlan');
-    const resumeProjectBtn = document.getElementById('resumeProject');
-    const buildLoading = document.getElementById('buildLoading');
-    const buildLoadingText = document.getElementById('buildLoadingText');
     const buildHint = document.getElementById('buildHint');
-    const buildStatus = document.getElementById('buildStatus');
+    const nimEnabledEl = document.getElementById('nimEnabled');
+    const nimFields = document.getElementById('nimFields');
     const planChips = document.getElementById('planChips');
-    const planSummary = document.getElementById('planSummary');
+    const planMeta = document.getElementById('planMeta');
+    const sceneTimeline = document.getElementById('sceneTimeline');
     const flowPackEl = document.getElementById('flowPack');
-    const planBadge = document.getElementById('planBadge');
-    const execBadge = document.getElementById('execBadge');
-    const execNote = document.getElementById('execNote');
+    const proceedExecuteBtn = document.getElementById('proceedExecute');
     const stepperEl = document.getElementById('stepper');
-    const sceneDetailEl = document.getElementById('sceneDetail');
-    const sceneGridEl = document.getElementById('sceneGrid');
-    const scenePreviewEl = document.getElementById('scenePreview');
-    const scenePreviewTitle = document.getElementById('scenePreviewTitle');
-    const scenePreviewBody = document.getElementById('scenePreviewBody');
+    const sceneGridMini = document.getElementById('sceneGridMini');
+    const sceneHeader = document.getElementById('sceneHeader');
+    const sceneInstruction = document.getElementById('sceneInstruction');
+    const videoPromptEl = document.getElementById('videoPrompt');
+    const masterPromptEl = document.getElementById('masterPrompt');
+    const masterPromptPanel = document.getElementById('masterPromptPanel');
+    const assetInfoEl = document.getElementById('assetInfo');
+    const copyMasterBtn = document.getElementById('copyMasterBtn');
+    const copyVideoBtn = document.getElementById('copyVideoBtn');
+    const copyFullSceneBtn = document.getElementById('copyFullSceneBtn');
+    const confirmStepBtn = document.getElementById('confirmStepBtn');
+    const confirmBtnText = document.getElementById('confirmBtnText');
+    const resetRelayBtn = document.getElementById('resetRelayBtn');
     const copyAllBtn = document.getElementById('copyAllBtn');
     const downloadJsonBtn = document.getElementById('downloadJsonBtn');
     const newProjectBtn = document.getElementById('newProjectBtn');
-    const copyMasterImageBtn = document.getElementById('copyMasterImageBtn');
-    const copySceneVideoBtn = document.getElementById('copySceneVideoBtn');
-    const copyFullSceneBtn = document.getElementById('copyFullSceneBtn');
-    const confirmStepBtn = document.getElementById('confirmStepBtn');
-    const resetRelayBtn = document.getElementById('resetRelayBtn');
-    const nimEnabledEl = document.getElementById('nimEnabled');
-    const nimFields = document.getElementById('nimFields');
+    const resumeProjectBtn = document.getElementById('resumeProjectBtn');
     const nimModelEl = document.getElementById('nimModel');
     const nimBaseUrlEl = document.getElementById('nimBaseUrl');
     const nimApiKeyEl = document.getElementById('nimApiKey');
     const nimRefinementPolicyEl = document.getElementById('nimRefinementPolicy');
 
+    // Vehicle selection elements
+    const vehicleCard = document.getElementById('vehicleCard');
+    const vehicleCategoryEl = document.getElementById('vehicleCategory');
+    const vehicleModelEl = document.getElementById('vehicleModel');
+    const selectedVehicleCategoryEl = document.getElementById('selectedVehicleCategory');
+    const selectedVehicleModelEl = document.getElementById('selectedVehicleModel');
+
     // ============================================================================
     // Initialization
     // ============================================================================
     async function init() {
-      // Populate profile selector
-      for (const [id, profile] of Object.entries(PROFILES)) {
-        const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = `${profile.display_name} (${profile.workflow_mode})`;
-        if (id === currentProfileId) opt.selected = true;
-        flowProfileEl.appendChild(opt);
-      }
+      renderProfileGrid();
+      renderExecProfileList();
+      setupEventListeners();
+      checkResumeAvailability();
 
-      // Populate Flow profile selector
-      const opt = document.createElement('option');
-      opt.value = DEFAULT_FLOW_PROFILE.id;
-      opt.textContent = DEFAULT_FLOW_PROFILE.display_name;
-      opt.selected = true;
-      flowProfileEl.appendChild(opt);
+      loadingScreen.hidden = true;
+      header.hidden = false;
+      main.hidden = false;
+    }
 
-      // Populate NIM models
-      nimModelEl.innerHTML = `
-        <option value="meta/llama-3.1-8b-instruct">Llama 3.1 8B Instruct</option>
-        <option value="nvidia/nemotron-4-340b-instruct">Nemotron 4 340B Instruct</option>
-      `;
+    function setupEventListeners() {
+      // Profile selection
+      profileGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.profile-card');
+        if (card) selectProfile(card.dataset.profileId);
+      });
 
-      // Load persisted NIM settings
-      const storedBaseUrl = localStorage.getItem('miniature_timelapse_nim_base_url');
-      if (storedBaseUrl) nimBaseUrlEl.value = storedBaseUrl;
-      nimBaseUrlEl.addEventListener('input', () => localStorage.setItem('miniature_timelapse_nim_base_url', nimBaseUrlEl.value));
-
-      const storedApiKey = localStorage.getItem('miniature_timelapse_nim_api_key');
-      if (storedApiKey) nimApiKeyEl.value = storedApiKey;
-      nimApiKeyEl.addEventListener('input', () => localStorage.setItem('miniature_timelapse_nim_api_key', nimApiKeyEl.value));
+      // Exec profile selection
+      execProfileList.addEventListener('click', (e) => {
+        const item = e.target.closest('.exec-profile-item');
+        if (item) selectExecProfile(item.dataset.execProfileId);
+      });
 
       // NIM toggle
       nimEnabledEl.addEventListener('change', () => {
         nimFields.hidden = !nimEnabledEl.checked;
       });
 
-      // Duration selector in config grid
-      renderConfigGrid();
+      // Duration change
+      durationEl.addEventListener('change', validateSetup);
 
-      // Event listeners
-      flowProfileEl.addEventListener('change', (e) => {
-        currentProfileId = e.target.value;
-        renderConfigGrid();
-      });
+      // Topic input
+      topicEl.addEventListener('input', validateSetup);
+      ideaSeedEl.addEventListener('input', validateSetup);
 
+      // Build plan
       buildPlanBtn.addEventListener('click', buildRelayPlan);
-      resumeProjectBtn.addEventListener('click', resumeLastProject);
-      copyAllBtn.addEventListener('click', copyAllAction);
-      downloadJsonBtn.addEventListener('click', downloadJson);
-      newProjectBtn.addEventListener('click', startNewProject);
-      copyMasterImageBtn.addEventListener('click', () => copyAction(CopyAction.MASTER_IMAGE));
-      copySceneVideoBtn.addEventListener('click', () => copyAction(CopyAction.SCENE_VIDEO));
+
+      // Plan phase
+      proceedExecuteBtn.addEventListener('click', () => switchPhase('execute'));
+
+      // Execute phase
+      copyMasterBtn.addEventListener('click', () => copyAction(CopyAction.MASTER_IMAGE));
+      copyVideoBtn.addEventListener('click', () => copyAction(CopyAction.SCENE_VIDEO));
       copyFullSceneBtn.addEventListener('click', () => copyAction(CopyAction.FULL_SCENE));
       confirmStepBtn.addEventListener('click', confirmStep);
       resetRelayBtn.addEventListener('click', resetRelay);
+      copyAllBtn.addEventListener('click', () => copyAction(CopyAction.ALL));
+      downloadJsonBtn.addEventListener('click', downloadJson);
+      newProjectBtn.addEventListener('click', startNewProject);
+      resumeProjectBtn.addEventListener('click', resumeLastProject);
 
-      // Check for resumable project
-      const saved = loadProjectState();
-      if (saved) {
-        resumeProjectBtn.disabled = false;
+      // Copy buttons in prompt panels
+      document.querySelectorAll('.btn-copy-small').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const targetId = e.currentTarget.dataset.target;
+          const target = document.getElementById(targetId);
+          if (target) copyToClipboard(target.textContent);
+        });
+      });
+
+      // NIM settings persistence
+      nimBaseUrlEl.addEventListener('input', () =>
+        localStorage.setItem('miniature_timelapse_nim_base_url', nimBaseUrlEl.value));
+      nimApiKeyEl.addEventListener('input', () =>
+        localStorage.setItem('miniature_timelapse_nim_api_key', nimApiKeyEl.value));
+
+      const storedBaseUrl = localStorage.getItem('miniature_timelapse_nim_base_url');
+      if (storedBaseUrl) nimBaseUrlEl.value = storedBaseUrl;
+      const storedApiKey = localStorage.getItem('miniature_timelapse_nim_api_key');
+      if (storedApiKey) nimApiKeyEl.value = storedApiKey;
+
+      // Stepper click delegation
+      stepperEl.addEventListener('click', (e) => {
+        const pill = e.target.closest('.step-pill');
+        if (pill && !pill.classList.contains('locked')) {
+          const idx = parseInt(pill.dataset.sceneIndex, 10);
+          if (!isNaN(idx)) setActiveScene(idx);
+        }
+      });
+
+      // Scene grid mini click
+      sceneGridMini.addEventListener('click', (e) => {
+        const card = e.target.closest('.scene-card-mini');
+        if (card && !card.classList.contains('locked')) {
+          const idx = parseInt(card.dataset.sceneIndex, 10);
+          if (!isNaN(idx)) setActiveScene(idx);
+        }
+      });
+    }
+
+    // ============================================================================
+    // Rendering Functions
+    // ============================================================================
+    function renderProfileGrid() {
+      profileGrid.innerHTML = '';
+      for (const [id, profile] of Object.entries(PROFILES)) {
+        const isSelected = id === currentProfileId;
+        const workflowLabel = profile.workflow_mode === WorkflowMode.REFERENCE_FRAME_RELAY
+          ? '릴레이 (순차)'
+          : '싱글 클립';
+        const durations = profile.allowed_total_durations.join(' / ');
+
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `profile-card${isSelected ? ' selected' : ''}`;
+        card.dataset.profileId = id;
+        card.setAttribute('role', 'radio');
+        card.setAttribute('aria-checked', isSelected);
+        card.innerHTML = `
+          <div class="profile-icon" aria-hidden="true">${getProfileIcon(id)}</div>
+          <div class="profile-info">
+            <h4>${profile.display_name}</h4>
+            <p class="profile-meta">${workflowLabel} · ${durations}s · ${profile.clip_duration_seconds}s/clips</p>
+            <p class="profile-desc">${getProfileDescription(id)}</p>
+          </div>
+          ${isSelected ? '<span class="profile-check" aria-hidden="true">✓</span>' : ''}
+        `;
+        profileGrid.appendChild(card);
       }
-
-      // Hide loading screen
-      loadingScreen.hidden = true;
-      hero.hidden = false;
+      selectedProfileEl.value = currentProfileId;
+      updateDurationOptions();
+      validateSetup();
     }
 
-    // ============================================================================
-    // Config Grid Rendering
-    // ============================================================================
-    function renderConfigGrid() {
+    function renderExecProfileList() {
+      execProfileList.innerHTML = '';
+      for (const ep of EXECUTION_PROFILES) {
+        const isSelected = ep.id === currentExecProfileId;
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = `exec-profile-item${isSelected ? ' selected' : ''}`;
+        item.dataset.execProfileId = ep.id;
+        item.setAttribute('role', 'radio');
+        item.setAttribute('aria-checked', isSelected);
+        item.innerHTML = `
+          <span class="exec-profile-label">${ep.label}</span>
+          <span class="exec-profile-meta">${ep.provider} · ${ep.clipDuration}s</span>
+          ${isSelected ? '<span class="exec-profile-check" aria-hidden="true">✓</span>' : ''}
+        `;
+        execProfileList.appendChild(item);
+      }
+      selectedExecProfileEl.value = currentExecProfileId;
+    }
+
+    function updateDurationOptions() {
       const profile = PROFILES[currentProfileId];
-      const durations = profile.allowed_total_durations;
-      configGrid.innerHTML = `
-        <div class="field">
-          <label for="duration">Total Duration</label>
-          <select id="duration">
-            ${durations.map(d => `<option value="${d}" ${d === profile.default_total_duration ? 'selected' : ''}>${d} seconds</option>`).join('')}
-          </select>
-        </div>
-        <div class="field">
-          <label for="format">Aspect Ratio</label>
-          <select id="format">
-            <option value="9:16" selected>9:16 (Vertical)</option>
-            <option value="16:9">16:9 (Horizontal)</option>
-          </select>
-        </div>
-      `;
+      durationEl.innerHTML = profile.allowed_total_durations.map(d =>
+        `<option value="${d}" ${d === profile.default_total_duration ? 'selected' : ''}>${d}초</option>`
+      ).join('');
+    }
+
+    function validateSetup() {
+      const hasTopic = topicEl.value.trim().length > 0;
+      buildPlanBtn.disabled = !hasTopic;
+      buildHint.textContent = hasTopic ? '준비 완료 - 릴레이 플랜 생성' : '주제를 입력하세요';
+    }
+
+    function selectProfile(profileId) {
+      currentProfileId = profileId;
+      renderProfileGrid();
+    }
+
+    function selectExecProfile(execProfileId) {
+      currentExecProfileId = execProfileId;
+      renderExecProfileList();
+    }
+
+    function getProfileIcon(profileId) {
+      const icons = {
+        'architecture.korean': '🏯',
+        'vehicle.assembly': '🚗',
+        'home_decor.diy': '🪟',
+        'cooking.miniature': '🍲'
+      };
+      return icons[profileId] || '📦';
+    }
+
+    function getProfileDescription(profileId) {
+      const descs = {
+        'architecture.korean': '한옥 건축 과정 - 기초부터 조경까지 단계별 릴레이 (30s/60s)',
+        'vehicle.assembly': '차량 조립 공정 - 섀시부터 완성까지 단계별 릴레이 (30s/60s)',
+        'home_decor.diy': '한국 전통 공예 DIY - 한지/자개/매듭 공예 릴레이 (30s/60s)',
+        'cooking.miniature': '미니어처 요리 - 손질/조리/플레이팅 릴레이 (30s/60s)'
+      };
+      return descs[profileId] || '';
     }
 
     // ============================================================================
-    // Project Building
+    // Phase Switching
+    // ============================================================================
+    function switchPhase(phase) {
+      currentPhase = phase;
+      phaseSetup.hidden = phase !== 'setup';
+      phasePlan.hidden = phase !== 'plan';
+      phaseExecute.hidden = phase !== 'execute';
+
+      if (phase === 'execute') {
+        renderStepper();
+        renderSceneGridMini();
+        setActiveScene(activeSceneIndex);
+      }
+    }
+
+    // ============================================================================
+    // Build Relay Plan
     // ============================================================================
     async function buildRelayPlan() {
+      const profile = PROFILES[currentProfileId];
+      const duration = parseInt(durationEl.value, 10);
+      const aspectRatio = aspectRatioEl.value;
       const topic = topicEl.value.trim();
-      if (!topic) {
-        buildStatus.textContent = 'Please enter a topic label.';
-        return;
-      }
+      const ideaSeed = ideaSeedEl.value.trim() || undefined;
+      const nimEnabled = nimEnabledEl.checked;
 
-      setBuildingState(true);
-      buildLoadingText.textContent = 'Building relay plan...';
-      buildStatus.textContent = 'Building deterministic relay plan...';
+      buildPlanBtn.disabled = true;
+      buildHint.textContent = '릴레이 플랜 생성 중...';
 
-      try {
-        const profile = PROFILES[currentProfileId];
-        const duration = parseInt(document.getElementById('duration').value);
-        const format = document.getElementById('format').value;
-        const ideaSeed = ideaSeedEl.value.trim() || crypto.randomUUID().slice(0, 8);
-        const scenePlans = profile.scene_plans[duration] || profile.scene_plans[profile.default_total_duration];
+      // Get scene plans for duration
+      const scenePlans = profile.scene_plans[duration] || profile.scene_plans[30];
 
-        currentScenePlans = scenePlans;
-
-        // Build Project domain object
-        project = buildProject(profile, topic, duration, format, ideaSeed, scenePlans);
-
-        // Compute source revision
-        project.source_revision = await computeSourceRevision(projectToSourceDraft(project));
-
-        // Create initial relay branch
-        relayBranch = createInitialRelayBranch(project);
-
-        // Save project state
-        saveProjectState(project);
-
-        // Switch to relay runner UI
-        showRelayRunner();
-
-        buildStatus.textContent = 'Relay plan built successfully.';
-        showToast('Relay plan built — Scene 1 ready for Master Image', 'success');
-      } catch (err) {
-        console.error('Build failed:', err);
-        buildStatus.textContent = `Error: ${err.message}`;
-        showToast(`Build failed: ${err.message}`, 'error');
-      } finally {
-        setBuildingState(false);
-      }
-    }
-
-    function buildProject(profile, topic, duration, format, ideaSeed, scenePlans) {
-      const scenes = scenePlans.map((sp, i) => ({
-        id: sp.scene_id,
-        name: sp.name,
-        input_mode: sp.input_mode,
-        asset_ref: {
-          logical_id: i === 0 ? `scene_${String(sp.scene_id).padStart(2, '0')}_master` : `scene_${String(sp.scene_id - 1).padStart(2, '0')}_last_frame`,
-          kind: 'image',
-          scope: 'scene',
-          flow_asset_label: i === 0 ? `Scene ${sp.scene_id} master image` : `Scene ${sp.scene_id - 1} final frame`,
-          local_path: i === 0 ? `scenes/scene_${String(sp.scene_id).padStart(2, '0')}_master.png` : `scenes/scene_${String(sp.scene_id - 1).padStart(2, '0')}_last_frame.png`,
-          source_scene_id: i === 0 ? sp.scene_id : sp.scene_id - 1,
-          confirmed_by_user: false
-        },
-        first_frame_prompt: i === 0 ? profile.first_frame_prompt_factory(topic, `${topic} | ${profile.style_bible.materials?.primary?.join(', ') || ''} | ${profile.style_bible.camera?.lens || ''} | ${profile.style_bible.lighting?.key || ''}`) : '',
-        video_prompt: buildVideoPrompt(profile, sp, duration),
-        template_exclusions: sp.forbidden_changes,
-        negative_prompt: IMMUTABLE_NEGATIVE,
-        clip_duration_seconds: profile.clip_duration_seconds,
-        lineage_revision: '',
-        status: SceneStatus.LOCKED
-      }));
-
-      const provenance = {
-        source: 'local_planner',
-        provider: 'local',
-        model_id: profile.id,
-        base_url_label: 'local',
-        generated_at: new Date().toISOString(),
-        request_id: crypto.randomUUID(),
-        source_revision: ''
-      };
-
-      return {
-        schema_version: '2.0',
-        topic,
-        topic_label: `${profile.display_name} - ${topic}`,
-        genre: 'architecture',
-        subtype: 'hanok',
+      // Build project object
+      project = {
         profile_id: profile.id,
         profile_version: profile.version,
+        profile_display_name: profile.display_name,
         workflow_mode: profile.workflow_mode,
+        topic,
+        topic_label: topic,
+        genre: profile.id.split('.')[0],
+        subtype: profile.id.split('.')[1],
         duration_seconds: duration,
         clip_duration_seconds: profile.clip_duration_seconds,
-        aspect_ratio: format,
+        aspect_ratio: aspectRatio,
+        scene_count: scenePlans.length,
         style_bible: profile.style_bible,
-        derived_fields: {},
+        identity_lock: profile.identity_lock,
+        negative_prompt_base: profile.negative_prompt_base || IMMUTABLE_NEGATIVE,
+        template_exclusions: 'text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures',
+        flow_execution_profile_id: currentExecProfileId,
+        nim_enabled: nimEnabled,
+        nim_model_id: nimEnabled ? nimModelEl.value : undefined,
+        nim_refinement_policy: nimEnabled ? (nimRefinementPolicyEl.checked ? 'mutable_only' : 'all') : undefined,
+        provenance: { source: 'local' },
+        scenes: []
+      };
+
+      // Compute source revision
+      const sourceDraft = {
+        profile_id: project.profile_id,
+        profile_version: project.profile_version,
+        workflow_mode: project.workflow_mode,
+        topic: project.topic,
+        genre: project.genre,
+        subtype: project.subtype,
+        topic_label: project.topic_label,
+        duration_seconds: project.duration_seconds,
+        clip_duration_seconds: project.clip_duration_seconds,
+        aspect_ratio: project.aspect_ratio,
+        style_bible: project.style_bible,
         scene_plans: scenePlans.map(sp => ({
           scene_id: sp.scene_id,
           name: sp.name,
@@ -475,299 +687,339 @@
           forbidden_changes: sp.forbidden_changes,
           input_mode: sp.input_mode
         })),
-        scene_count: scenePlans.length,
-        source_revision: '',
-        flow_execution_profile_id: DEFAULT_FLOW_PROFILE.id,
-        nim_enabled: nimEnabledEl.checked,
-        nim_model_id: nimModelEl.value,
-        nim_refinement_policy: nimRefinementPolicyEl.checked ? 'mutable_only' : 'none',
-        narration: null,
+        narration: ideaSeed,
         idea_seed: ideaSeed,
-        provenance,
-        relay_branch: null,
-        scenes
-      };
-    }
-
-    function buildVideoPrompt(profile, scenePlan, duration) {
-      const isFinal = scenePlan.scene_id === currentScenePlans.length;
-      const inputContract = scenePlan.scene_id === 1
-        ? 'Start from the uploaded approved master image. The opening frame must match the uploaded image exactly before the hands begin moving.'
-        : `Start from the uploaded file scenes/scene_${String(scenePlan.scene_id - 1).padStart(2, '0')}_last_frame.png, the exact saved final frame from Scene ${scenePlan.scene_id - 1}. Treat it as immutable visual ground truth. The opening frame must match it exactly before motion begins; do not generate a new first frame.`;
-      const finish = isFinal
-        ? 'After construction is complete, the hands leave the frame. Hold the completed subject, then perform one subtle cinematic pull-back without changing the subject design.'
-        : `End on a clean, stable, motionless hold for the final 0.5 seconds. Keep every installed part, tool, loose material, camera parameter, and light direction unchanged so this exact frame can be saved as scenes/scene_${String(scenePlan.scene_id).padStart(2, '0')}_last_frame.png and reused as the next scene input.`;
-
-      const audio = 'Detailed tool and material ASMR only, no dialogue and no background music.';
-
-      return [
-        `Identity Lock: ${profile.identity_lock}`,
-        inputContract,
-        '10-second hyper-realistic macro timelapse, giant human hands only; no miniature people, tiny workers, human figures, faces, characters, or full bodies.',
-        `Camera: ${profile.style_bible.camera?.lens || '85mm'}, ${profile.style_bible.camera?.angle || '45'}°, ${profile.style_bible.camera?.movement || 'locked'}, ${profile.style_bible.camera?.distance || 'fixed'}. Lighting: ${profile.style_bible.lighting?.key || 'soft daylight'}. Color palette: ${profile.style_bible.color_palette?.join(', ') || 'warm wood, terracotta, stone gray'}. Materials: ${JSON.stringify(profile.style_bible.materials?.primary || ['wood', 'stone'])}.`,
-        'Rapid procedural timelapse with fast hand motion in one locked camera composition; no camera cuts, no new establishing shot, no workspace replacement.',
-        scenePlan.ordered_actions.map(a => `- ${a}`).join('\n'),
-        'Every part moves only through visible contact with the hands or their tools; no floating, teleporting, duplication, or unexplained disappearance. Installed work remains installed.',
-        audio,
-        finish
-      ].join(' ');
-    }
-
-    function projectToSourceDraft(project) {
-      return {
-        profile_id: project.profile_id,
-        profile_version: project.profile_version,
-        workflow_mode: project.workflow_mode,
-        topic: project.topic,
-        genre: project.genre,
-        subtype: project.subtype,
-        topic_label: project.topic_label,
-        model_name: '',
-        dish_name: '',
-        craft_name: '',
-        duration_seconds: project.duration_seconds,
-        clip_duration_seconds: project.clip_duration_seconds,
-        aspect_ratio: project.aspect_ratio,
-        style_bible: project.style_bible,
-        derived_fields: project.derived_fields,
-        scene_plans: project.scene_plans,
-        narration: project.narration,
-        idea_seed: project.idea_seed,
         flow_execution_profile_id: project.flow_execution_profile_id,
         nim_enabled: project.nim_enabled,
         nim_model_id: project.nim_model_id,
         nim_refinement_policy: project.nim_refinement_policy
       };
+
+      project.source_revision = await computeSourceRevision(sourceDraft);
+
+      // Build scenes with prompts
+      for (let i = 0; i < scenePlans.length; i++) {
+        const sp = scenePlans[i];
+        const isFirst = i === 0;
+
+        const firstFramePrompt = isFirst
+          ? profile.first_frame_prompt_factory(topic, ideaSeed || '')
+          : '';
+
+        const videoPrompt = profile.scene_prompt_factory
+          ? profile.scene_prompt_factory(topic, ideaSeed || '', sp, i + 1)
+          : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Identity: ${profile.identity_lock}`;
+
+        const assetRef = {
+          logical_id: `scene_${i + 1}_final`,
+          kind: 'frame',
+          scope: 'project',
+          flow_asset_label: `Scene ${i + 1} Final Frame`,
+          local_path: `output/scene_${i + 1}_final.png`,
+          source_scene_id: isFirst ? undefined : i,
+          confirmed_by_user: false,
+          confirmed_at: null,
+          content_hash: null
+        };
+
+        project.scenes.push({
+          id: i + 1,
+          name: sp.name,
+          input_mode: sp.input_mode,
+          forbidden_changes: sp.forbidden_changes,
+          start_state: sp.start_state,
+          ordered_actions: sp.ordered_actions,
+          end_state: sp.end_state,
+          first_frame_prompt: firstFramePrompt,
+          video_prompt: videoPrompt,
+          template_exclusions: project.template_exclusions,
+          asset_ref: assetRef
+        });
+      }
+
+      // Create initial relay branch
+      relayBranch = createInitialRelayBranch(project);
+      project.relay_branch = relayBranch;
+
+      // Save
+      saveProjectState(project);
+
+      // Render plan phase
+      renderPlanPhase();
+      switchPhase('plan');
     }
 
     // ============================================================================
-    // Relay Runner UI
+    // Plan Phase Rendering
     // ============================================================================
-    function showRelayRunner() {
-      hero.hidden = true;
-      relayRunner.hidden = false;
-      sceneGridSection.hidden = false;
-
-      renderPlanHeader();
-      renderStepper();
-      renderSceneGrid();
-      selectScene(0);
-    }
-
-    function renderPlanHeader() {
+    function renderPlanPhase() {
+      // Chips
       const profile = PROFILES[currentProfileId];
-      planChips.innerHTML = [
-        `Profile: ${profile.display_name}`,
-        `Workflow: ${project.workflow_mode}`,
-        `Duration: ${project.duration_seconds}s (${project.scene_count} scenes × ${project.clip_duration_seconds}s)`,
-        `Aspect: ${project.aspect_ratio}`,
-        `Source: ${planSource === 'nim' ? 'NIM' : 'Local'}`,
-        `Revision: ${project.source_revision.slice(0, 16)}...`
-      ].map(t => `<span class="chip">${t}</span>`).join('');
-
-      planBadge.hidden = false;
-
-      planSummary.innerHTML = `
-        <div class="template-title">${project.topic_label}</div>
-        <div class="template-meta">
-          <div><strong>Identity Lock:</strong> ${profile.identity_lock}</div>
-          <div><strong>Materials:</strong> ${JSON.stringify(profile.style_bible.materials?.primary || [])}</div>
-          <div><strong>Camera:</strong> ${profile.style_bible.camera?.lens || ''}mm, ${profile.style_bible.camera?.angle || ''}°, ${profile.style_bible.camera?.movement || ''}</div>
-          <div><strong>Lighting:</strong> ${profile.style_bible.lighting?.key || ''}, ${profile.style_bible.lighting?.mood || ''}</div>
-          <div><strong>Palette:</strong> ${profile.style_bible.color_palette?.join(', ') || ''}</div>
-          <div><strong>Workspace:</strong> ${profile.style_bible.workspace || ''}</div>
-          <div><strong>Hands Rule:</strong> ${profile.style_bible.hands_rule || ''}</div>
-        </div>
+      const execProfile = EXECUTION_PROFILES.find(e => e.id === currentExecProfileId);
+      planChips.innerHTML = `
+        <span class="chip chip-profile">${profile.display_name}</span>
+        <span class="chip chip-workflow">${project.workflow_mode}</span>
+        <span class="chip chip-duration">${project.duration_seconds}s</span>
+        <span class="chip chip-clips">${project.scene_count} clips × ${project.clip_duration_seconds}s</span>
+        <span class="chip chip-ratio">${project.aspect_ratio}</span>
+        <span class="chip chip-exec">${execProfile?.label || currentExecProfileId}</span>
+        ${project.nim_enabled ? '<span class="chip chip-nim">NIM Enabled</span>' : ''}
       `;
 
+      // Meta
+      planMeta.innerHTML = `
+        <div class="meta-item"><strong>주제:</strong> ${project.topic}</div>
+        ${project.narration ? `<div class="meta-item"><strong>아이디어 시드:</strong> ${project.narration}</div>` : ''}
+        <div class="meta-item"><strong>Source Revision:</strong> <code>${project.source_revision}</code></div>
+        <div class="meta-item"><strong>워크플로우:</strong> ${project.workflow_mode} (${project.scene_count} 씬)</div>
+      `;
+
+      // Scene Timeline
+      sceneTimeline.innerHTML = project.scenes.map((scene, i) => `
+        <div class="timeline-scene" data-index="${i}">
+          <div class="timeline-marker">
+            <span class="scene-number">${i + 1}</span>
+            <span class="timeline-line" ${i === project.scenes.length - 1 ? 'style="display:none"' : ''}></span>
+          </div>
+          <div class="timeline-content">
+            <h4>${scene.name}</h4>
+            <div class="timeline-meta">
+              <span class="input-mode-badge">${scene.input_mode}</span>
+              <span>입력: ${scene.asset_ref?.flow_asset_label || 'pending'}</span>
+            </div>
+            <p class="timeline-actions">${scene.ordered_actions.join(' → ')}</p>
+          </div>
+        </div>
+      `).join('');
+
+      // Full plan output
       flowPackEl.value = serializeFullPlan(project);
     }
 
+    // ============================================================================
+    // Execute Phase Rendering
+    // ============================================================================
     function renderStepper() {
-      stepperEl.innerHTML = '';
-      project.scenes.forEach((scene, i) => {
-        const status = relayBranch.scene_statuses[String(scene.id)] || SceneStatus.LOCKED;
+      stepperEl.innerHTML = project.scenes.map((scene, i) => {
+        const status = relayBranch.scene_statuses[String(scene.id)];
         const isActive = i === activeSceneIndex;
-        const isActionable = [SceneStatus.AWAITING_MASTER_IMAGE, SceneStatus.AWAITING_PREVIOUS_FRAME, SceneStatus.VIDEO_READY].includes(status);
+        const isComplete = [SceneStatus.CONFIRMED, SceneStatus.COMPLETE].includes(status);
+        const isLocked = status === SceneStatus.LOCKED;
+        const canClick = !isLocked && !isComplete;
 
-        const pill = document.createElement('button');
-        pill.className = `step-pill ${getSceneStatusBadgeClass(status)} ${isActive ? 'active' : ''} ${!isActionable && i !== activeSceneIndex ? 'locked' : ''}`;
-        pill.setAttribute('role', 'tab');
-        pill.setAttribute('aria-selected', isActive);
-        pill.setAttribute('aria-disabled', !isActionable && i !== activeSceneIndex);
-        pill.innerHTML = `
-          <span class="step-num">${i + 1}</span>
-          <span class="step-name">${scene.name}</span>
-          <span class="step-status">${getSceneStatusLabel(status).split(' ').slice(1).join(' ')}</span>
+        return `
+          <button class="step-pill${isActive ? ' active' : ''}${isComplete ? ' complete' : ''}${isLocked ? ' locked' : ''}"
+                  data-scene-index="${i}"
+                  role="tab"
+                  aria-selected="${isActive}"
+                  ${!canClick ? 'disabled' : ''}
+                  title="${getStepTooltip(status, scene)}">
+            <span class="step-num">${i + 1}</span>
+            <span class="step-label">${scene.name}</span>
+            <span class="step-status">${getStatusShortLabel(status)}</span>
+          </button>
         `;
-        pill.addEventListener('click', () => {
-          if (isActionable || isActive) selectScene(i);
-        });
-        stepperEl.appendChild(pill);
-      });
+      }).join('');
     }
 
-    function renderSceneGrid() {
-      sceneGridEl.innerHTML = '';
-      project.scenes.forEach((scene, i) => {
-        const status = relayBranch.scene_statuses[String(scene.id)] || SceneStatus.LOCKED;
+    function renderSceneGridMini() {
+      sceneGridMini.innerHTML = project.scenes.map((scene, i) => {
+        const status = relayBranch.scene_statuses[String(scene.id)];
         const isActive = i === activeSceneIndex;
+        const isLocked = status === SceneStatus.LOCKED;
+        const isComplete = [SceneStatus.CONFIRMED, SceneStatus.COMPLETE].includes(status);
 
-        const card = document.createElement('button');
-        card.className = `scene-card ${getSceneStatusClass(status)} ${isActive ? 'active' : ''}`;
-        card.setAttribute('role', 'listitem');
-        card.setAttribute('aria-current', isActive ? 'true' : 'false');
-        card.disabled = status === SceneStatus.LOCKED && !isActive;
-        card.innerHTML = `
-          <div class="scene-name">Scene ${scene.id}: ${scene.name}</div>
-          <div class="scene-status"><span class="state-badge ${getSceneStatusBadgeClass(status)}">${getSceneStatusLabel(status)}</span></div>
-          <div class="scene-asset">Input: ${scene.asset_ref?.logical_id || 'pending'}</div>
-          ${scene.asset_ref?.local_path ? `<div class="scene-asset">Local: ${scene.asset_ref.local_path}</div>` : ''}
+        return `
+          <div class="scene-card-mini${isActive ? ' active' : ''}${isLocked ? ' locked' : ''}${isComplete ? ' complete' : ''}"
+               data-scene-index="${i}"
+               role="listitem"
+               aria-current="${isActive ? 'true' : 'false'}">
+            <span class="mini-num">${i + 1}</span>
+            <span class="mini-name">${scene.name}</span>
+            <span class="mini-status status-${status.toLowerCase()}">${getStatusShortLabel(status)}</span>
+          </div>
         `;
-        card.addEventListener('click', () => selectScene(i));
-        sceneGridEl.appendChild(card);
-      });
+      }).join('');
     }
 
-    function selectScene(index) {
+    function setActiveScene(index) {
       if (index < 0 || index >= project.scenes.length) return;
       activeSceneIndex = index;
       renderStepper();
-      renderSceneGrid();
+      renderSceneGridMini();
       renderSceneDetail();
     }
 
     function renderSceneDetail() {
       const scene = project.scenes[activeSceneIndex];
-      const status = relayBranch.scene_statuses[String(scene.id)] || SceneStatus.LOCKED;
-      const isActionable = [SceneStatus.AWAITING_MASTER_IMAGE, SceneStatus.AWAITING_PREVIOUS_FRAME, SceneStatus.VIDEO_READY].includes(status);
+      const status = relayBranch.scene_statuses[String(scene.id)];
       const isFirstScene = activeSceneIndex === 0;
-      const profile = PROFILES[currentProfileId];
-
-      execNote.textContent = getSceneInstruction(status, scene, isFirstScene);
-      execBadge.hidden = false;
-      execBadge.textContent = getSceneStatusLabel(status);
-      execBadge.className = `chip ${getSceneStatusBadgeClass(status)}`;
-
-      // Determine available copy actions
-      const canCopyMaster = isFirstScene;
-      const canCopyVideo = status === SceneStatus.VIDEO_READY || status === SceneStatus.CONFIRMED || status === SceneStatus.COMPLETE;
-      const canCopyFull = true;
-
-      copyMasterImageBtn.disabled = !canCopyMaster;
-      copySceneVideoBtn.disabled = !canCopyVideo;
-      copyFullSceneBtn.disabled = !canCopyFull;
-
-      // Confirm/Advance button
-      if (status === SceneStatus.VIDEO_READY) {
-        confirmStepBtn.disabled = false;
-        confirmStepBtn.textContent = 'Confirm Video Complete → Advance';
-      } else if (status === SceneStatus.CONFIRMED) {
-        confirmStepBtn.disabled = false;
-        confirmStepBtn.textContent = 'Mark Scene Complete → Unlock Next';
-      } else if (status === SceneStatus.COMPLETE) {
-        confirmStepBtn.disabled = true;
-        confirmStepBtn.textContent = 'Scene Complete';
-      } else {
-        confirmStepBtn.disabled = true;
-        confirmStepBtn.textContent = getSceneInstruction(status, scene, isFirstScene).split('\n')[0];
-      }
-
-      resetRelayBtn.disabled = false;
-
-      // Scene detail panel
-      const assetRef = scene.asset_ref;
-      const assetStr = assetRef ? serializeAssetRef(assetRef) : 'none';
       const nextScene = project.scenes[activeSceneIndex + 1];
 
-      sceneDetailEl.innerHTML = `
-        <div class="scene-frame-shell ${status === SceneStatus.COMPLETE || status === SceneStatus.CONFIRMED ? 'applied-shell' : ''}">
-          <div class="template-title">Scene ${scene.id}: ${scene.name} <span class="scene-mini-badge ${['VIDEO_READY', 'CONFIRMED', 'COMPLETE'].includes(status) ? 'applied' : 'source'}">${getSceneStatusLabel(status)}</span></div>
-          <div class="preview-note focus-spot">
-            <strong>Profile:</strong> ${profile.display_name} ·
-            <strong>Workflow:</strong> ${project.workflow_mode} ·
-            <strong>Input Mode:</strong> ${scene.input_mode}
-          </div>
+      // Header
+      sceneHeader.innerHTML = `
+        <div class="scene-title-row">
+          <span class="scene-badge">${isFirstScene ? 'MASTER IMAGE (정지 이미지 1장)' : 'SCENE'}</span>
+          <h3>${scene.name}</h3>
+          <span class="state-badge ${getSceneStatusBadgeClass(status)}">${getSceneStatusLabel(status)}</span>
+        </div>
+        <div class="scene-meta-row">
+          <span><strong>입력 모드:</strong> ${scene.input_mode}${isFirstScene ? ' → 정지 이미지 1장 생성 후 Flow 시작 프레임으로 사용' : ''}</span>
+          <span><strong>워크플로우:</strong> ${project.workflow_mode}</span>
+          <span><strong>클립 길이:</strong> ${project.clip_duration_seconds}s</span>
+        </div>
+      `;
 
-          <div class="relay-action-box ${status === SceneStatus.COMPLETE ? 'complete' : ''}">
-            <div class="relay-kicker">Next Manual Action · ${getSceneStatusLabel(status)}</div>
-            <div class="relay-next">${getSceneInstruction(status, scene, isFirstScene).split('\n')[0]}</div>
-            <div class="hint">${getSceneInstruction(status, scene, isFirstScene).split('\n').slice(1).join('\n')}</div>
-            <div class="relay-asset">
-              <strong>Input Asset:</strong> ${assetStr}<br>
-              ${isFirstScene ? `<strong>Master Image:</strong> ${scene.first_frame_prompt.slice(0, 120)}...` : ''}
-              ${nextScene ? `<strong>Handoff Asset:</strong> ${nextScene.asset_ref?.local_path || 'pending'}` : ''}
-            </div>
-          </div>
-
-          <div class="step-summary">
-            <div><strong>Video Prompt:</strong></div>
-            <div class="scene-prompt-block">${scene.video_prompt}</div>
-            ${isFirstScene ? `
-              <div style="margin-top:12px;"><strong>Master Image Prompt:</strong></div>
-              <div class="scene-prompt-block">${scene.first_frame_prompt}</div>
-            ` : ''}
-            <div style="margin-top:12px;"><strong>Template Exclusions:</strong> ${scene.template_exclusions}</div>
-            <div><strong>Negative Prompt:</strong> ${IMMUTABLE_NEGATIVE}</div>
+      // Instruction
+      sceneInstruction.innerHTML = `
+        <div class="instruction-card">
+          <span class="instruction-icon" aria-hidden="true">${getStatusIcon(status)}</span>
+          <div class="instruction-text">
+            <strong>${getInstructionTitle(status, scene, isFirstScene)}</strong>
+            <p>${getInstructionDetail(status, scene, isFirstScene, nextScene)}</p>
           </div>
         </div>
       `;
 
-      // Scene preview panel
-      scenePreviewTitle.textContent = `Scene ${scene.id}: ${scene.name}`;
-      scenePreviewBody.innerHTML = `
-        <div><strong>Status:</strong> <span class="state-badge ${getSceneStatusBadgeClass(status)}">${getSceneStatusLabel(status)}</span></div>
-        <div><strong>Input Mode:</strong> ${scene.input_mode}</div>
-        <div><strong>Input Asset:</strong> ${assetStr}</div>
-        <div><strong>Local Path:</strong> ${assetRef?.local_path || 'pending'}</div>
-        <div style="margin-top:12px;"><strong>Video Prompt:</strong></div>
-        <pre style="white-space:pre-wrap;font-size:11px;background:#14120f;color:#f5efe5;padding:12px;border-radius:8px;max-height:200px;overflow:auto;">${scene.video_prompt}</pre>
-        ${isFirstScene ? `
-          <div style="margin-top:12px;"><strong>Master Image Prompt:</strong></div>
-          <pre style="white-space:pre-wrap;font-size:11px;background:#14120f;color:#f5efe5;padding:12px;border-radius:8px;max-height:150px;overflow:auto;">${scene.first_frame_prompt}</pre>
-        ` : ''}
+      // Update buttons
+      updateActionButtons(status, isFirstScene);
+
+      // Prompts
+      videoPromptEl.textContent = scene.video_prompt;
+      if (isFirstScene) {
+        masterPromptPanel.hidden = false;
+        masterPromptEl.textContent = scene.first_frame_prompt;
+      } else {
+        masterPromptPanel.hidden = true;
+      }
+
+      // Asset info
+      const assetRef = scene.asset_ref;
+      assetInfoEl.innerHTML = `
+        <div class="asset-item"><strong>입력 애셋:</strong> ${serializeAssetRef(assetRef)}</div>
+        <div class="asset-item"><strong>로컬 경로:</strong> <code>${assetRef?.local_path || 'pending'}</code></div>
+        ${isFirstScene ? `<div class="asset-item"><strong>마스터 이미지:</strong> ${scene.first_frame_prompt.slice(0, 100)}...</div>` : ''}
+        ${nextScene ? `<div class="asset-item"><strong>다음 씬 전달:</strong> <code>${nextScene.asset_ref?.local_path || 'pending'}</code></div>` : ''}
       `;
     }
 
-    function getSceneInstruction(status, scene, isFirstScene) {
-      switch (status) {
-        case SceneStatus.LOCKED:
-          return `Complete the previous scene first.\nScene ${scene.id} stays locked until ${scene.asset_ref?.local_path || 'the previous scene final frame'} has been confirmed.`;
-        case SceneStatus.AWAITING_MASTER_IMAGE:
-          return `Generate one master image in Google Flow.\nCopy the Master Image Prompt, generate candidates in Flow, choose one image, and add that approved image to the Flow prompt as the start image.`;
-        case SceneStatus.AWAITING_PREVIOUS_FRAME:
-          return `Upload the previous scene's final frame.\nUse ${scene.asset_ref?.local_path} as the sole start image in Flow. The opening frame must match that uploaded image exactly before motion begins.`;
-        case SceneStatus.VIDEO_READY:
-          return `Generate the video from the approved start image.\nAfter rendering, save the exact final frame as ${project.scenes[activeSceneIndex + 1]?.asset_ref?.local_path || 'output'} and confirm to unlock the next scene.`;
-        case SceneStatus.CONFIRMED:
-          return `Video generation confirmed.\nMark this scene complete to unlock Scene ${scene.id + 1} (${project.scenes[activeSceneIndex + 1]?.name || 'N/A'}).`;
-        case SceneStatus.COMPLETE:
-          return isFirstScene && project.scenes.length === 1
-            ? 'All scenes complete. The clip is ready for stitching and visual QA.'
-            : `Scene handoff complete.\nThe next scene can now use ${scene.asset_ref?.local_path}.`;
-        case SceneStatus.NEEDS_RETRY:
-          return `This scene needs a retry.\nReset the relay or re-generate the video for this scene.`;
-        default:
-          return 'Select a scene to see instructions.';
+    function updateActionButtons(status, isFirstScene) {
+      // Copy buttons
+      const canCopyVideo = [SceneStatus.VIDEO_READY, SceneStatus.CONFIRMED, SceneStatus.COMPLETE].includes(status);
+      const canCopyMaster = isFirstScene && [SceneStatus.AWAITING_MASTER_IMAGE, SceneStatus.VIDEO_READY, SceneStatus.CONFIRMED, SceneStatus.COMPLETE].includes(status);
+
+      copyMasterBtn.disabled = !canCopyMaster;
+      copyVideoBtn.disabled = !canCopyVideo;
+      copyFullSceneBtn.disabled = !canCopyVideo;
+
+      // Update button text for clarity
+      if (isFirstScene) {
+        copyMasterBtn.innerHTML = `
+          <span class="btn-icon" aria-hidden="true">📋</span>
+          Master Image Prompt 복사 (정지 이미지용)
+        `;
+        copyVideoBtn.innerHTML = `
+          <span class="btn-icon" aria-hidden="true">📋</span>
+          Video Prompt 복사 (Flow 10초 비디오용)
+        `;
+      } else {
+        copyMasterBtn.innerHTML = `
+          <span class="btn-icon" aria-hidden="true">📋</span>
+          Master Image Prompt
+        `;
+        copyVideoBtn.innerHTML = `
+          <span class="btn-icon" aria-hidden="true">📋</span>
+          Scene Video Prompt
+        `;
       }
+
+      // Confirm button
+      const confirmConfig = getConfirmConfig(status, isFirstScene);
+      confirmStepBtn.disabled = confirmConfig.disabled;
+      confirmBtnText.textContent = confirmConfig.text;
+      confirmStepBtn.classList.toggle('btn-danger', confirmConfig.danger);
+
+      // Reset button
+      resetRelayBtn.disabled = false;
     }
 
-    function getSceneStatusClass(status) {
+    function getConfirmConfig(status, isFirstScene) {
       switch (status) {
-        case SceneStatus.LOCKED: return 'locked';
         case SceneStatus.AWAITING_MASTER_IMAGE:
-        case SceneStatus.AWAITING_PREVIOUS_FRAME: return 'ready';
-        case SceneStatus.VIDEO_READY: return 'active';
+          return { disabled: false, text: '마스터 이미지 승인 → 비디오 생성', danger: false };
+        case SceneStatus.AWAITING_PREVIOUS_FRAME:
+          return { disabled: false, text: '이전 프레임 업로드 완료 → 비디오 생성', danger: false };
+        case SceneStatus.VIDEO_READY:
+          return { disabled: false, text: '비디오 생성 완료 확인 → 다음 씬 잠금 해제', danger: false };
         case SceneStatus.CONFIRMED:
-        case SceneStatus.COMPLETE: return 'complete';
-        case SceneStatus.NEEDS_RETRY: return 'retry';
-        case SceneStatus.STALE: return 'stale';
-        default: return '';
+          return { disabled: false, text: '씬 완료 표시 → 다음 단계 진행', danger: false };
+        case SceneStatus.COMPLETE:
+          return { disabled: true, text: '씬 완료됨', danger: false };
+        case SceneStatus.NEEDS_RETRY:
+          return { disabled: false, text: '재시도 진행', danger: true };
+        default:
+          return { disabled: true, text: '대기 중...', danger: false };
       }
     }
 
     // ============================================================================
-    // Copy Actions (Section 11.6)
+    // Relay State Transitions
+    // ============================================================================
+    function confirmStep() {
+      const scene = project.scenes[activeSceneIndex];
+      const status = relayBranch.scene_statuses[String(scene.id)];
+
+      if (status === SceneStatus.AWAITING_MASTER_IMAGE) {
+        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.VIDEO_READY;
+        showToast('마스터 이미지 승인됨 - 비디오 생성 준비', 'success');
+      } else if (status === SceneStatus.AWAITING_PREVIOUS_FRAME) {
+        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.VIDEO_READY;
+        showToast('이전 프레임 확인됨 - 비디오 생성 준비', 'success');
+      } else if (status === SceneStatus.VIDEO_READY) {
+        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.CONFIRMED;
+
+        // Unlock next scene
+        const nextIndex = activeSceneIndex + 1;
+        if (nextIndex < project.scenes.length) {
+          const nextScene = project.scenes[nextIndex];
+          relayBranch.scene_statuses[String(nextScene.id)] = nextScene.input_mode === InputMode.MASTER_IMAGE
+            ? SceneStatus.AWAITING_MASTER_IMAGE
+            : SceneStatus.AWAITING_PREVIOUS_FRAME;
+          activeSceneIndex = nextIndex;
+        }
+        showToast(`씬 ${scene.id} 확인됨 - 다음 씬 잠금 해제`, 'success');
+      } else if (status === SceneStatus.CONFIRMED) {
+        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.COMPLETE;
+        showToast(`씬 ${scene.id} 완료`, 'success');
+
+        if (isAllComplete(relayBranch, project)) {
+          showToast('모든 씬 완료! 스티칭 및 QA 준비', 'success');
+        }
+      } else if (status === SceneStatus.NEEDS_RETRY) {
+        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.AWAITING_PREVIOUS_FRAME;
+        showToast('재시도 모드 - 이전 프레임부터 다시', 'info');
+      }
+
+      project.relay_branch = relayBranch;
+      saveProjectState(project);
+      renderStepper();
+      renderSceneGridMini();
+      renderSceneDetail();
+    }
+
+    function resetRelay() {
+      relayBranch = createInitialRelayBranch(project);
+      project.relay_branch = relayBranch;
+      activeSceneIndex = 0;
+      saveProjectState(project);
+      renderStepper();
+      renderSceneGridMini();
+      renderSceneDetail();
+      showToast('릴레이 초기화됨', 'info');
+    }
+
+    // ============================================================================
+    // Copy Actions
     // ============================================================================
     async function copyAction(action) {
       const sceneId = activeSceneIndex + 1;
@@ -788,94 +1040,62 @@
             break;
         }
         await copyToClipboard(result.text);
-        showToast(`Copied: ${result.action} (rev ${result.source_revision.slice(0, 12)}...)`, 'success');
+        showToast(`복사됨: ${result.action} (rev ${result.source_revision.slice(0, 12)}...)`, 'success');
       } catch (err) {
-        showToast(`Copy failed: ${err.message}`, 'error');
+        showToast(`복사 실패: ${err.message}`, 'error');
       }
     }
 
-    async function copyAllAction() {
-      await copyAction(CopyAction.ALL);
+    // ============================================================================
+    // Persistence
+    // ============================================================================
+    function checkResumeAvailability() {
+      const saved = loadProjectState();
+      resumeProjectBtn.disabled = !saved;
     }
 
-    // ============================================================================
-    // Relay State Transitions
-    // ============================================================================
-    function confirmStep() {
-      const scene = project.scenes[activeSceneIndex];
-      const status = relayBranch.scene_statuses[String(scene.id)];
-
-      if (status === SceneStatus.VIDEO_READY) {
-        // Confirm video generated, advance to CONFIRMED
-        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.CONFIRMED;
-
-        // Unlock next scene if exists
-        const nextIndex = activeSceneIndex + 1;
-        if (nextIndex < project.scenes.length) {
-          relayBranch.scene_statuses[String(project.scenes[nextIndex].id)] = project.scenes[nextIndex].input_mode === InputMode.MASTER_IMAGE
-            ? SceneStatus.AWAITING_MASTER_IMAGE
-            : SceneStatus.AWAITING_PREVIOUS_FRAME;
-          activeSceneIndex = nextIndex;
-        }
-
-        showToast(`Scene ${scene.id} confirmed — next scene unlocked`, 'success');
-      } else if (status === SceneStatus.CONFIRMED) {
-        // Mark scene complete
-        relayBranch.scene_statuses[String(scene.id)] = SceneStatus.COMPLETE;
-        showToast(`Scene ${scene.id} marked complete`, 'success');
-
-        // Check if all complete
-        if (isAllComplete(relayBranch, project)) {
-          showToast('All scenes complete! Ready for stitch and QA.', 'success');
-        }
-      }
-
-      saveProjectState(project);
-      renderStepper();
-      renderSceneGrid();
-      renderSceneDetail();
-    }
-
-    function resetRelay() {
-      relayBranch = createInitialRelayBranch(project);
-      activeSceneIndex = 0;
-      saveProjectState(project);
-      renderStepper();
-      renderSceneGrid();
-      renderSceneDetail();
-      showToast('Relay reset to initial state', 'info');
-    }
-
-    // ============================================================================
-    // Project Persistence
-    // ============================================================================
     function resumeLastProject() {
       const saved = loadProjectState();
       if (!saved) {
-        showToast('No saved project found', 'error');
+        showToast('저장된 프로젝트 없음', 'error');
         return;
       }
       project = saved;
       relayBranch = project.relay_branch || createInitialRelayBranch(project);
-      currentProfileId = project.profile_id;
-      currentScenePlans = project.scene_plans;
+
+      // Find first actionable scene
+      const actionableStatuses = [SceneStatus.AWAITING_MASTER_IMAGE, SceneStatus.AWAITING_PREVIOUS_FRAME, SceneStatus.VIDEO_READY];
       activeSceneIndex = 0;
-      showRelayRunner();
-      showToast('Project resumed', 'success');
+      for (let i = 0; i < project.scenes.length; i++) {
+        const status = relayBranch.scene_statuses[String(project.scenes[i].id)];
+        if (actionableStatuses.includes(status)) {
+          activeSceneIndex = i;
+          break;
+        }
+        if (i === project.scenes.length - 1) activeSceneIndex = i;
+      }
+
+      currentProfileId = project.profile_id;
+      currentExecProfileId = project.flow_execution_profile_id || 'flow.frames_first.10s';
+
+      renderProfileGrid();
+      renderExecProfileList();
+      durationEl.value = project.duration_seconds;
+
+      switchPhase('execute');
+      showToast('프로젝트 복원됨', 'success');
     }
 
     function startNewProject() {
       project = null;
       relayBranch = null;
       activeSceneIndex = 0;
-      hero.hidden = false;
-      relayRunner.hidden = true;
-      sceneGridSection.hidden = true;
-      buildPlanBtn.disabled = false;
+      switchPhase('setup');
       topicEl.value = '';
       ideaSeedEl.value = '';
-      buildStatus.textContent = 'Ready to build a new relay plan.';
-      showToast('Started new project', 'info');
+      buildPlanBtn.disabled = true;
+      buildHint.textContent = '주제를 입력하세요';
+      showToast('새 프로젝트 시작', 'info');
     }
 
     function downloadJson() {
@@ -886,16 +1106,101 @@
       a.download = `${project.topic.replace(/\s+/g, '-')}-relay-plan.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('JSON downloaded', 'success');
+      showToast('JSON 다운로드 완료', 'success');
     }
 
     // ============================================================================
     // Helpers
     // ============================================================================
-    function setBuildingState(building) {
-      buildPlanBtn.disabled = building;
-      buildLoading.hidden = !building;
-      buildHint.hidden = building;
+    function getStepTooltip(status, scene) {
+      const tooltips = {
+        [SceneStatus.LOCKED]: `완료 대기: ${scene.name}`,
+        [SceneStatus.AWAITING_MASTER_IMAGE]: '마스터 이미지 생성 필요',
+        [SceneStatus.AWAITING_PREVIOUS_FRAME]: '이전 씬 최종 프레임 업로드 필요',
+        [SceneStatus.VIDEO_READY]: '비디오 생성 대기',
+        [SceneStatus.CONFIRMED]: '비디오 확인됨, 완료 대기',
+        [SceneStatus.COMPLETE]: '완료',
+        [SceneStatus.NEEDS_RETRY]: '재시도 필요'
+      };
+      return tooltips[status] || '';
+    }
+
+    function getStatusShortLabel(status) {
+      const labels = {
+        [SceneStatus.LOCKED]: '잠김',
+        [SceneStatus.AWAITING_MASTER_IMAGE]: '마스터 대기',
+        [SceneStatus.AWAITING_PREVIOUS_FRAME]: '프레임 대기',
+        [SceneStatus.VIDEO_READY]: '비디오 준비',
+        [SceneStatus.CONFIRMED]: '확인됨',
+        [SceneStatus.COMPLETE]: '완료',
+        [SceneStatus.NEEDS_RETRY]: '재시도',
+        [SceneStatus.STALE]: '구식'
+      };
+      return labels[status] || status;
+    }
+
+    function getStatusIcon(status) {
+      const icons = {
+        [SceneStatus.LOCKED]: '🔒',
+        [SceneStatus.AWAITING_MASTER_IMAGE]: '🖼️',
+        [SceneStatus.AWAITING_PREVIOUS_FRAME]: '⏭️',
+        [SceneStatus.VIDEO_READY]: '▶️',
+        [SceneStatus.CONFIRMED]: '✅',
+        [SceneStatus.COMPLETE]: '🏁',
+        [SceneStatus.NEEDS_RETRY]: '🔄',
+        [SceneStatus.STALE]: '⚠️'
+      };
+      return icons[status] || '❓';
+    }
+
+    function getInstructionTitle(status, scene, isFirstScene) {
+      const titles = {
+        [SceneStatus.LOCKED]: '이전 씬 완료 대기',
+        [SceneStatus.AWAITING_MASTER_IMAGE]: isFirstScene ? '마스터 이미지 생성' : '마스터 이미지 생성',
+        [SceneStatus.AWAITING_PREVIOUS_FRAME]: '이전 프레임 업로드',
+        [SceneStatus.VIDEO_READY]: '비디오 생성',
+        [SceneStatus.CONFIRMED]: '완료 확인',
+        [SceneStatus.COMPLETE]: '완료',
+        [SceneStatus.NEEDS_RETRY]: '재시도 필요'
+      };
+      return titles[status] || '대기 중';
+    }
+
+    function getInstructionDetail(status, scene, isFirstScene, nextScene) {
+      switch (status) {
+        case SceneStatus.LOCKED:
+          return `씬 ${scene.id}은(는) 이전 씬이 완료되어야 해제됩니다.`;
+        case SceneStatus.AWAITING_MASTER_IMAGE:
+          return isFirstScene
+            ? '🖼️ 1단계: "Master Image Prompt"를 복사해 **이미지 생성기(Midjourney, DALL-E, Flux 등)에서 정지 이미지 1장**을 생성하세요.\n2단계: 생성된 이미지를 Flow의 "Frames to Video" 시작 프레임(Start Frame)으로 업로드하세요.\n3단계: "Video Prompt"로 10초 비디오를 생성하세요.'
+            : 'Google Flow에서 마스터 이미지를 생성하세요. "Master Image Prompt"를 복사해 이미지 생성기에서 정지 이미지를 만들고, Flow의 시작 프레임으로 업로드하세요.';
+        case SceneStatus.AWAITING_PREVIOUS_FRAME:
+          return `이전 씬(${scene.id - 1})의 **최종 프레임 이미지**(${scene.asset_ref?.local_path})를 Flow의 "Frames to Video" 시작 프레임(Start Frame)으로 업로드하세요. 첫 프레임이 업로드한 이미지와 정확히 일치해야 합니다.`;
+        case SceneStatus.VIDEO_READY:
+          return isFirstScene
+            ? `🎬 **Flow "Frames to Video" 모드에서 10초 비디오 생성:**
+1. **시작 프레임(Start Frame)**: 방금 생성한 마스터 이미지 업로드
+2. **프롬프트**: 아래 "Video Prompt" 복사해서 붙여넣기
+3. **길이**: 10초 설정 후 생성
+
+✅ 생성된 10초 비디오가 마스터 이미지에서 자연스럽게 시작되는지 확인 후 "완료 확인"을 누르세요.`
+            : `🎬 **Flow "Frames to Video" 모드에서 10초 비디오 생성:**
+1. **시작 프레임(Start Frame)**: 이전 씬 최종 프레임(${scene.asset_ref?.local_path}) 업로드
+2. **프롬프트**: 아래 "Video Prompt" 복사해서 붙여넣기
+3. **길이**: 10초 설정 후 생성
+
+✅ 생성된 10초 비디오가 이전 씬에서 자연스럽게 이어지는지 확인 후 "완료 확인"을 누르세요.`;
+        case SceneStatus.CONFIRMED:
+          return '비디오 생성이 확인되었습니다. "씬 완료"를 눌러 다음 씬을 잠금 해제하세요.';
+        case SceneStatus.COMPLETE:
+          return isFirstScene && project.scenes.length === 1
+            ? '단일 클립이 준비되었습니다. 스티칭 및 시각적 QA를 진행하세요.'
+            : `씬 핸드오프 완료. 다음 씬에서 ${scene.asset_ref?.local_path}를 시작 이미지로 사용합니다.`;
+        case SceneStatus.NEEDS_RETRY:
+          return '이 씬은 재시도가 필요합니다. 릴레이를 초기화하거나 비디오를 다시 생성하세요.';
+        default:
+          return '상태를 확인 중입니다.';
+      }
     }
 
     // ============================================================================

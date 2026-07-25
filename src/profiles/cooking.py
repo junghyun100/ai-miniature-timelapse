@@ -162,10 +162,11 @@ cooking_profile = Profile(
     default_total_duration=30,
     clip_duration_seconds=10,
     scene_plans=SCENE_PLANS_30S,
+    scene_plans_factory=lambda topic, dur, ctx: SCENE_PLANS_30S,
     selection_schema=COOKING_SELECTION_SCHEMA,
-    style_bible_factory={},
-    first_frame_factory={},
-    scene_prompt_factory={},
+    style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["dish_key"]),
+    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["dish_key"])} if ctx.get("scene_id") == 1 else {},
+    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["dish_key"])},
     audio_contract={
         "type": "asmr_only",
         "description": "Only satisfying ASMR sounds: knife chops, water drips, sizzle, boil, simmer, pour, drizzle, gentle clink. No voices, no music, no narration."

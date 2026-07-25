@@ -54,12 +54,7 @@ ARCH_IDENTITY_LOCK = (
 )
 
 
-ARCH_NEGATIVE_BASE = (
-    "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, "
-    "bad anatomy, deformed hands, blurry, miniature people, tiny workers, "
-    "shaky camera, camera shake, modern buildings, steel, concrete, glass curtain wall, "
-    "neon lights, electricity, contemporary architecture"
-)
+ARCH_NEGATIVE_BASE = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry."
 
 
 # 30s plan (3 scenes × 10s)
@@ -162,10 +157,11 @@ architecture_profile = Profile(
     default_total_duration=30,
     clip_duration_seconds=10,
     scene_plans=SCENE_PLANS_30S,
+    scene_plans_factory=lambda topic, dur, ctx: SCENE_PLANS_60S if dur == 60 else SCENE_PLANS_30S,
     selection_schema=ARCH_SELECTION_SCHEMA,
-    style_bible_factory={},
-    first_frame_factory={},
-    scene_prompt_factory={},
+    style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["subtype"]),
+    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["subtype"])} if ctx.get("scene_id") == 1 else {},
+    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["subtype"])},
     audio_contract={
         "type": "asmr_only",
         "description": "Wood joinery, stone setting, brush strokes, paper rustling. No voices, no music."
@@ -222,80 +218,95 @@ def make_style_bible(subtype: str) -> StyleBible:
 def make_first_frame_prompt(subtype: str) -> str:
     st = ARCHITECTURE_SUBTYPES[subtype]
     return (
-        f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, "
-        f"extreme close-up, soft focus pulls. Giant human hands only, "
-        f"no miniature people, no tiny workers, no small figures. "
-        f"Foundation stones and timber framework of a {st['label']} on a dark wooden workbench, "
-        f"traditional carpentry workshop, warm morning light. "
-        f"Individual wooden beams, clay tiles, stone blocks laid out separately, "
-        f"not yet assembled. Miniature chisel, trowel, brush, magnifying glass, wooden mallet visible. "
-        f"Scene: Master Image."
+        "Ultra realistic macro photography, miniature construction site, sand or soil surface, "
+        "giant human fingers interacting with miniature materials, tiny realistic construction tools, "
+        "partially prepared foundation area, 8K detail, cinematic studio lighting, shallow depth of field. "
+        f"Building type: {st['label']}."
     )
 
 
 def make_scene_video_prompt(scene_id: int, subtype: str) -> str:
     st = ARCHITECTURE_SUBTYPES[subtype]
-    base_style = (
-        "Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, "
-        "extreme close-up, soft focus pulls. Giant human hands only, "
-        "no miniature people, no tiny workers, no small figures. "
-        "Identical lighting, camera angle, workbench, and workshop throughout. "
+
+    # Reference prompt global rules (exact from reference)
+    global_rules = (
+        "ultra fast timelapse speed, human hands continuously constructing and moving rapidly, "
+        "multiple rapid scene cuts, cinematic macro photography, "
+        "miniature people forbidden, only giant human hands appear. "
     )
 
+    # Scene descriptions matching reference exactly
     if scene_id == 1:
-        actions = [
-            "Giant hands lay foundation stones with miniature trowel, mortar visible between joints",
-            "Hands place base timbers (sill plates) on stone foundation, checking alignment",
-            "Vertical posts erected one by one, mortise-and-tenon joints fitted with wooden mallet",
-            "Horizontal beams (girders) lowered onto posts, joints secured",
-        ]
-        end_state = "Complete timber framework standing on stone foundation, ready for roof structure"
+        # 30s: Foundation & Walls / 60s: Foundation
+        if "dolmen" in subtype.lower():
+            scene_desc = (
+                "Giant hands survey empty site, measure and mark foundation layout on compacted earth. "
+                "Hands place massive capstone support stones with precision. "
+                "Mortar applied, foundation stones set level and aligned."
+            )
+        else:
+            scene_desc = (
+                "Giant hands measure and mark foundation layout on compacted earth. "
+                "Miniature cement mixed and spread for foundation. "
+                "Foundation bricks/stones laid precisely with mortar. "
+                "Wall frames and window/door frames constructed up from foundation."
+            )
     elif scene_id == 2:
-        actions = [
-            "Hands lift and position rafters onto beam framework, precise angle cuts visible",
-            "Ridge beam placed, rafters secured with traditional joinery",
-            "Purlins added horizontally, creating roof grid",
-            "Clay tiles laid from bottom edge upward, overlapping perfectly",
-        ]
-        end_state = "Complete tiled roof with curved eaves, ridge ornaments in place"
+        # 30s: Roofing & Exterior / 60s: Roof Structure
+        if "dolmen" in subtype.lower():
+            scene_desc = (
+                "Hands position remaining support stones, checking stability. "
+                "Massive capstone lifted and placed atop supports with perfect alignment. "
+                "Earth mound built around structure, burial chamber sealed."
+            )
+        else:
+            scene_desc = (
+                "Roof framework assembled: rafters positioned, ridge beam placed. "
+                "Clay tiles/panels installed from bottom edge upward, overlapping perfectly. "
+                "Exterior walls finished, doors and windows installed with decorative trim."
+            )
     elif scene_id == 3:
-        actions = [
-            "Wall panels (wattle-and-daub or wooden) fitted between posts",
-            "Hanji paper windows installed in lattice frames",
-            "Dancheong patterns painted on exposed beams and eaves",
-            "Stone steps and courtyard stones placed",
-        ]
-        end_state = "Fully assembled hanok with tiled roof, paper windows, painted details, stone courtyard"
+        # 30s: Painting & Landscaping Reveal / 60s: Walls & Windows
+        if "dolmen" in subtype.lower():
+            scene_desc = (
+                "Weathering effects applied to stone surfaces. "
+                "Surrounding landscape arranged with period-appropriate vegetation. "
+                "Camera pulls back to reveal complete megalithic monument."
+            )
+        else:
+            scene_desc = (
+                "Wall panels fitted between structural posts. "
+                "Hanji paper windows installed in lattice frames. "
+                "Exterior decorative details added to eaves and trim."
+            )
     elif scene_id == 4:
-        actions = [
-            "Ondol floor heating channels laid beneath stone slabs",
-            "Miniature furniture placed: low table, floor cushions, storage chest",
-            "Incense burner and brush holder arranged on table",
-            "Paper screens slid into door frames",
-        ]
-        end_state = "Furnished interior visible through open doors, warm lived-in atmosphere"
+        # 60s: Interior & Furnishings
+        scene_desc = (
+            "Ondol floor heating channels laid beneath stone slabs. "
+            "Low furniture placed: table, cushions, storage chest. "
+            "Scholarly objects arranged: incense burner, brush holder. "
+            "Paper screens slid into door frames."
+        )
     elif scene_id == 5:
-        actions = [
-            "Moss and miniature plants placed around foundation",
-            "Stone lantern positioned in courtyard",
-            "Stepping stones laid along garden path",
-            "Miniature pine tree planted near corner",
-        ]
-        end_state = "Complete hanok in landscaped garden setting, harmonious with nature"
+        # 60s: Garden & Landscape
+        scene_desc = (
+            "Moss and ground cover planted around foundation. "
+            "Stone lantern positioned in courtyard. "
+            "Stepping stones laid along garden path. "
+            "Miniature pine tree planted near corner."
+        )
     elif scene_id == 6:
-        actions = [
-            "Soft morning light shifts, casting long shadows across courtyard",
-            "Steam rises gently from ondol-heated floor visible through door gap",
-            "Camera pulls back slightly to reveal full composition",
-            "Final focus pull to hero angle: curved roof silhouette against sky",
-        ]
-        end_state = "Cinematic hero shot of complete hanok, warm atmospheric lighting, serene mood"
+        # 60s: Atmosphere & Hero Shot
+        scene_desc = (
+            "Soft morning light shifts, casting long shadows across courtyard. "
+            "Gentle steam rises from ondol-heated floor visible through door gap. "
+            "Camera pulls back to reveal full composition. "
+            "Final focus pull to hero angle: curved roof silhouette against sky. "
+            "Normal cinematic speed for final reveal."
+        )
     else:
-        actions = ["Additional detail work continues"]
-        end_state = "Architecture complete"
+        scene_desc = "Construction continues with precision."
 
-    prompt = base_style + " ".join(actions) + f" Final state: {end_state}. "
-    prompt += "Identical workshop, lighting, tools, and camera maintained. "
-    prompt += "No voices, no music, only satisfying ASMR sounds (wood joinery, stone setting, brush strokes). "
-    prompt += f"Negative Prompt: {ARCH_NEGATIVE_BASE}."
-    return prompt
+    negative = f"Negative Prompt: {ARCH_NEGATIVE_BASE}."
+
+    return global_rules + scene_desc + " " + negative

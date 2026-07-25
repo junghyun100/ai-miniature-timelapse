@@ -418,47 +418,8 @@ class SourceRevision:
 # Profile Registry (loaded from profile implementations)
 # ============================================================================
 
-@dataclass
-class Profile:
-    profile_id: str
-    version: str
-    topic_label: str
-    workflow_mode: WorkflowMode
-    allowed_total_durations: list[int]
-    default_total_duration: int
-    clip_duration_seconds: int
-    scene_plans: list[ScenePlan]
-    selection_schema: dict
-    style_bible_factory: dict
-    first_frame_factory: dict
-    scene_prompt_factory: dict
-    audio_contract: dict
-    negative_prompt_base: str
-    template_exclusions: list[str]
-
-    def make_style_bible(self, topic: str, subtype: str, **kwargs) -> StyleBible:
-        """Generate StyleBible for this profile with given parameters."""
-        raise NotImplementedError
-
-    def make_first_frame_prompt(self, topic: str, subtype: str, **kwargs) -> str:
-        """Generate first frame prompt for Scene 1."""
-        raise NotImplementedError
-
-    def make_scene_video_prompt(self, scene_id: int, topic: str, subtype: str, **kwargs) -> str:
-        """Generate video prompt for given scene."""
-        raise NotImplementedError
-
-
-# Registry - populated by profile modules
-PROFILE_REGISTRY: dict[str, Profile] = {}
-
-
-def register_profile(profile: Profile) -> None:
-    PROFILE_REGISTRY[profile.profile_id] = profile
-
-
-def get_profile(profile_id: str) -> Optional[Profile]:
-    return PROFILE_REGISTRY.get(profile_id)
+# Import Profile from profile_types to avoid duplication
+from .profile_types import Profile, register_profile, get_profile, PROFILE_REGISTRY
 
 
 # ============================================================================
@@ -648,13 +609,15 @@ def normalize_nim_response(
     Rules:
     - If response.source_revision != source_revision -> STALE, entire response discarded
     - If response.request_id != request.request_id -> mismatch, discarded
-    - Missing scenes -> fallback to local_planner for those scenes
-    - Scene N first_frame_prompt must be empty for N>=2
+    - Scene count must match exactly
+    - Scene N first_frame_prompt must be empty for N>=2 (relay mode)
+    - Video prompt must not be empty
     - Negative prompt must not be altered (local negative_prompt_base preserved)
     - Identity lock must be present in all video_prompts
-    - Wrong subtype/dish/model in response -> fallback for that scene
+    - Wrong subtype/dish/model in response -> error (no fallback)
 
     Returns (normalized_response, warnings)
+    Raises ValueError on validation failures (no fallback to local templates)
     """
     warnings = []
 
@@ -662,65 +625,23 @@ def normalize_nim_response(
     if response.source_revision != source_revision:
         raise ValueError(f"Stale NIM response: source_revision mismatch (response={response.source_revision}, expected={source_revision})")
 
-    # Validate scene count
+    # Validate scene count - MUST match exactly, no padding with fallbacks
     if len(response.scenes) != len(local_plans):
-        warnings.append(f"Scene count mismatch: expected {len(local_plans)}, got {len(response.scenes)}. Fallback for missing scenes.")
-        # Pad with local fallbacks
-        for i in range(len(response.scenes), len(local_plans)):
-            local = local_plans[i]
-            response.scenes.append(NimSceneResponse(
-                id=local.id,
-                first_frame_prompt=local.local_first_frame_prompt if i == 0 else "",
-                video_prompt=local.local_video_prompt
-            ))
+        raise ValueError(f"NIM response scene count mismatch: expected {len(local_plans)}, got {len(response.scenes)}. No fallback available - NIM must return correct number of scenes.")
 
-    # Per-scene validation and fallback
+    # Per-scene validation - NO FALLBACK to local templates
     for i, (nim_scene, local_scene) in enumerate(zip(response.scenes, local_plans)):
         # Scene ID must match
         if nim_scene.id != local_scene.id:
-            warnings.append(f"Scene {i+1}: ID mismatch, falling back to local")
-            nim_scene = NimSceneResponse(
-                id=local_scene.id,
-                first_frame_prompt=local_scene.local_first_frame_prompt if i == 0 else "",
-                video_prompt=local_scene.local_video_prompt
-            )
-            response.scenes[i] = nim_scene
-            continue
+            raise ValueError(f"Scene {i+1}: ID mismatch (expected {local_scene.id}, got {nim_scene.id}). NIM response is invalid.")
 
-        # Scene 2+ first_frame_prompt must be empty
+        # Scene 2+ first_frame_prompt must be empty in relay mode
         if i >= 1 and nim_scene.first_frame_prompt:
             warnings.append(f"Scene {i+1}: first frame prompt must be empty in relay mode, clearing")
             nim_scene.first_frame_prompt = ""
 
-        # Video prompt must not be empty
+        # Video prompt must not be empty - FAIL if NIM doesn't provide one
         if not nim_scene.video_prompt or not nim_scene.video_prompt.strip():
-            warnings.append(f"Scene {i+1}: empty video_prompt, falling back to local")
-            nim_scene.video_prompt = local_scene.local_video_prompt
-
-        # Wrong subject identity detection (Section 14.5 rule 9)
-        # Check if response contains forbidden terms for the profile
-        local_ff = local_scene.local_first_frame_prompt
-        local_vid = local_scene.local_video_prompt
-
-        # Check for architecture terms in non-architecture responses
-        # This is a simplified check - in practice would use profile-specific forbidden lists
-        forbidden_cross_profile = {
-            "architecture": ["castle", "church", "cottage", "pagoda", "fortress", "tower", "palace"],
-            "vehicle": ["construction site", "foundation", "brick", "mortar", "building"],
-            "home_decor": ["engine", "chassis", "combustion", "transmission"],
-            "cooking": ["engine", "chassis", "construction", "vehicle"],
-        }
-
-        # Try to infer profile from local prompts (simplified heuristic)
-        video_lower = nim_scene.video_prompt.lower()
-        for genre, forbidden in forbidden_cross_profile.items():
-            if any(term in video_lower for term in forbidden):
-                # Check if local prompts DON'T have these terms (i.e., this is a genre mismatch)
-                local_lower = (local_ff + " " + local_vid).lower()
-                if not any(term in local_lower for term in forbidden):
-                    warnings.append(f"Scene {i+1}: wrong subtype/genre detected, falling back to local")
-                    nim_scene.first_frame_prompt = local_scene.local_first_frame_prompt if i == 0 else ""
-                    nim_scene.video_prompt = local_scene.local_video_prompt
-                    break
+            raise ValueError(f"Scene {i+1}: NIM returned empty video_prompt. No fallback to local templates - NIM must generate valid prompts.")
 
     return response, warnings

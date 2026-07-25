@@ -76,10 +76,15 @@ def run(
     qc_report = build_report(project)
     retry_plan = build_retry_plan(project)
     prompt_bundle = export_text_bundle(project)
-    generated_prompt_bundle = generate_nim_prompt(
-        prompt_bundle,
-        os.environ.get("NIM_MODEL", "meta/llama-3.1-8b-instruct"),
-    ) if use_nim_generate else prompt_bundle
+
+    if use_nim_generate:
+        model = os.environ.get("NIM_MODEL", "nvidia/nemotron-3-super-120b-a12b")
+        try:
+            generated_prompt_bundle = generate_nim_prompt(prompt_bundle, model)
+        except RuntimeError as e:
+            raise RuntimeError(f"NIM generation failed (required): {e}")
+    else:
+        generated_prompt_bundle = prompt_bundle
     refined_prompt_bundle = refine_prompt(
         generated_prompt_bundle,
         "Preserve the prompt pack structure, scene continuity, negative prompt, and first-frame-vs-followup-scene distinction."
@@ -143,6 +148,7 @@ def main() -> None:
     parser.add_argument("--variant", default="")
     parser.add_argument("--base-dir", default="output", help="Root directory for generated artifacts.")
     parser.add_argument("--use-nim-generate", action="store_true", help="Generate the prompt bundle with NVIDIA NIM when an API key is available.")
+    parser.add_argument("--nim-model", default="nvidia/nemotron-3-super-120b-a12b", help="NIM model ID to use (default: nvidia/nemotron-3-super-120b-a12b)")
     parser.add_argument("--refine-prompts", action="store_true", help="Refine the prompt bundle through OpenAI if OPENAI_API_KEY is set.")
     parser.add_argument("--output", default="-", help="Print summary JSON to stdout or write to a file.")
     args = parser.parse_args()
@@ -160,6 +166,7 @@ def main() -> None:
         args.building_type,
         args.refine_prompts,
         args.use_nim_generate,
+        args.nim_model,
     )
     payload = json.dumps(summary, ensure_ascii=False, indent=2)
     if args.output == "-":

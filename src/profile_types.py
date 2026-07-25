@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 import json
 
 
@@ -163,14 +163,17 @@ class Profile:
     allowed_total_durations: list[int]
     default_total_duration: int
     clip_duration_seconds: int
-    scene_plans: list[ScenePlan]
-    selection_schema: dict
-    style_bible_factory: dict
-    first_frame_factory: dict
-    scene_prompt_factory: dict
-    audio_contract: dict
-    negative_prompt_base: str
-    template_exclusions: list[str]
+    genre: str = ""
+    subtype: str = ""
+    scene_plans: list[ScenePlan] = field(default_factory=list)
+    scene_plans_factory: Optional[Callable] = None
+    selection_schema: dict = field(default_factory=dict)
+    style_bible_factory: Optional[Callable] = None
+    first_frame_factory: Optional[Callable] = None
+    scene_prompt_factory: Optional[Callable] = None
+    audio_contract: dict = field(default_factory=dict)
+    negative_prompt_base: str = ""
+    template_exclusions: list[str] = field(default_factory=list)
 
     def make_style_bible(self, topic: str, subtype: str, **kwargs) -> StyleBible:
         raise NotImplementedError

@@ -278,11 +278,9 @@ export function getInitialSceneStatus(sceneIndex, workflowMode, hasMasterImage =
             return hasMasterImage ? SceneStatus.VIDEO_READY : SceneStatus.AWAITING_MASTER_IMAGE;
         }
     } else { // Scene 2+
-        if (workflowMode === WorkflowMode.REFERENCE_FRAME_RELAY) {
-            return hasPreviousFrame ? SceneStatus.VIDEO_READY : SceneStatus.AWAITING_PREVIOUS_FRAME;
-        } else {
-            return SceneStatus.LOCKED;
-        }
+        // For REFERENCE_FRAME_RELAY: Scene 2+ starts LOCKED, unlocks to AWAITING_PREVIOUS_FRAME when previous scene is CONFIRMED
+        // For SINGLE_CLIP_FROM_MASTER: always LOCKED (only 1 scene)
+        return SceneStatus.LOCKED;
     }
 }
 
@@ -304,8 +302,9 @@ export function createInitialRelayBranch(project) {
     const sceneStatuses = {};
     for (let i = 0; i < project.scenes.length; i++) {
         const scene = project.scenes[i];
-        const hasMaster = i === 0 && scene.asset_ref?.local_path;
-        const hasPrev = i > 0 && scene.asset_ref?.local_path;
+        // Check if asset has been confirmed by user (master image uploaded/approved)
+        const hasMaster = i === 0 && scene.asset_ref?.confirmed_by_user;
+        const hasPrev = i > 0 && scene.asset_ref?.confirmed_by_user;
         sceneStatuses[String(i + 1)] = getInitialSceneStatus(i, project.workflow_mode, hasMaster, hasPrev);
     }
     return {
@@ -462,10 +461,150 @@ export const DEFAULT_PROFILES = {
         allowed_total_durations: [30, 60],
         default_total_duration: 30,
         clip_duration_seconds: 10,
-        scene_plans_30s: [
-            { scene_id: 1, name: "Foundation and Walls", start_state: "compacted earth, stone footings, sill beams, columns, hanji frames", ordered_actions: ["place stone footings", "seat sill beams", "raise columns", "fit hanji frames"], end_state: "single-story timber wall frame complete", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
-            { scene_id: 2, name: "Roofing and Exterior", start_state: "Scene 1 final frame", ordered_actions: ["crossbeams", "purlins", "rafters", "eave supports", "giwa tiles", "hanji doors/windows"], end_state: "roof and exterior complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
-            { scene_id: 3, name: "Painting, Landscaping, and Reveal", start_state: "Scene 2 final frame", ordered_actions: ["wood finish", "dancheong on beam ends", "stone path", "low wall", "moss", "grass", "small pine", "remove tools"], end_state: "coherent hanok revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
-        ]
+        scene_plans: {
+            30: [
+                { scene_id: 1, name: "Foundation and Walls", start_state: "compacted earth, stone footings, sill beams, columns, hanji frames", ordered_actions: ["place stone footings", "seat sill beams", "raise columns", "fit hanji frames"], end_state: "single-story timber wall frame complete", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
+                { scene_id: 2, name: "Roofing and Exterior", start_state: "Scene 1 final frame", ordered_actions: ["crossbeams", "purlins", "rafters", "eave supports", "giwa tiles", "hanji doors/windows"], end_state: "roof and exterior complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 3, name: "Painting, Landscaping, and Reveal", start_state: "Scene 2 final frame", ordered_actions: ["wood finish", "dancheong on beam ends", "stone path", "low wall", "moss", "grass", "small pine", "remove tools"], end_state: "coherent hanok revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+            ],
+            60: [
+                { scene_id: 1, name: "Foundation", start_state: "compacted earth", ordered_actions: ["tension guide strings", "place natural stone footings", "level footings", "seat sill beams"], end_state: "stone foundation and sill beams complete", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
+                { scene_id: 2, name: "Wall and Windows", start_state: "Scene 1 final frame", ordered_actions: ["raise columns", "mortise-and-tenon joints", "connect beams", "fit hanji door/window frames"], end_state: "single-story timber wall frame complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 3, name: "Roofing", start_state: "Scene 2 final frame", ordered_actions: ["crossbeams", "purlins", "rafters", "eave supports", "giwa tiles row by row"], end_state: "traditional roof complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 4, name: "Exterior Finishing", start_state: "Scene 3 final frame", ordered_actions: ["install hanji doors/windows", "finish exposed timber", "add wooden trim", "remove debris"], end_state: "roof and exterior complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 5, name: "Painting and Weathering", start_state: "Scene 4 final frame", ordered_actions: ["protective wood finish", "restrained dancheong on beam ends", "preserve hanji and giwa colors"], end_state: "painted hanok shell complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 6, name: "Landscaping and Reveal", start_state: "Scene 5 final frame", ordered_actions: ["stone path", "low wall", "moss", "grass", "small pine", "remove tools"], end_state: "coherent hanok revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+            ]
+        },
+        identity_lock: "One coherent single-story Korean hanok with a rectangular timber bay plan, natural stone footings, warm post-and-beam woodwork, white hanji doors and windows, deep curved black giwa eaves, and restrained dancheong only on appropriate beam ends and eaves. Never a stone castle, Gothic church, European cottage, pagoda tower, palace tower, or fantasy fortress.",
+        style_bible: {
+            materials: { primary: ["wood", "stone"], secondary: ["moss"], tools: ["chisel", "trowel"] },
+            camera: { lens: "85mm", angle: "45", movement: "locked", distance: "fixed" },
+            lighting: { key: "soft daylight", fill: "ambient", mood: "warm", consistency: "locked" },
+            color_palette: ["warm wood", "terracotta", "stone gray"],
+            workspace: "compacted earth tray",
+            hands_rule: "giant human hands only",
+            motion_rule: "rapid procedural timelapse"
+        },
+        first_frame_prompt_factory: (topic, detail) => `Ultra realistic macro photography of a completely unstarted miniature Korean hanok construction site, an untouched compacted-earth tray with an empty rectangular footprint and taut guide strings, every natural stone footing, timber sill beam, timber column, white hanji frame, rafter, and black giwa roof tile still separate and neatly staged outside the footprint, no foundation or wall already built, no completed hanok visible, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, giant human fingers beginning the very first action by lifting one natural stone footing toward its marked position, tiny traditional measuring and woodworking tools, locked 85mm-equivalent macro camera, fixed 45-degree angle, unchanged subject scale and framing, 8K detail, soft daylight from camera-left, warm rim light, natural shadows, unchanged through every scene, shallow depth of field, Identity Lock: One coherent single-story Korean hanok with a rectangular timber bay plan, natural stone footings, warm post-and-beam woodwork, white hanji doors and windows, deep curved black giwa eaves, and restrained dancheong only on appropriate beam ends and eaves. Never a stone castle, Gothic church, European cottage, pagoda tower, palace tower, or fantasy fortress., ${topic} | ${detail}, scene: Foundation and Walls.`
+    },
+    // Vehicle Assembly - 10 Categories (car, motorcycle, airplane, boat, agricultural, helicopter, construction, spaceship, tank, bicycle)
+// Generated from reference prompts - each category has specific identity_lock, style_bible, scene_plans, prompts
+'vehicle.assembly': (() => {
+    const categories = ['car', 'motorcycle', 'airplane', 'boat', 'agricultural', 'helicopter', 'construction', 'spaceship', 'tank', 'bicycle'];
+    const models = VEHICLE_MODELS;
+    const identityLocks = VEHICLE_IDENTITY_LOCKS;
+    const styleBibles = VEHICLE_STYLE_BIBLES;
+    const keyParts = VEHICLE_KEY_PARTS;
+    const assemblySteps = VEHICLE_ASSEMBLY_STEPS;
+    const scenePlans30 = VEHICLE_SCENE_PLANS_30;
+    const scenePlans60 = VEHICLE_SCENE_PLANS_60;
+    const steps60 = VEHICLE_ASSEMBLY_STEPS_60;
+
+    function buildVehicleProfile(category, modelName) {
+        const cat = category;
+        const name = modelName || (models[cat]?.[0] || cat);
+        const plan30 = scenePlans30[cat] || [];
+        const plan60 = scenePlans60[cat] || [];
+
+        return {
+            id: 'vehicle.assembly',
+            version: '2.0.0',
+            display_name: `Vehicle Assembly: ${name}`,
+            workflow_mode: WorkflowMode.REFERENCE_FRAME_RELAY,
+            allowed_total_durations: [30, 60],
+            default_total_duration: 30,
+            clip_duration_seconds: 10,
+            _subtype: cat,
+            _model_name: name,
+            scene_plans: {
+                30: plan30,
+                60: plan60,
+            },
+            identity_lock: identityLocks[cat] || VEHICLE_IDENTITY_LOCKS.car,
+            style_bible: styleBibles[cat] || VEHICLE_STYLE_BIBLES.car,
+            negative_prompt_base: VEHICLE_NEGATIVE_BASE,
+            template_exclusions: ["completed model at start", "floating parts", "teleporting parts"],
+            first_frame_prompt_factory: (topic, detail) => `Hyper-realistic macro photo of 100% disassembled miniature ${name} model parts neatly arranged on a wooden workbench, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, chassis/body/frame components, ${keyParts[cat] || keyParts.car} separated clearly, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, ${name}, scene: Master Image.`,
+            scene_prompt_factory: (topic, detail, scenePlan, sceneIdx) => {
+                const sceneName = scenePlan.name;
+                const step = assemblySteps[cat]?.[sceneIdx - 1] || `assembly step ${sceneIdx}`;
+                return `hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, 100% disassembled parts to fully assembled model, no floating or teleporting parts, parts attach in realistic order and disappear from workbench as installed, final step leaves only the fully assembled model on a clean workbench, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting, ${name.toLowerCase()}, scene: ${sceneName}. ${step}. As parts are attached, they logically disappear from the workbench. By the final step, the workspace is completely clean, leaving only the fully assembled model. Negative Prompt: ${VEHICLE_NEGATIVE_BASE}.`;
+            },
+        };
+    }
+
+    // Default to car
+    return buildVehicleProfile('car', models.car?.[0] || 'Porsche 911');
+})(),
+    'home_decor.diy': {
+        id: 'home_decor.diy',
+        version: '2.0.0',
+        display_name: 'Home Decor DIY (Korean Craft)',
+        workflow_mode: WorkflowMode.REFERENCE_FRAME_RELAY,
+        allowed_total_durations: [30, 60],
+        default_total_duration: 30,
+        clip_duration_seconds: 10,
+        scene_plans: {
+            30: [
+                { scene_id: 1, name: "Material Prep and Base Structure", start_state: "raw Korean materials on clean desk", ordered_actions: ["cut hanji paper to size", "fold jogakbo pieces", "prepare jadeok (mother-of-pearl) inlays", "build wire/base frame", "arrange all elements"], end_state: "prepared materials and base frame ready", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
+                { scene_id: 2, name: "Assembly and Layering", start_state: "Scene 1 final frame", ordered_actions: ["glue hanji layers onto frame", "attach jogakbo patches", "inlay jadeok pieces", "wrap with myeongju silk thread", "secure all joints"], end_state: "assembled craft structure complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 3, name: "Finishing Details and Reveal", start_state: "Scene 2 final frame", ordered_actions: ["apply protective coating", "add decorative knots", "trim excess material", "attach hanging hardware", "remove tools, soft lighting hero shot"], end_state: "finished Korean decor piece revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+            ],
+            60: [
+                { scene_id: 1, name: "Material Selection and Cutting", start_state: "raw Korean materials on clean desk", ordered_actions: ["select hanji paper sheets", "measure and mark dimensions", "precision cut with craft knife", "prepare jogakbo fabric scraps", "sort jadeok pieces by size"], end_state: "all materials precisely cut and sorted", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
+                { scene_id: 2, name: "Base Frame Construction", start_state: "Scene 1 final frame", ordered_actions: ["bend wire into base shape", "reinforce joints with solder", "wrap frame with myeongju thread", "create mounting points", "verify structural integrity"], end_state: "sturdy wire base frame complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 3, name: "Hanji Layering", start_state: "Scene 2 final frame", ordered_actions: ["brush adhesive onto frame", "apply first hanji layer", "smooth out air bubbles", "add second colored hanji layer", "create translucent window panels"], end_state: "hanji skin fully applied to frame", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 4, name: "Jogakbo and Jadeok Inlay", start_state: "Scene 3 final frame", ordered_actions: ["arrange jogakbo pattern", "stitch patchwork onto surface", "glue jadeok inlay pieces", "press and set each piece", "trim excess fabric edges"], end_state: "decorative inlay complete", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 5, name: "Traditional Knotting and Details", start_state: "Scene 4 final frame", ordered_actions: ["tie maedeup decorative knots", "attach norigae tassel", "add metal ornament accents", "seal with natural lacquer", "polish jadeok surfaces"], end_state: "all traditional details applied", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 6, name: "Final Finish and Reveal", start_state: "Scene 5 final frame", ordered_actions: ["apply UV protective spray", "attach hanging loop or stand", "final dust removal with soft brush", "hero lighting setup", "remove all tools, cinematic reveal"], end_state: "finished Korean decor piece revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+            ]
+        },
+        identity_lock: "One coherent Korean traditional craft piece using hanji paper, jogakbo patchwork, jadeok mother-of-pearl, myeongju silk, and maedeup knots. Pastel/jewel-tone palette, tactile mixed-media papercraft aesthetic. Never plastic factory goods, modern synthetic materials, or non-Korean craft styles.",
+        style_bible: {
+            materials: { primary: ["hanji paper", "jogakbo fabric"], secondary: ["jadeok (mother-of-pearl)", "myeongju silk", "wire"], tools: ["craft knife", "tweezers", "fine brush", "needle"] },
+            camera: { lens: "100mm macro", angle: "top-down 45°", movement: "locked", distance: "fixed" },
+            lighting: { key: "bright even studio", fill: "soft", mood: "warm pastel", consistency: "locked" },
+            color_palette: ["pastel pink", "sage green", "cream", "pearl white", "soft gold"],
+            workspace: "clean craft desk",
+            hands_rule: "giant human hands only",
+            motion_rule: "satisfying ASMR craft sequence"
+        },
+        first_frame_prompt_factory: (topic, detail) => `Ultra-realistic macro photography, clean top-down craft desk, giant human hands only, no miniature people, assorted Korean traditional materials neatly arranged: hanji paper sheets in pastel tones, jogakbo silk scraps, jadeok mother-of-pearl pieces, myeongju silk thread spools, copper wire, precision craft tools (knife, tweezers, brush, needle), untouched workspace, 100mm macro lens, shallow depth of field, 8K detail, bright even studio lighting, Identity Lock: One coherent Korean traditional craft piece using hanji paper, jogakbo patchwork, jadeok mother-of-pearl, myeongju silk, and maedeup knots. Pastel/jewel-tone palette, tactile mixed-media papercraft aesthetic., ${topic} | ${detail}, scene: Material Selection and Cutting.`
+    },
+    'cooking.miniature': {
+        id: 'cooking.miniature',
+        version: '2.0.0',
+        display_name: 'Miniature Cooking',
+        workflow_mode: WorkflowMode.REFERENCE_FRAME_RELAY,
+        allowed_total_durations: [30, 60],
+        default_total_duration: 30,
+        clip_duration_seconds: 10,
+        scene_plans: {
+            30: [
+                { scene_id: 1, name: "Preparation (Ingredients)", start_state: "raw ingredients on wooden cutting board", ordered_actions: ["wash and peel vegetables", "dice aromatics (onion, garlic, ginger)", "slice protein into bite pieces", "measure sauces and seasonings", "arrange in mini prep bowls"], end_state: "all ingredients prepped and organized", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
+                { scene_id: 2, name: "Cooking (Heat Application)", start_state: "Scene 1 final frame", ordered_actions: ["heat oil in miniature pot", "sauté aromatics until fragrant", "add protein and sear", "pour in liquid base", "simmer with lid"], end_state: "dish cooking, steam rising", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 3, name: "Finishing and Plating", start_state: "Scene 2 final frame", ordered_actions: ["taste and adjust seasoning", "add finishing oil or garnish", "ladle into miniature bowl", "arrange toppings artistically", "hero shot with rising steam"], end_state: "finished dish plated and revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+            ],
+            60: [
+                { scene_id: 1, name: "Ingredient Prep - Vegetables", start_state: "raw ingredients on wooden cutting board", ordered_actions: ["wash all produce thoroughly", "peel onion, garlic, ginger", "dice onion into fine mince", "slice garlic paper-thin", "julienne ginger and scallions"], end_state: "all vegetables prepped in mini bowls", forbidden_changes: InputMode.MASTER_IMAGE, input_mode: InputMode.MASTER_IMAGE },
+                { scene_id: 2, name: "Ingredient Prep - Protein & Sauces", start_state: "Scene 1 final frame", ordered_actions: ["slice protein against grain", "marinate with light seasoning", "measure soy sauce, oil, spices", "prepare broth or water base", "arrange all mise en place"], end_state: "complete mise en place ready", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 3, name: "Cooking - Aromatics and Sear", start_state: "Scene 2 final frame", ordered_actions: ["heat miniature pot with oil", "sauté onion until translucent", "add garlic and ginger", "stir-fry until fragrant", "add protein and sear all sides"], end_state: "aromatics cooked, protein seared", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 4, name: "Cooking - Simmer and Develop", start_state: "Scene 3 final frame", ordered_actions: ["deglaze with liquid base", "add measured seasonings", "bring to gentle boil", "reduce heat and simmer", "skim impurities, cover partially"], end_state: "flavors melded, sauce reduced", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 5, name: "Finishing - Texture and Balance", start_state: "Scene 4 final frame", ordered_actions: ["add quick-cook vegetables", "adjust salt, acid, sweet", "thicken sauce if needed", "finish with sesame oil", "rest briefly off heat"], end_state: "perfectly balanced finished dish", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+                { scene_id: 6, name: "Plating and Hero Reveal", start_state: "Scene 5 final frame", ordered_actions: ["ladle into miniature stone bowl", "arrange protein visibly on top", "sprinkle scallions and seeds", "drizzle finishing oil", "macro hero shot with rising steam"], end_state: "finished dish plated and revealed", forbidden_changes: InputMode.PREVIOUS_FINAL_FRAME, input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+            ]
+        },
+        identity_lock: "Ultra-realistic 8K HDR miniature cooking on natural wooden cutting board, clean modern kitchen blurred background. Giant human hands only, no miniature people, no tiny chef. 100mm macro lens, extreme close-up, soft focus pulls, identical kitchen/lighting/tools across all scenes. Satisfying ASMR sounds only (chop, sizzle, boil, pour), no voices, no music, no shaky camera.",
+        style_bible: {
+            materials: { primary: ["food ingredients"], secondary: ["garnishes"], tools: ["miniature knife", "miniature pot/ttukbaegi", "miniature ladle", "chopsticks"] },
+            camera: { lens: "100mm macro", angle: "extreme close-up", movement: "locked", distance: "fixed" },
+            lighting: { key: "soft natural", fill: "warm", mood: "appetizing", consistency: "locked" },
+            color_palette: ["ingredient-natural", "steam-white", "oil-glisten"],
+            workspace: "natural wooden cutting board, miniature cookware",
+            hands_rule: "giant human hands only",
+            motion_rule: "ASMR cooking sequence, realistic physics"
+        },
+        first_frame_prompt_factory: (topic, detail) => `Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, soft focus pulls. Giant human hands only, no miniature people, no tiny chef, fresh raw ingredients for ${topic} on a natural wooden cutting board in a clean modern kitchen with softly blurred background. Whole vegetables, protein, aromatics neatly separated, miniature prep bowls ready, miniature knife poised to begin, identical kitchen lighting and camera for all scenes, satisfying ASMR sounds only (knife chopping, water drips), no voices no music. Identity Lock: Ultra-realistic miniature cooking on natural wooden cutting board, clean modern kitchen blurred background. Giant human hands only. 100mm macro lens, identical kitchen/lighting/tools across all scenes., ${topic} | ${detail}, scene: Preparation.`
     }
 };

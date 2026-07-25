@@ -28,7 +28,7 @@ def _extract_text(data: Dict[str, Any]) -> str:
 def generate_prompt(prompt_brief: str, model: str = "meta/llama-3.1-8b-instruct") -> str:
     api_key = os.environ.get("NIM_API_KEY", "").strip() or os.environ.get("NGC_API_KEY", "").strip()
     if not api_key:
-        return prompt_brief
+        raise RuntimeError("NIM_API_KEY or NGC_API_KEY not set. NIM is required - no fallback templates available.")
 
     base_url = os.environ.get("NIM_BASE_URL", "").strip() or DEFAULT_NIM_BASE_URL
     endpoint = base_url.rstrip("/") + "/chat/completions"

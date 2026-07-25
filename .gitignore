@@ -1,2 +1,48 @@
+# macOS
 .DS_Store
+
+# Output directory
 output/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.dist/
+build/
+.tox/
+
+# Project-local Claude/Agent state
+.claude/
+.agents/
+
+# Remotion project (ai-miniature-timelapse has embedded remotion-timelapse)
+remotion-timelapse/
+remotion-timelapse/node_modules/
+remotion-timelapse/dist/
+remotion-timelapse/.remotion/
+remotion-timelapse/.turbo/
+
+# Skills lock file (local)
+skills-lock.json
+
+# Test artifacts
+tests/browser/
+playwright-report/
+test-results/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local

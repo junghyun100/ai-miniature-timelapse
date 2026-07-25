@@ -147,10 +147,11 @@ home_decor_profile = Profile(
     default_total_duration=10,
     clip_duration_seconds=10,
     scene_plans=SCENE_PLAN,
+    scene_plans_factory=lambda topic, dur, ctx: SCENE_PLAN,
     selection_schema=HOME_DECOR_SELECTION_SCHEMA,
-    style_bible_factory={},
-    first_frame_factory={},
-    scene_prompt_factory={},
+    style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["idea_name"], ctx["materials"]),
+    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": _make_first_frame_prompt(ctx["idea_name"], ctx["materials"])} if ctx.get("scene_id") == 1 else {},
+    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["idea_name"], ctx["korean_narration"], ctx["materials"], ctx["final_object"])},
     audio_contract={
         "type": "korean_narration_plus_asmr",
         "description": "Korean female voiceover (max 60 chars no spaces) + craft ASMR sounds. No background music."
@@ -160,6 +161,20 @@ home_decor_profile = Profile(
 )
 
 register_profile(home_decor_profile)
+
+
+def _make_first_frame_prompt(craft_name: str, materials: list[str]) -> str:
+    """Generate Master Image prompt for home decor"""
+    materials_str = ", ".join(materials)
+    return (
+        f"Ultra-realistic 8K macro photo of craft materials neatly arranged on clean craft table, "
+        f"giant human hands only, no miniature people, no small people, no tiny workers, "
+        f"no human figures, no characters, no completed craft visible, "
+        f"{materials_str}, paper, cardstock, wire, glue, scissors laid out clearly, "
+        f"scissors, craft knife, cutting mat, ruler, bone folder, tweezers, glue gun, "
+        f"macro lens, shallow depth of field, 8K product photo quality, "
+        f"bright even studio lighting, pastel and jewel-tone palette, scene: Master Image."
+    )
 
 
 def make_style_bible(craft_name: str, materials: list[str]) -> StyleBible:
