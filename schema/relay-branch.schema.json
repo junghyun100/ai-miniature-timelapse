@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/relay-branch.schema.json",
+  "title": "RelayBranch",
+  "type": "object",
+  "required": ["branch_id", "parent_branch_id", "scene_statuses", "asset_refs", "created_at"],
+  "properties": {
+    "branch_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique branch ID"
+    },
+    "parent_branch_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Parent branch ID (null for master branch)"
+    },
+    "scene_statuses": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["LOCKED", "AWAITING_MASTER_IMAGE", "AWAITING_PREVIOUS_FRAME", "VIDEO_READY", "CONFIRMED", "COMPLETE", "NEEDS_RETRY", "STALE"],
+        "description": "Per-scene state machine status per Section 10.3"
+      },
+      "description": "Map of scene_id (string) to status"
+    },
+    "asset_refs": {
+      "type": "array",
+      "items": { "$ref": "asset-ref.schema.json" },
+      "description": "Asset references for this branch"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Branch creation timestamp"
+    },
+    "lineage_revision": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Source revision this branch was created from"
+    },
+    "nonce": {
+      "type": "string",
+      "description": "Nonce for branch invalidation on retry"
+    }
+  },
+  "additionalProperties": false
+}

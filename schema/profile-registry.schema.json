@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/profile-registry.schema.json",
+  "title": "ProfileRegistryEntry",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "version",
+    "topic_label",
+    "workflow_mode",
+    "allowed_total_durations",
+    "default_total_duration",
+    "clip_duration_seconds",
+    "scene_plans",
+    "selection_schema",
+    "style_bible_factory",
+    "first_frame_factory",
+    "scene_prompt_factory",
+    "audio_contract",
+    "negative_prompt_base",
+    "template_exclusions"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z]+$",
+      "description": "Profile identifier (e.g., 'architecture.korean')"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version"
+    },
+    "topic_label": {
+      "type": "string",
+      "description": "Human-readable topic label for UI"
+    },
+    "workflow_mode": {
+      "type": "string",
+      "enum": ["REFERENCE_FRAME_RELAY", "SINGLE_CLIP_FROM_MASTER"],
+      "description": "Workflow mode per Section 9"
+    },
+    "allowed_total_durations": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 10, "maximum": 60 },
+      "minItems": 1,
+      "description": "Allowed total durations in seconds"
+    },
+    "default_total_duration": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 60,
+      "description": "Default total duration in seconds"
+    },
+    "clip_duration_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 30,
+      "description": "Clip duration per scene in seconds"
+    },
+    "scene_plans": {
+      "type": "array",
+      "items": { "$ref": "scene-plan.schema.json" },
+      "description": "Base scene plans for this profile"
+    },
+    "selection_schema": {
+      "type": "object",
+      "description": "JSON Schema for user selection validation (subtype, model_name, dish_name, craft_name, etc.)"
+    },
+    "style_bible_factory": {
+      "type": "object",
+      "description": "Factory spec for StyleBible generation (topic, subtype, etc.)"
+    },
+    "first_frame_factory": {
+      "type": "object",
+      "description": "Factory spec for first frame prompt generation"
+    },
+    "scene_prompt_factory": {
+      "type": "object",
+      "description": "Factory spec for scene video prompt generation"
+    },
+    "audio_contract": {
+      "type": "object",
+      "description": "Audio requirements (ASMR only, Korean narration, silent, etc.)"
+    },
+    "negative_prompt_base": {
+      "type": "string",
+      "description": "Base negative prompt for this profile"
+    },
+    "template_exclusions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Template exclusion patterns for this profile"
+    }
+  },
+  "additionalProperties": false
+}

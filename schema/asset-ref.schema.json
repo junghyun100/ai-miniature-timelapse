@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/asset-ref.schema.json",
+  "title": "AssetRef",
+  "type": "object",
+  "required": ["logical_id", "kind", "scope"],
+  "properties": {
+    "logical_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable logical identifier (e.g., 'master_image', 'scene_1_final_frame', 'scene_2_final_frame')"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["image", "video"],
+      "description": "Asset kind"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["project", "scene"],
+      "description": "Asset scope: project-level (master) or scene-level"
+    },
+    "flow_asset_id": {
+      "type": "string",
+      "description": "Google Flow asset ID (opaque identifier from Flow API)"
+    },
+    "flow_asset_label": {
+      "type": "string",
+      "description": "Human-readable label shown in Flow UI (e.g., 'Master Image - Hanok')"
+    },
+    "local_path": {
+      "type": "string",
+      "description": "Local filesystem path (CLI/render use only, never in canonical JSON)"
+    },
+    "source_scene_id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Source scene ID for relay frames (scene N-1 for scene N's start frame)"
+    },
+    "confirmed_by_user": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user has confirmed this asset in Flow UI"
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of user confirmation"
+    },
+    "content_hash": {
+      "type": "string",
+      "description": "SHA-256 of file content for dedup/verification (hex)"
+    },
+    "lineage_revision": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Source revision of the plan that produced this asset"
+    }
+  },
+  "additionalProperties": false
+}

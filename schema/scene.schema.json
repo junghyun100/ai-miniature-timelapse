@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/scene.schema.json",
+  "title": "Scene",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "input_mode",
+    "asset_ref",
+    "video_prompt",
+    "template_exclusions",
+    "negative_prompt",
+    "lineage_revision"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based scene index"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Scene display name"
+    },
+    "input_mode": {
+      "type": "string",
+      "enum": ["MASTER_IMAGE", "PREVIOUS_FINAL_FRAME", "NONE"],
+      "description": "How this scene starts in Flow (Section 9)"
+    },
+    "asset_ref": {
+      "$ref": "asset-ref.schema.json",
+      "description": "Asset reference for start frame (master image or previous final frame)"
+    },
+    "first_frame_prompt": {
+      "type": ["string", "null"],
+      "description": "First frame prompt (Scene 1 only, null for Scenes 2+)"
+    },
+    "video_prompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Video prompt for this scene"
+    },
+    "template_exclusions": {
+      "type": "string",
+      "description": "Template exclusions text for this scene"
+    },
+    "negative_prompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Negative prompt for this scene"
+    },
+    "clip_duration_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 30
+    },
+    "lineage_revision": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Source revision at time this scene's prompts were generated"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["LOCKED", "AWAITING_MASTER_IMAGE", "VIDEO_READY", "COMPLETE", "NEEDS_RETRY", "STALE"],
+      "default": "LOCKED",
+      "description": "Relay state machine status (Section 10)"
+    },
+    "confirmed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When user confirmed this scene in Flow"
+    }
+  },
+  "additionalProperties": false
+}

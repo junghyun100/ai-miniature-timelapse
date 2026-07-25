@@ -1,0 +1,210 @@
+{
+  "schema_version": "2.0",
+  "topic": "hanok",
+  "topic_label": "Korean Architecture: Hanok",
+  "genre": "architecture",
+  "subtype": "hanok",
+  "profile_id": "architecture.korean",
+  "profile_version": "2.0.0",
+  "workflow_mode": "REFERENCE_FRAME_RELAY",
+  "duration_seconds": 60,
+  "clip_duration_seconds": 10,
+  "aspect_ratio": "9:16",
+  "style_bible": {
+    "identity_lock": "macro cinematography, 100mm lens, extreme close-up, soft focus pulls, Korean traditional wooden architecture, hanok, tiled roof, wooden beams, stone foundation",
+    "materials": {
+      "primary": [
+        "wood",
+        "clay tiles (giwa)",
+        "stone foundation",
+        "hanji paper windows",
+        "ondol floor stones"
+      ],
+      "secondary": [
+        "moss",
+        "lichen",
+        "seasonal foliage"
+      ],
+      "tools": [
+        "miniature chisel",
+        "tiny trowel",
+        "brush",
+        "magnifying glass",
+        "wooden mallet"
+      ]
+    },
+    "camera": {
+      "lens": "100mm macro",
+      "angle": "extreme_closeup",
+      "movement": "soft_focus_pull",
+      "distance": "extreme_macro"
+    },
+    "lighting": {
+      "key": "soft directional morning light",
+      "fill": "ambient skylight",
+      "mood": "warm_cinematic",
+      "consistency": "locked"
+    },
+    "color_palette": {
+      "primary": [
+        "warm wood tones",
+        "terracotta",
+        "stone gray"
+      ],
+      "accent": [
+        "dancheong red/green/blue",
+        "gold leaf"
+      ],
+      "background": "soft blurred nature",
+      "tone": "warm_natural"
+    },
+    "workspace": {
+      "surface": "dark wooden workbench",
+      "environment": "traditional carpentry workshop",
+      "clutter_rule": "organized_chaos"
+    },
+    "hands_rule": "giant_hands_only",
+    "motion_rule": "stop_motion_assembly",
+    "negative_prompt_base": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, tiny workers, shaky camera, camera shake, modern buildings, steel, concrete, glass curtain wall, neon lights, electricity"
+  },
+  "derived_fields": {},
+  "scene_plans": [
+    {
+      "scene_id": 1,
+      "name": "Foundation & Framework",
+      "start_state": "Empty workbench with materials",
+      "ordered_actions": [
+        "Lay foundation stones",
+        "Place base timbers",
+        "Erect vertical posts",
+        "Secure horizontal beams"
+      ],
+      "end_state": "Complete timber framework on stone foundation",
+      "forbidden_changes": [
+        "Workbench",
+        "Lighting",
+        "Camera angle",
+        "Tool positions"
+      ],
+      "input_mode": "MASTER_IMAGE",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 2,
+      "name": "Roof Structure",
+      "start_state": "Framework ready for roof",
+      "ordered_actions": [
+        "Position rafters",
+        "Place ridge beam",
+        "Add purlins",
+        "Lay clay tiles"
+      ],
+      "end_state": "Complete tiled roof with curved eaves",
+      "forbidden_changes": [
+        "Workbench",
+        "Lighting",
+        "Camera angle",
+        "Established framework"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 3,
+      "name": "Walls & Windows",
+      "start_state": "Roof complete, walls open",
+      "ordered_actions": [
+        "Fit wall panels",
+        "Install hanji window frames",
+        "Apply paper to lattices",
+        "Add decorative trim"
+      ],
+      "end_state": "Enclosed structure with paper windows",
+      "forbidden_changes": [
+        "Roof structure",
+        "Workbench",
+        "Lighting",
+        "Camera angle"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 4,
+      "name": "Interior & Furnishings",
+      "start_state": "Structure enclosed",
+      "ordered_actions": [
+        "Lay ondol floor channels",
+        "Place floor stones",
+        "Arrange low furniture",
+        "Add scholarly objects"
+      ],
+      "end_state": "Furnished interior visible through open doors",
+      "forbidden_changes": [
+        "Roof structure",
+        "Workbench",
+        "Lighting",
+        "Camera angle"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 5,
+      "name": "Garden & Landscape",
+      "start_state": "Interior complete",
+      "ordered_actions": [
+        "Plant moss and ground cover",
+        "Position stone lantern",
+        "Lay stepping stones",
+        "Plant miniature pine"
+      ],
+      "end_state": "Building integrated into garden setting",
+      "forbidden_changes": [
+        "Roof structure",
+        "Workbench",
+        "Lighting",
+        "Camera angle"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 6,
+      "name": "Atmosphere & Hero Shot",
+      "start_state": "Garden complete",
+      "ordered_actions": [
+        "Morning light shifts across courtyard",
+        "Gentle steam from ondol floor",
+        "Camera pulls to hero angle",
+        "Focus on curved roof silhouette"
+      ],
+      "end_state": "Cinematic hero shot, serene atmosphere",
+      "forbidden_changes": [
+        "Roof structure",
+        "Workbench",
+        "Lighting",
+        "Camera angle"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    }
+  ],
+  "scene_count": 6,
+  "source_revision": "sha256:c1178d76893287218c9d9be0dc90db6afcf4f63015f1e7540484eaa1200aa58c",
+  "flow_execution_profile_id": "google-veo2-9-16-10s",
+  "nim_enabled": false,
+  "nim_model_id": "",
+  "nim_refinement_policy": "mutable_only",
+  "provenance": {
+    "source": "local_planner",
+    "provider": "local",
+    "model_id": "architecture.korean.v2",
+    "base_url_label": "local",
+    "generated_at": "2025-07-25T00:00:00Z",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "source_revision": "sha256:c1178d76893287218c9d9be0dc90db6afcf4f63015f1e7540484eaa1200aa58c",
+    "fallback_scene_ids": [],
+    "validation_warnings": []
+  }
+}

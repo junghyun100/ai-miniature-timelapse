@@ -1,0 +1,118 @@
+{
+  "schema_version": "2.0",
+  "topic": "airplane",
+  "topic_label": "Vehicle Assembly: Airplane",
+  "genre": "vehicle",
+  "subtype": "airplane",
+  "model_name": "Spitfire Mk IX",
+  "profile_id": "vehicle.assembly",
+  "profile_version": "2.0.0",
+  "workflow_mode": "SINGLE_CLIP_FROM_MASTER",
+  "duration_seconds": 10,
+  "clip_duration_seconds": 10,
+  "aspect_ratio": "9:16",
+  "style_bible": {
+    "identity_lock": "hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, 100% disassembled parts to fully assembled model, no floating or teleporting parts, parts attach in realistic order and disappear from workbench as installed, final step leaves only the fully assembled model on a clean workbench, tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting",
+    "materials": {
+      "primary": [
+        "die-cast metal",
+        "plastic",
+        "photo-etched brass",
+        "rubber tires"
+      ],
+      "secondary": [
+        "paint",
+        "decals",
+        "chrome plating",
+        "clear coat"
+      ],
+      "tools": [
+        "tweezers",
+        "mini screwdriver",
+        "soft brush",
+        "nippers",
+        "file",
+        "cement"
+      ]
+    },
+    "camera": {
+      "lens": "85mm macro",
+      "angle": "macro_closeup",
+      "movement": "fixed",
+      "distance": "macro"
+    },
+    "lighting": {
+      "key": "bright workshop overhead",
+      "fill": "soft diffuser",
+      "mood": "bright_clean",
+      "consistency": "locked"
+    },
+    "color_palette": {
+      "primary": [
+        "metallic silver",
+        "gunmetal",
+        "chrome"
+      ],
+      "accent": [
+        "model-specific paint colors"
+      ],
+      "background": "clean workbench surface",
+      "tone": "cool_cinematic"
+    },
+    "workspace": {
+      "surface": "wooden workbench",
+      "environment": "bright workshop",
+      "clutter_rule": "parts_disappear"
+    },
+    "hands_rule": "hands_with_tools",
+    "motion_rule": "stop_motion_assembly",
+    "negative_prompt_base": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, tiny workers, small people, human figures, characters, floating parts, teleporting parts, completed model at start"
+  },
+  "derived_fields": {
+    "category": "airplane",
+    "model_name": "Spitfire Mk IX"
+  },
+  "scene_plans": [
+    {
+      "scene_id": 1,
+      "name": "Assembly",
+      "start_state": "Disassembled parts on workbench",
+      "ordered_actions": [
+        "Engine/frame/chassis placed on workbench",
+        "Major sub-assemblies built (engine, drivetrain, suspension)",
+        "Sub-assemblies joined to chassis",
+        "Wheels/tracks/landing gear attached",
+        "Body panels/skin installed",
+        "Final detailing and cleanup"
+      ],
+      "end_state": "Fully assembled model alone on clean workbench",
+      "forbidden_changes": [
+        "Camera angle",
+        "Lighting",
+        "Workbench surface",
+        "Tool positions",
+        "Parts must not float/teleport",
+        "Completed model cannot appear before final step"
+      ],
+      "input_mode": "MASTER_IMAGE",
+      "estimated_clip_duration_seconds": 10
+    }
+  ],
+  "scene_count": 1,
+  "source_revision": "sha256:cefba794a22dc705404f762663f41024feb4415b228ac03aba77f880b16f1b0d",
+  "flow_execution_profile_id": "google-veo2-9-16-10s",
+  "nim_enabled": false,
+  "nim_model_id": "",
+  "nim_refinement_policy": "mutable_only",
+  "provenance": {
+    "source": "local_planner",
+    "provider": "local",
+    "model_id": "vehicle.assembly.v2",
+    "base_url_label": "local",
+    "generated_at": "2025-07-25T00:00:00Z",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "source_revision": "sha256:cefba794a22dc705404f762663f41024feb4415b228ac03aba77f880b16f1b0d",
+    "fallback_scene_ids": [],
+    "validation_warnings": []
+  }
+}

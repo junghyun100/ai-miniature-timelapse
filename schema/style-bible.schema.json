@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/style-bible.schema.json",
+  "title": "StyleBible",
+  "type": "object",
+  "required": [
+    "identity_lock",
+    "materials",
+    "camera",
+    "lighting",
+    "color_palette",
+    "workspace",
+    "hands_rule",
+    "motion_rule"
+  ],
+  "properties": {
+    "identity_lock": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Immutable identity string that must appear verbatim in every prompt for this project"
+    },
+    "materials": {
+      "type": "object",
+      "required": ["primary", "secondary", "tools"],
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Primary material descriptors (wood, paper, metal, clay, food ingredients)"
+        },
+        "secondary": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Secondary/supporting material descriptors"
+        },
+        "tools": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Miniature tools visible in scene (knife, tweezers, brush, ladle, etc.)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "camera": {
+      "type": "object",
+      "required": ["lens", "angle", "movement", "distance"],
+      "properties": {
+        "lens": {
+          "type": "string",
+          "enum": ["100mm macro", "85mm macro", "macro"],
+          "description": "Lens specification"
+        },
+        "angle": {
+          "type": "string",
+          "enum": ["extreme_closeup", "closeup", "macro_closeup", "top_down", "45_degree"],
+          "description": "Camera angle"
+        },
+        "movement": {
+          "type": "string",
+          "enum": ["fixed", "soft_focus_pull", "static"],
+          "description": "Camera movement rule"
+        },
+        "distance": {
+          "type": "string",
+          "enum": ["extreme_macro", "macro", "close"],
+          "description": "Camera distance from subject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "lighting": {
+      "type": "object",
+      "required": ["key", "fill", "mood", "consistency"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Key light description (e.g., 'bright workshop overhead', 'soft studio diffuse')"
+        },
+        "fill": {
+          "type": "string",
+          "description": "Fill light description"
+        },
+        "mood": {
+          "type": "string",
+          "enum": ["bright_clean", "warm_cinematic", "soft_even", "dramatic_rim"],
+          "description": "Lighting mood preset"
+        },
+        "consistency": {
+          "type": "string",
+          "enum": ["locked", "scene_consistent", "profile_locked"],
+          "description": "Lighting consistency rule"
+        }
+      },
+      "additionalProperties": false
+    },
+    "color_palette": {
+      "type": "object",
+      "required": ["primary", "accent", "background", "tone"],
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Primary color descriptors"
+        },
+        "accent": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Accent color descriptors"
+        },
+        "background": {
+          "type": "string",
+          "description": "Background color/tone"
+        },
+        "tone": {
+          "type": "string",
+          "enum": ["pastel_jewel", "warm_natural", "cool_cinematic", "monochrome", "earth_tones"],
+          "description": "Overall color tone"
+        }
+      },
+      "additionalProperties": false
+    },
+    "workspace": {
+      "type": "object",
+      "required": ["surface", "environment", "clutter_rule"],
+      "properties": {
+        "surface": {
+          "type": "string",
+          "description": "Work surface description (wooden cutting board, workbench, desk, etc.)"
+        },
+        "environment": {
+          "type": "string",
+          "description": "Environment description (kitchen, workshop, studio, desk)"
+        },
+        "clutter_rule": {
+          "type": "string",
+          "enum": ["parts_disappear", "clean_final", "organized_chaos", "minimal"],
+          "description": "How workspace clutter evolves across timeline"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hands_rule": {
+      "type": "string",
+      "enum": ["giant_hands_only", "hands_with_tools", "tactile_only"],
+      "description": "Human presence rule"
+    },
+    "motion_rule": {
+      "type": "string",
+      "enum": ["stop_motion_assembly", "continuous_flow", "asmr_prep", "step_motion"],
+      "description": "Motion style rule"
+    },
+    "negative_prompt_base": {
+      "type": "string",
+      "description": "Base negative prompt that applies to all scenes in this project"
+    }
+  },
+  "additionalProperties": false
+}

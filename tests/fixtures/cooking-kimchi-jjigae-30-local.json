@@ -1,0 +1,161 @@
+{
+  "schema_version": "2.0",
+  "topic": "kimchi jjigae",
+  "topic_label": "Miniature Cooking: Kimchi Jjigae",
+  "genre": "cooking",
+  "subtype": "korean_stew",
+  "dish_name": "Kimchi Jjigae",
+  "profile_id": "cooking.miniature",
+  "profile_version": "2.0.0",
+  "workflow_mode": "REFERENCE_FRAME_RELAY",
+  "duration_seconds": 30,
+  "clip_duration_seconds": 10,
+  "aspect_ratio": "9:16",
+  "style_bible": {
+    "identity_lock": "ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, soft focus pulls, giant human hands only, no miniature people, no tiny chef, no small person, all objects miniature except hands, all tools miniature, all ingredients miniature, identical kitchen, lighting, cutting board, stove, camera style throughout, physical realism: logical cooking steps never skipped, food reactions (sizzle, browning, steam) realistic",
+    "materials": {
+      "primary": [
+        "kimchi",
+        "pork belly",
+        "tofu",
+        "green onion",
+        "gochujang",
+        "garlic"
+      ],
+      "secondary": [
+        "miniature earthenware pot (ttukbaegi)",
+        "tea light candle under pot",
+        "miniature black stone bowl"
+      ],
+      "tools": [
+        "miniature knife",
+        "miniature ladle",
+        "miniature spatula",
+        "miniature chopsticks",
+        "miniature tongs"
+      ]
+    },
+    "camera": {
+      "lens": "100mm macro",
+      "angle": "extreme_closeup",
+      "movement": "soft_focus_pull",
+      "distance": "extreme_macro"
+    },
+    "lighting": {
+      "key": "soft kitchen lighting",
+      "fill": "warm candle glow from heat source",
+      "mood": "warm_cinematic",
+      "consistency": "locked"
+    },
+    "color_palette": {
+      "primary": [
+        "food-natural colors (reds, greens, whites, browns)"
+      ],
+      "accent": [
+        "steam",
+        "oil sheen",
+        "caramelization",
+        "charring"
+      ],
+      "background": "softly blurred modern kitchen",
+      "tone": "warm_natural"
+    },
+    "workspace": {
+      "surface": "natural wooden cutting board",
+      "environment": "clean modern kitchen with softly blurred background",
+      "clutter_rule": "clean_final"
+    },
+    "hands_rule": "giant_hands_only",
+    "motion_rule": "asmr_prep",
+    "negative_prompt_base": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, tiny chef, small person, shaky camera, camera shake, music, voice, narration, dialogue, talking"
+  },
+  "derived_fields": {
+    "dish_name": "Kimchi Jjigae"
+  },
+  "scene_plans": [
+    {
+      "scene_id": 1,
+      "name": "Preparation",
+      "start_state": "Empty cutting board, ingredients raw",
+      "ordered_actions": [
+        "washing",
+        "slicing",
+        "cubing",
+        "chopping",
+        "mincing",
+        "arranging in prep bowls"
+      ],
+      "end_state": "All ingredients prepped and arranged in miniature bowls, ready for cooking",
+      "forbidden_changes": [
+        "Kitchen",
+        "Lighting",
+        "Cutting board",
+        "Camera style",
+        "Hand position"
+      ],
+      "input_mode": "MASTER_IMAGE",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 2,
+      "name": "Cooking",
+      "start_state": "Ingredients ready, cookware on heat",
+      "ordered_actions": [
+        "heating oil/pan",
+        "stir-frying aromatics",
+        "adding protein",
+        "adding liquid",
+        "simmering/grilling",
+        "ingredients melding"
+      ],
+      "end_state": "Dish cooking, steam rising, bubbles/sizzle visible",
+      "forbidden_changes": [
+        "Kitchen",
+        "Lighting",
+        "Cookware",
+        "Heat source",
+        "Camera style"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    },
+    {
+      "scene_id": 3,
+      "name": "Finishing & Plating",
+      "start_state": "Dish cooked, ready for plating",
+      "ordered_actions": [
+        "ladling/plating",
+        "adding garnish",
+        "final drizzles",
+        "hero close-up with steam"
+      ],
+      "end_state": "Finished dish in serveware, cinematic hero shot with natural steam",
+      "forbidden_changes": [
+        "Kitchen",
+        "Lighting",
+        "Serveware",
+        "Camera style",
+        "Cooking state continuity"
+      ],
+      "input_mode": "PREVIOUS_FINAL_FRAME",
+      "estimated_clip_duration_seconds": 10
+    }
+  ],
+  "scene_count": 3,
+  "source_revision": "sha256:93da86af903761433c8cc9d43fbe8450cae3f887266c938b211643b26e019778",
+  "flow_execution_profile_id": "google-veo2-9-16-10s",
+  "nim_enabled": false,
+  "nim_model_id": "",
+  "nim_refinement_policy": "mutable_only",
+  "provenance": {
+    "source": "local_planner",
+    "provider": "local",
+    "model_id": "cooking.miniature.v2",
+    "base_url_label": "local",
+    "generated_at": "2025-07-25T00:00:00Z",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "source_revision": "sha256:93da86af903761433c8cc9d43fbe8450cae3f887266c938b211643b26e019778",
+    "fallback_scene_ids": [],
+    "validation_warnings": []
+  }
+}

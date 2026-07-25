@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/scene-plan.schema.json",
+  "title": "ScenePlan",
+  "type": "object",
+  "required": ["scene_id", "name", "start_state", "ordered_actions", "end_state", "forbidden_changes"],
+  "properties": {
+    "scene_id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based scene index"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Scene display name (e.g., 'Preparation', 'Cooking', 'Assembly')"
+    },
+    "start_state": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical description of starting frame state"
+    },
+    "ordered_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Ordered action descriptors for this scene"
+    },
+    "end_state": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical description of ending frame state"
+    },
+    "forbidden_changes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Features that must not change during this scene (lighting, camera, set, etc.)"
+    },
+    "input_mode": {
+      "type": "string",
+      "enum": ["MASTER_IMAGE", "PREVIOUS_FINAL_FRAME", "NONE"],
+      "description": "How this scene starts in Flow"
+    },
+    "estimated_clip_duration_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 30
+    }
+  },
+  "additionalProperties": false
+}

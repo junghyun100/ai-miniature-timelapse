@@ -1,29 +1,157 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "MiniatureTimelapseProject",
+  "$id": "https://ai-miniature-timelapse.dev/schema/project.schema.json",
+  "title": "MiniatureTimelapseProject v2.0",
   "type": "object",
-  "required": ["topic", "duration", "format", "style", "scenes"],
+  "required": [
+    "schema_version",
+    "topic",
+    "topic_label",
+    "profile_id",
+    "profile_version",
+    "workflow_mode",
+    "duration_seconds",
+    "clip_duration_seconds",
+    "aspect_ratio",
+    "style_bible",
+    "scene_plans",
+    "source_revision",
+    "flow_execution_profile_id",
+    "nim_enabled",
+    "nim_model_id",
+    "nim_refinement_policy",
+    "provenance"
+  ],
   "properties": {
-    "topic": { "type": "string", "minLength": 1 },
-    "duration": { "type": "integer", "enum": [30, 60] },
-    "format": { "type": "string", "enum": ["9:16", "16:9"] },
-    "style": { "type": "string", "minLength": 1 },
-    "variant": { "type": "string" },
-    "scenes": {
+    "schema_version": {
+      "type": "string",
+      "const": "2.0",
+      "description": "Schema version, must be 2.0"
+    },
+    "topic": {
+      "type": "string",
+      "minLength": 1,
+      "description": "User-facing topic (e.g., 'hanok', 'Porsche 911', 'hanji lotus lamp', 'kimchi jjigae')"
+    },
+    "topic_label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable label for UI (e.g., 'Korean Architecture: Hanok')"
+    },
+    "genre": {
+      "type": "string",
+      "enum": ["architecture", "vehicle", "home_decor", "cooking", "product"],
+      "description": "Genre/category for recording."
+    },
+    "subtype": {
+      "type": "string",
+      "description": "Subtype within genre (e.g., 'hanok', 'car', 'hanji_craft', 'korean_stew')"
+    },
+    "model_name": {
+      "type": "string",
+      "description": "Specific model name for vehicle profile (e.g., 'Porsche 911')"
+    },
+    "dish_name": {
+      "type": "string",
+      "description": "Specific dish name for cooking profile (e.g., 'Kimchi Jjigae')"
+    },
+    "craft_name": {
+      "type": "string",
+      "description": "Specific craft name for home_decor profile (e.g., 'Traditional Lotus Mood Lamp')"
+    },
+    "profile_id": {
+      "type": "string",
+      "enum": ["architecture.korean", "vehicle.assembly", "home_decor.diy", "cooking.miniature"],
+      "description": "Profile identifier per Section 13.1"
+    },
+    "profile_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the profile"
+    },
+    "workflow_mode": {
+      "type": "string",
+      "enum": ["REFERENCE_FRAME_RELAY", "SINGLE_CLIP_FROM_MASTER"],
+      "description": "Workflow mode per Section 9"
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 60,
+      "description": "Total video duration in seconds"
+    },
+    "clip_duration_seconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 30,
+      "description": "Duration per clip/scene in seconds"
+    },
+    "aspect_ratio": {
+      "type": "string",
+      "enum": ["9:16", "16:9", "1:1"],
+      "description": "Output aspect ratio"
+    },
+    "style_bible": {
+      "$ref": "style-bible.schema.json"
+    },
+    "derived_fields": {
+      "type": "object",
+      "description": "Profile-specific derived fields (e.g., subtype-specific materials, motions)"
+    },
+    "scene_plans": {
       "type": "array",
       "minItems": 1,
+      "maxItems": 10,
       "items": {
-        "type": "object",
-        "required": ["id", "name", "seconds", "prompt", "negative_prompt"],
-        "properties": {
-          "id": { "type": "integer", "minimum": 1 },
-          "name": { "type": "string", "minLength": 1 },
-          "seconds": { "type": "integer", "minimum": 1 },
-          "prompt": { "type": "string", "minLength": 1 },
-          "negative_prompt": { "type": "string", "minLength": 1 }
-        }
-      }
+        "$ref": "scene-plan.schema.json"
+      },
+      "description": "Scene plans with start_state, ordered_actions, end_state, forbidden_changes"
+    },
+    "scene_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of scenes (may differ from scene_plans if some are merged)"
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 hash of canonical Source Draft per Section 14.1"
+    },
+    "flow_execution_profile_id": {
+      "type": "string",
+      "description": "FlowExecutionProfile ID from registry (Section 8)"
+    },
+    "nim_enabled": {
+      "type": "boolean",
+      "description": "Whether NIM constrained wording layer is enabled"
+    },
+    "nim_model_id": {
+      "type": "string",
+      "description": "NIM model identifier (e.g., 'nvidia/nemotron-3-ultra')"
+    },
+    "nim_refinement_policy": {
+      "type": "string",
+      "enum": ["mutable_only", "all"],
+      "default": "mutable_only",
+      "description": "Which fields NIM may refine (mutable_only = first_frame_prompt, video_prompt only)"
+    },
+    "narration": {
+      "type": "string",
+      "description": "Korean narration script for home_decor profile (max 60 chars no spaces)"
+    },
+    "idea_seed": {
+      "type": "string",
+      "description": "User-selected idea seed for home_decor profile"
+    },
+    "provenance": {
+      "$ref": "provenance.schema.json",
+      "description": "Provenance metadata per Section 14.6"
+    },
+    "relay_branch": {
+      "$ref": "relay-branch.schema.json",
+      "description": "Current relay branch state (relay profiles only)"
     }
-  }
+  },
+  "additionalProperties": false
 }
-

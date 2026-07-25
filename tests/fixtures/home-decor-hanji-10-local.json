@@ -1,0 +1,133 @@
+{
+  "schema_version": "2.0",
+  "topic": "hanji lotus lamp",
+  "topic_label": "Home Decor DIY: Hanji Lotus Lamp",
+  "genre": "home_decor",
+  "subtype": "hanji_craft",
+  "profile_id": "home_decor.diy",
+  "profile_version": "2.0.0",
+  "workflow_mode": "SINGLE_CLIP_FROM_MASTER",
+  "duration_seconds": 10,
+  "clip_duration_seconds": 10,
+  "aspect_ratio": "9:16",
+  "style_bible": {
+    "identity_lock": "tactile mixed-media papercraft and craft ASMR style, specifically featuring 3D layered paper-cutting, origami folding, and organic material collage captured from a clean, top-down perspective. Macro close-up, hands only, fixed top-down 45-degree angle, steady camera, bright even studio lighting, shallow depth of field, clean background, pastel and jewel-tone palette, 9:16 vertical, photorealistic 8K",
+    "materials": {
+      "primary": [
+        "hanji (Korean traditional paper)",
+        "plastic spoon",
+        "wire",
+        "glue",
+        "scissors"
+      ],
+      "secondary": [
+        "paint",
+        "glitter",
+        "beads",
+        "fabric scraps"
+      ],
+      "tools": [
+        "scissors",
+        "craft knife",
+        "cutting mat",
+        "ruler",
+        "bone folder",
+        "tweezers",
+        "glue gun",
+        "wire cutters"
+      ]
+    },
+    "camera": {
+      "lens": "macro",
+      "angle": "top_down",
+      "movement": "fixed",
+      "distance": "close"
+    },
+    "lighting": {
+      "key": "bright even studio lighting",
+      "fill": "soft diffuser",
+      "mood": "soft_even",
+      "consistency": "locked"
+    },
+    "color_palette": {
+      "primary": [
+        "pastel pink",
+        "mint green",
+        "lavender",
+        "cream",
+        "peach"
+      ],
+      "accent": [
+        "gold foil",
+        "iridescent",
+        "metallic thread"
+      ],
+      "background": "clean white or soft pastel",
+      "tone": "pastel_jewel"
+    },
+    "workspace": {
+      "surface": "clean craft table with cutting mat",
+      "environment": "bright studio",
+      "clutter_rule": "minimal"
+    },
+    "hands_rule": "giant_hands_only",
+    "motion_rule": "continuous_flow",
+    "negative_prompt_base": "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, music, voice (except specified narration), narration (except specified Korean), talking, dialogue, messy background, cluttered workspace, harsh shadows"
+  },
+  "derived_fields": {
+    "craft_name": "Traditional Lotus Mood Lamp",
+    "korean_narration": "버려진 숟가락이 연꽃이 되다니 손으로 접으니 피어나네요",
+    "materials": [
+      "hanji",
+      "plastic spoon",
+      "wire",
+      "glue",
+      "scissors"
+    ],
+    "final_object": "Traditional Lotus Mood Lamp"
+  },
+  "scene_plans": [
+    {
+      "scene_id": 1,
+      "name": "DIY Craft Tutorial",
+      "start_state": "Discarded materials on clean table",
+      "ordered_actions": [
+        "Opening Hook: close-up of discarded materials, Korean female voiceover speaks narration",
+        "Introducing Materials: Korean materials introduced — hanji, plastic spoon, wire",
+        "Building Begins: hands cut hanji, bend spoon, start folding",
+        "Mid-Build Sequence: satisfying origami folding, layering hanji petals, wire stem assembly, tactile ASMR sounds",
+        "Detail Showcase: adding gloss, arranging petals, precise placement",
+        "Final Reveal: zoom out to finished traditional lotus mood lamp on clean desk"
+      ],
+      "end_state": "Finished craft revealed on clean desk",
+      "forbidden_changes": [
+        "Camera angle (fixed top-down 45°)",
+        "Lighting (bright even studio)",
+        "Background (clean)",
+        "Color palette (pastel/jewel)",
+        "Hands only rule"
+      ],
+      "input_mode": "MASTER_IMAGE",
+      "estimated_clip_duration_seconds": 10
+    }
+  ],
+  "scene_count": 1,
+  "source_revision": "sha256:72b4c055f1780168da322009279178cfba129b52d6439c38898e2e5b52a52e46",
+  "flow_execution_profile_id": "google-veo2-9-16-10s",
+  "nim_enabled": false,
+  "nim_model_id": "",
+  "nim_refinement_policy": "mutable_only",
+  "narration": "버려진 숟가락이 연꽃이 되다니 손으로 접으니 피어나네요",
+  "idea_seed": "한지와 플라스틱 숟가락으로 만든 전통 연꽃 무드등",
+  "provenance": {
+    "source": "local_planner",
+    "provider": "local",
+    "model_id": "home_decor.diy.v2",
+    "base_url_label": "local",
+    "generated_at": "2025-07-25T00:00:00Z",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "source_revision": "sha256:72b4c055f1780168da322009279178cfba129b52d6439c38898e2e5b52a52e46",
+    "fallback_scene_ids": [],
+    "validation_warnings": []
+  }
+}

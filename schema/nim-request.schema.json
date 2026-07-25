@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/nim-request.schema.json",
+  "title": "NIMRequest",
+  "type": "object",
+  "required": ["schema_version", "request_id", "source_revision", "profile", "subject", "style_bible", "scenes", "mutable_fields", "immutable_rules"],
+  "properties": {
+    "schema_version": {
+      "const": "2.0",
+      "description": "NIM contract schema version"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique request identifier for idempotency and matching responses"
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Source revision hash of the canonical Source Draft. NIM must echo this back."
+    },
+    "profile": {
+      "type": "object",
+      "required": ["id", "version", "workflow_mode"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "workflow_mode": { "type": "string", "enum": ["REFERENCE_FRAME_RELAY", "SINGLE_CLIP_FROM_MASTER"] }
+      },
+      "additionalProperties": false,
+      "description": "Profile identification for NIM routing"
+    },
+    "subject": {
+      "type": "object",
+      "description": "Subject-specific fields (topic, genre, subtype, dish_name, craft_name, model_name, etc.)",
+      "additionalProperties": true
+    },
+    "style_bible": {
+      "$ref": "style-bible.schema.json",
+      "description": "Complete StyleBible for the project"
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "start_state", "ordered_actions", "end_state", "local_first_frame_prompt", "local_video_prompt"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string" },
+          "start_state": { "type": "string" },
+          "ordered_actions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "end_state": { "type": "string" },
+          "local_first_frame_prompt": { "type": "string" },
+          "local_video_prompt": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "description": "Scene plans with local planner prompts"
+    },
+    "mutable_fields": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"]
+      },
+      "default": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"],
+      "description": "JSON paths of fields NIM may rewrite (only these two allowed)"
+    },
+    "immutable_rules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Human-readable list of invariants NIM must preserve (Section 7 + profile-specific)"
+    }
+  },
+  "additionalProperties": false
+}

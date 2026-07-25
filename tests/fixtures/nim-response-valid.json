@@ -1,0 +1,22 @@
+{
+  "schema_version": "2.0",
+  "request_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "source_revision": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "scenes": [
+    {
+      "id": 1,
+      "first_frame_prompt": "Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, soft focus pulls. Giant human hands only, no miniature people, no tiny workers, no small figures. Foundation stones and timber framework of a Hanok (Traditional Korean House) on a dark wooden workbench, traditional carpentry workshop, warm morning light. Individual wooden beams, clay tiles, stone blocks laid out separately, not yet assembled. Miniature chisel, trowel, brush, magnifying glass, wooden mallet visible. Scene: Master Image. Enhanced with subtle atmospheric dust motes.",
+      "video_prompt": "Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, soft focus pulls. Giant human hands only, no miniature people, no tiny workers, no small figures. Identical lighting, camera angle, workbench, and workshop throughout. Giant hands lay foundation stones with miniature trowel, mortar visible between joints. Hands place base timbers (sill plates) on stone foundation, checking alignment. Vertical posts erected one by one, mortise-and-tenon joints fitted with wooden mallet. Horizontal beams (girders) lowered onto posts, joints secured. Final state: Complete timber framework standing on stone foundation, ready for roof structure. Identical workshop, lighting, tools, and camera maintained. No voices, no music, only satisfying ASMR sounds (wood joinery, stone setting, brush strokes). Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, tiny workers, shaky camera, camera shake, modern buildings, steel, concrete, glass curtain wall, neon lights, electricity."
+    },
+    {
+      "id": 2,
+      "first_frame_prompt": "",
+      "video_prompt": "Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, soft focus pulls. Giant human hands only, no miniature people, no tiny workers, no small figures. Identical lighting, camera angle, workbench, and workshop throughout. Hands lift and position rafters onto beam framework, precise angle cuts visible. Ridge beam placed, rafters secured with traditional joinery. Purlins added horizontally, creating roof grid. Clay tiles laid from bottom edge upward, overlapping perfectly. Final state: Complete tiled roof with curved eaves, ridge ornaments in place. Identical workshop, lighting, tools, and camera maintained. No voices, no music, only satisfying ASMR sounds (wood joinery, stone setting, brush strokes). Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, tiny workers, shaky camera, camera shake, modern buildings, steel, concrete, glass curtain wall, neon lights, electricity."
+    },
+    {
+      "id": 3,
+      "first_frame_prompt": "",
+      "video_prompt": "Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, soft focus pulls. Giant human hands only, no miniature people, no tiny workers, no small figures. Identical lighting, camera angle, workbench, and workshop throughout. Wall panels (wattle-and-daub or wooden) fitted between posts. Hanji paper windows installed in lattice frames. Dancheong patterns painted on exposed beams and eaves. Stone steps and courtyard stones placed. Final state: Fully assembled hanok with tiled roof, paper windows, painted details, stone courtyard. Identical workshop, lighting, tools, and camera maintained. No voices, no music, only satisfying ASMR sounds (wood joinery, stone setting, brush strokes). Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, tiny workers, shaky camera, camera shake, modern buildings, steel, concrete, glass curtain wall, neon lights, electricity."
+    }
+  ]
+}

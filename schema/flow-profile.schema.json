@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-miniature-timelapse.dev/schema/flow-profile.schema.json",
+  "title": "FlowExecutionProfile",
+  "type": "object",
+  "required": ["id", "display_name", "provider", "model_label", "supports_start_frame", "supported_clip_durations_seconds", "supports_prompt_audio", "last_verified_at", "verification_url"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique profile ID (e.g., 'google-veo-2-9-16-8s')"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable name (e.g., 'Google Veo 2 — 9:16 — 8s')"
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["google", "runway", "pika", "luma", "local"],
+      "description": "Provider identifier"
+    },
+    "model_label": {
+      "type": "string",
+      "description": "Model label (e.g., 'veo-2', 'gen-3', 'dream-machine')"
+    },
+    "supports_start_frame": {
+      "type": "boolean",
+      "description": "Whether this profile accepts a start frame image"
+    },
+    "supported_clip_durations_seconds": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 5, "maximum": 30 },
+      "minItems": 1,
+      "description": "Supported clip durations in seconds"
+    },
+    "supports_prompt_audio": {
+      "type": "boolean",
+      "description": "Whether audio prompting is supported"
+    },
+    "last_verified_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Last verification date (ISO 8601)"
+    },
+    "verification_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to provider documentation or verification artifact"
+    }
+  },
+  "additionalProperties": false
+}
