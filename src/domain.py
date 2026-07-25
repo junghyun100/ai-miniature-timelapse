@@ -652,6 +652,7 @@ def normalize_nim_response(
     - Scene N first_frame_prompt must be empty for N>=2
     - Negative prompt must not be altered (local negative_prompt_base preserved)
     - Identity lock must be present in all video_prompts
+    - Wrong subtype/dish/model in response -> fallback for that scene
 
     Returns (normalized_response, warnings)
     """
@@ -663,7 +664,7 @@ def normalize_nim_response(
 
     # Validate scene count
     if len(response.scenes) != len(local_plans):
-        warnings.append(f"Scene count mismatch: expected {len(local_plans)}, got {len(response.scenes)}. Falling back for missing.")
+        warnings.append(f"Scene count mismatch: expected {len(local_plans)}, got {len(response.scenes)}. Fallback for missing scenes.")
         # Pad with local fallbacks
         for i in range(len(response.scenes), len(local_plans)):
             local = local_plans[i]
@@ -677,7 +678,7 @@ def normalize_nim_response(
     for i, (nim_scene, local_scene) in enumerate(zip(response.scenes, local_plans)):
         # Scene ID must match
         if nim_scene.id != local_scene.id:
-            warnings.append(f"Scene {i+1}: ID mismatch, using local")
+            warnings.append(f"Scene {i+1}: ID mismatch, falling back to local")
             nim_scene = NimSceneResponse(
                 id=local_scene.id,
                 first_frame_prompt=local_scene.local_first_frame_prompt if i == 0 else "",
@@ -688,12 +689,38 @@ def normalize_nim_response(
 
         # Scene 2+ first_frame_prompt must be empty
         if i >= 1 and nim_scene.first_frame_prompt:
-            warnings.append(f"Scene {i+1}: first_frame_prompt must be empty in relay mode, clearing")
+            warnings.append(f"Scene {i+1}: first frame prompt must be empty in relay mode, clearing")
             nim_scene.first_frame_prompt = ""
 
         # Video prompt must not be empty
         if not nim_scene.video_prompt or not nim_scene.video_prompt.strip():
             warnings.append(f"Scene {i+1}: empty video_prompt, falling back to local")
             nim_scene.video_prompt = local_scene.local_video_prompt
+
+        # Wrong subject identity detection (Section 14.5 rule 9)
+        # Check if response contains forbidden terms for the profile
+        local_ff = local_scene.local_first_frame_prompt
+        local_vid = local_scene.local_video_prompt
+
+        # Check for architecture terms in non-architecture responses
+        # This is a simplified check - in practice would use profile-specific forbidden lists
+        forbidden_cross_profile = {
+            "architecture": ["castle", "church", "cottage", "pagoda", "fortress", "tower", "palace"],
+            "vehicle": ["construction site", "foundation", "brick", "mortar", "building"],
+            "home_decor": ["engine", "chassis", "combustion", "transmission"],
+            "cooking": ["engine", "chassis", "construction", "vehicle"],
+        }
+
+        # Try to infer profile from local prompts (simplified heuristic)
+        video_lower = nim_scene.video_prompt.lower()
+        for genre, forbidden in forbidden_cross_profile.items():
+            if any(term in video_lower for term in forbidden):
+                # Check if local prompts DON'T have these terms (i.e., this is a genre mismatch)
+                local_lower = (local_ff + " " + local_vid).lower()
+                if not any(term in local_lower for term in forbidden):
+                    warnings.append(f"Scene {i+1}: wrong subtype/genre detected, falling back to local")
+                    nim_scene.first_frame_prompt = local_scene.local_first_frame_prompt if i == 0 else ""
+                    nim_scene.video_prompt = local_scene.local_video_prompt
+                    break
 
     return response, warnings
