@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ai-miniature-timelapse
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Ruff (lint)
+        run: ruff check .
+
+      - name: Run Ruff (format check)
+        run: ruff format --check .
+
+      - name: Run MyPy (type check)
+        run: mypy src/
+
+      - name: Run Pytest
+        run: pytest -v --tb=short
+
+  ui-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ai-miniature-timelapse/ui
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build check (verify JS syntax)
+        run: node --check app.js
+
+      - name: Verify vehicle.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('data/vehicle.json', 'utf-8'));
+            const required = ['categories', 'models', 'identityLocks', 'keyParts', 'assemblySteps', 'styleBibles', 'negativeBase'];
+            required.forEach(key => {
+              if (!data[key]) throw new Error('Missing key: ' + key);
+            });
+            if (data.categories.length !== 10) throw new Error('Expected 10 categories');
+            console.log('vehicle.json validation passed');
+          "

@@ -163,37 +163,6 @@
               <label for="ideaSeed">아이디어 시드 (선택)</label>
               <input id="ideaSeed" type="text" placeholder="비워두면 자동 생성됨" />
             </div>
-          </div>
-
-          <!-- Vehicle Subtype Selection (shown when vehicle.assembly selected) -->
-          <div class="setup-card vehicle-subtype-card" id="vehicleSubtypeCard" hidden>
-            <h3>차량 종류 및 모델 선택</h3>
-            <p class="card-desc">차량 조립 프로파일은 10가지 카테고리 중 하나를 선택하세요</p>
-            <div class="field-row">
-              <div class="field">
-                <label for="vehicleCategory">차량 카테고리</label>
-                <select id="vehicleCategory">
-                  <option value="car">자동차 (Car)</option>
-                  <option value="motorcycle">오토바이 (Motorcycle)</option>
-                  <option value="airplane">비행기 (Airplane)</option>
-                  <option value="boat">보트/선박 (Boat)</option>
-                  <option value="agricultural">농기계 (Agricultural)</option>
-                  <option value="helicopter">헬리콥터 (Helicopter)</option>
-                  <option value="construction">건설장비 (Construction)</option>
-                  <option value="spaceship">우주선 (Spaceship)</option>
-                  <option value="tank">전차 (Tank)</option>
-                  <option value="bicycle">자전거 (Bicycle)</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="vehicleModel">구체적 모델</label>
-                <select id="vehicleModel"></select>
-              </div>
-            </div>
-            <input type="hidden" id="selectedVehicleCategory" />
-            <input type="hidden" id="selectedVehicleModel" />
-          </div>
-        </div>
 
         <!-- NIM Integration - Always Visible -->
         <div class="setup-card nim-card" id="nimCard">
@@ -454,6 +423,17 @@
     // ============================================================================
     const PROFILES = DEFAULT_PROFILES;
 
+    // Vehicle profile cache (loaded async from vehicle.json)
+    let vehicleProfileCache = null;
+
+    async function getVehicleProfile(category = 'car', modelName = null) {
+      const profileFactory = PROFILES['vehicle.assembly'];
+      if (typeof profileFactory === 'function') {
+        return await profileFactory(category, modelName);
+      }
+      return profileFactory; // fallback for sync version
+    }
+
     const EXECUTION_PROFILES = [
       { id: 'flow.frames_first.10s', label: 'Frames to Video: First, 10s', provider: 'google_flow', clipDuration: 10 },
       { id: 'flow.frames_then_video.10s', label: 'Frames then Video, 10s', provider: 'google_flow', clipDuration: 10 }
@@ -533,6 +513,7 @@
     // Initialization
     // ============================================================================
     async function init() {
+      await loadVehicleData(); // Load vehicle JSON first for dropdowns
       renderProfileGrid();
       renderExecProfileList();
       setupEventListeners();
@@ -541,6 +522,18 @@
       loadingScreen.hidden = true;
       header.hidden = false;
       main.hidden = false;
+    }
+
+    async function loadVehicleData() {
+      try {
+        const profileFactory = PROFILES['vehicle.assembly'];
+        if (typeof profileFactory === 'function') {
+          // Trigger loadVehicleData in app.js to populate cache
+          await profileFactory('car', null); // Pre-load
+        }
+      } catch (err) {
+        console.warn('Vehicle data preload failed:', err);
+      }
     }
 
     function setupEventListeners() {
@@ -554,6 +547,27 @@
       execProfileList.addEventListener('click', (e) => {
         const item = e.target.closest('.exec-profile-item');
         if (item) selectExecProfile(item.dataset.execProfileId);
+      });
+
+      // Vehicle category change -> update models
+      vehicleCategoryEl.addEventListener('change', async () => {
+        const category = vehicleCategoryEl.value;
+        selectedVehicleCategoryEl.value = category;
+        try {
+          const profileFactory = PROFILES['vehicle.assembly'];
+          if (typeof profileFactory === 'function') {
+            await profileFactory(category, null); // Trigger data load
+          }
+          const { loadVehicleData: loadVehicleDataModule } = await import('./app.js');
+          const data = await loadVehicleDataModule();
+          populateVehicleModels(data, category);
+        } catch (err) {
+          console.warn('Failed to update vehicle models:', err);
+        }
+      });
+
+      vehicleModelEl.addEventListener('change', () => {
+        selectedVehicleModelEl.value = vehicleModelEl.value;
       });
 
       // NIM toggle
@@ -723,9 +737,52 @@
       buildHint.textContent = hasTopic ? '준비 완료 - 릴레이 플랜 생성' : '주제를 입력하세요';
     }
 
+    async function populateVehicleDropdowns() {
+      try {
+        const profileFactory = PROFILES['vehicle.assembly'];
+        if (typeof profileFactory === 'function') {
+          // Trigger loading vehicle data
+          const dummyProfile = await profileFactory('car', null);
+        }
+        // Now get the loaded data
+        const { loadVehicleData: loadVehicleDataModule } = await import('./app.js');
+        const data = await loadVehicleDataModule();
+
+        // Populate category dropdown
+        if (data && data.categories) {
+          const currentCategory = vehicleCategoryEl.value || 'car';
+          vehicleCategoryEl.innerHTML = data.categories.map(cat =>
+            `<option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`
+          ).join('');
+
+          // Populate model dropdown for current category
+          populateVehicleModels(data, currentCategory);
+        }
+      } catch (err) {
+        console.warn('Failed to populate vehicle dropdowns:', err);
+      }
+    }
+
+    function populateVehicleModels(data, category) {
+      if (data && data.models && data.models[category]) {
+        const currentModel = vehicleModelEl.value || '';
+        vehicleModelEl.innerHTML = data.models[category].map(model =>
+          `<option value="${model}" ${model === currentModel ? 'selected' : ''}>${model}</option>`
+        ).join('');
+      }
+    }
+
     function selectProfile(profileId) {
       currentProfileId = profileId;
       renderProfileGrid();
+
+      // Vehicle assembly profile selected - show vehicle card and populate dropdowns
+      const isVehicle = profileId === 'vehicle.assembly';
+      vehicleCard.hidden = !isVehicle;
+
+      if (isVehicle) {
+        populateVehicleDropdowns();
+      }
     }
 
     function selectExecProfile(execProfileId) {
@@ -773,7 +830,7 @@
     // Build Relay Plan
     // ============================================================================
     async function buildRelayPlan() {
-      const profile = PROFILES[currentProfileId];
+      let profile = PROFILES[currentProfileId];
       const duration = parseInt(durationEl.value, 10);
       const aspectRatio = aspectRatioEl.value;
       const topic = topicEl.value.trim();
@@ -782,6 +839,14 @@
 
       buildPlanBtn.disabled = true;
       buildHint.textContent = '릴레이 플랜 생성 중...';
+
+      // Handle vehicle.assembly async profile loading
+      if (currentProfileId === 'vehicle.assembly') {
+        // Get selected vehicle category/model from UI
+        const vehicleCategory = document.getElementById('vehicleCategory')?.value || 'car';
+        const vehicleModel = document.getElementById('vehicleModel')?.value || null;
+        profile = await getVehicleProfile(vehicleCategory, vehicleModel);
+      }
 
       // Get scene plans for duration
       const scenePlans = profile.scene_plans[duration] || profile.scene_plans[30];

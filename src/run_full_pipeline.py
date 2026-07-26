@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from orchestrator import run as run_orchestrator
 from stitch_finalize import finalize as finalize_stitch
-from prompt_templates import format_building_type_choices, get_supported_building_types
 
 
 def load_json(path: str | Path) -> Dict[str, Any]:
@@ -19,11 +18,9 @@ def all_scene_renders_exist(render_status: Dict[str, Any]) -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the full pipeline and stitch if renders already exist.")
-    parser.add_argument("topic", help="Target subject, for example 'Korean hanok'.")
+    parser = argparse.ArgumentParser(description="Run the full vehicle assembly pipeline and stitch if renders already exist.")
+    parser.add_argument("topic", help="Target subject, e.g. 'Porsche 911'.")
     parser.add_argument("--duration", type=int, choices=[30, 60], default=60)
-    parser.add_argument("--building-type", default="hanok", choices=get_supported_building_types())
-    parser.add_argument("--list-building-types", action="store_true", help="Print available building templates and exit.")
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
     parser.add_argument("--variant", default="")
     parser.add_argument("--base-dir", default="output")
@@ -39,12 +36,9 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Validate stitch only, don't render")
     args = parser.parse_args()
 
-    if args.list_building_types:
-        print(format_building_type_choices())
-        return
-
     base_dir = Path(args.base_dir)
-    summary = run_orchestrator(args.topic, args.duration, args.format_, args.variant, base_dir, args.building_type)
+    # topic 형식: "vehicle_category:model_name" (예: "car:Porsche 911")
+    summary = run_orchestrator(args.topic, args.duration, args.format_, args.variant, base_dir)
     render_status = load_json(base_dir / "exports" / "render-status.json")
 
     stitch_report: Dict[str, Any] = {

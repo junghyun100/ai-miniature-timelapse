@@ -437,377 +437,34 @@ export function showToast(message, type = 'info', duration = 3000) {
 }
 
 // ============================================================================
-// Vehicle Assembly Constants (mirrored from src/profiles/vehicle.py)
+// Vehicle Data Loader (loads from ui/data/vehicle.json - single source of truth)
 // ============================================================================
 
-export const VEHICLE_MODELS = {
-    car: ["Porsche 911", "Ford Mustang", "Toyota 2000GT", "Ferrari 250 GTO", "Mini Cooper", "Volkswagen Beetle", "BMW 3.0 CSL", "Nissan Skyline GT-R", "Chevrolet Corvette", "Jaguar E-Type"],
-    motorcycle: ["Honda CB750", "Ducati 916", "Harley-Davidson Knucklehead", "Kawasaki Ninja ZX-10R", "BMW R nineT", "Triumph Bonneville", "Yamaha R1", "Moto Guzzi V7", "Indian Chief", "Royal Enfield Interceptor"],
-    airplane: ["Boeing 707", "Supermarine Spitfire", "P-51 Mustang", "F-16 Fighting Falcon", "Cessna 172", "SR-71 Blackbird", "Concorde", "F-22 Raptor", "Mitsubishi Zero", "B-17 Flying Fortress"],
-    boat: ["Chris-Craft Runabout", "America's Cup Yacht", "PT Boat", "U-Boat", "Titanic", "Viking Longship", "Sailing Frigate", "Speedboat", "Submarine", "Hovercraft"],
-    agricultural: ["John Deere 4020", "Ford 8N", "Case IH Magnum", "Fendt 1050", "Massey Ferguson 135", "New Holland T8", "Claas Xerion", "Deutz-Fahr 9340", "Valtra S374", "Kubota M7"],
-    helicopter: ["Bell 47", "UH-1 Huey", "AH-64 Apache", "Mi-24 Hind", "CH-47 Chinook", "Sikorsky S-76", "Robinson R44", "Eurocopter EC135", "Kamov Ka-50", "Boeing CH-47"],
-    construction: ["Caterpillar D11", "Komatsu PC8000", "Liebherr R9800", "Hitachi EX8000", "Volvo EC950", "JCB 3CX", "Case 580", "Doosan DX225", "Hyundai R210", "Sumitomo SH350"],
-    spaceship: ["Saturn V", "Falcon 9", "Space Shuttle", "Starship", "Soyuz", "Delta IV", "Ariane 5", "Atlas V", "Electron", "New Glenn"],
-    tank: ["M1 Abrams", "T-90", "Leopard 2", "Challenger 2", "Type 99", "K2 Black Panther", "Merkava Mk 4", "T-14 Armata", "Panther", "Tiger I"],
-    bicycle: ["Pinarello Dogma", "Specialized S-Works", "Colnago C64", "Bianchi Oltre", "Cervélo R5", "Trek Madone", "Cannondale SuperSix", "Wilier Filante", "Factor Ostro", "Look 795"]
-};
+let _vehicleDataPromise = null;
 
-export const VEHICLE_IDENTITY_LOCKS = {
-    car: "One coherent miniature car with unchanged wheelbase, body silhouette, paint color, glass shape, and component layout throughout.",
-    motorcycle: "One coherent miniature motorcycle with unchanged frame geometry, engine position, wheelbase, handlebar shape, and component layout throughout.",
-    airplane: "One coherent miniature airplane with unchanged fuselage length, wingspan, engine configuration, tail design, and landing gear layout throughout.",
-    boat: "One coherent miniature boat with unchanged hull shape, deck layout, superstructure, propulsion type, and component arrangement throughout.",
-    agricultural: "One coherent miniature tractor with unchanged chassis dimensions, engine position, wheel/track configuration, cab shape, and implement mounting points throughout.",
-    helicopter: "One coherent miniature helicopter with unchanged fuselage shape, rotor configuration, tail boom length, engine position, and landing gear type throughout.",
-    construction: "One coherent miniature construction vehicle with unchanged track/wheel configuration, chassis dimensions, hydraulic system layout, boom/arm geometry, and cab position throughout.",
-    spaceship: "One coherent miniature spaceship with unchanged stage configuration, engine cluster arrangement, payload fairing shape, fin/grid fin layout, and overall silhouette throughout.",
-    tank: "One coherent miniature tank with unchanged hull shape, turret geometry, gun barrel length, track type, road wheel arrangement, and component layout throughout.",
-    bicycle: "One coherent miniature bicycle with unchanged frame geometry, wheel size, drivetrain layout, handlebar type, saddle position, and component arrangement throughout."
-};
-
-export const VEHICLE_KEY_PARTS = {
-    car: "chassis, engine block, transmission, suspension, wheels, body panels, steering, interior components",
-    motorcycle: "engine, frame, wheels, fork, swingarm, tank, exhaust, handlebars, controls",
-    airplane: "fuselage, wings, engine/propeller, landing gear, tail, cockpit, control surfaces",
-    boat: "hull, deck, mast/superstructure, engine, propeller, rudder, anchor, rigging",
-    agricultural: "engine, transmission, chassis, wheels/tracks, PTO, hydraulics, cab, drawbar",
-    helicopter: "main rotor, tail rotor, engine, transmission, fuselage, landing skids, cockpit, swashplate",
-    construction: "tracks/wheels, chassis, engine, hydraulic system, boom/arm, bucket, cab, counterweight",
-    spaceship: "stages, engines, fuel tanks, payload fairing, guidance, heat shield, landing legs, grid fins",
-    tank: "hull, turret, gun, tracks, engine, transmission, suspension, road wheels, optics",
-    bicycle: "frame, fork, wheels, drivetrain, handlebars, saddle, brakes, chain, cranks"
-};
-
-export const VEHICLE_ASSEMBLY_STEPS = {
-    car: [
-        "Engine block placed into chassis with precision",
-        "Fasteners tightened securing powertrain",
-        "Wheels and suspension mounted",
-        "Steering rack installed and connected",
-        "Body panels fitted seamlessly",
-        "Final polish revealing complete model on clean workbench"
-    ],
-    motorcycle: [
-        "Engine lowered into frame cradle",
-        "Bolts torqued securing engine to frame",
-        "Wheels and suspension fitted",
-        "Fork and handlebars assembled",
-        "Tank, seat, and bodywork mounted",
-        "Final polish revealing complete bike on clean workbench"
-    ],
-    airplane: [
-        "Engine mounted to fuselage/wing",
-        "Fasteners securing powerplant and mounts",
-        "Landing gear retracted and locked",
-        "Control surfaces connected and tested",
-        "Wings and tail surfaces fitted",
-        "Final polish revealing complete aircraft on clean workbench"
-    ],
-    boat: [
-        "Engine installed in hull",
-        "Mounts and fasteners secured",
-        "Propeller shaft and rudder connected",
-        "Steering and controls linked",
-        "Deck, superstructure, and rigging fitted",
-        "Final polish revealing complete vessel on clean workbench"
-    ],
-    agricultural: [
-        "Engine mounted to chassis",
-        "Transmission and PTO bolted in place",
-        "Wheels/tracks and suspension fitted",
-        "Hydraulics and cab installed",
-        "Drawbar and implement mounts attached",
-        "Final polish revealing complete tractor on clean workbench"
-    ],
-    helicopter: [
-        "Main transmission and engine installed",
-        "Mast and rotor head secured",
-        "Tail boom and tail rotor fitted",
-        "Landing skids and controls connected",
-        "Fuselage panels and cockpit glazed",
-        "Final polish revealing complete helicopter on clean workbench"
-    ],
-    construction: [
-        "Engine and hydraulic pump installed",
-        "Tracks/wheels and final drives fitted",
-        "Boom and arm structure assembled",
-        "Bucket and hydraulic cylinders connected",
-        "Cab and counterweight mounted",
-        "Final polish revealing complete machine on clean workbench"
-    ],
-    spaceship: [
-        "Engines mounted to first stage",
-        "Stage separation mechanisms secured",
-        "Fuel tanks and plumbing installed",
-        "Guidance and avionics integrated",
-        "Payload fairing and grid fins fitted",
-        "Final polish revealing complete rocket on clean workbench"
-    ],
-    tank: [
-        "Engine and transmission installed in hull",
-        "Suspension and road wheels fitted",
-        "Tracks connected and tensioned",
-        "Turret ring and turret mounted",
-        "Gun, optics, and armor fitted",
-        "Final polish revealing complete tank on clean workbench"
-    ],
-    bicycle: [
-        "Bottom bracket and cranks installed",
-        "Drivetrain (chain, cassette, derailleurs) fitted",
-        "Wheels trued and mounted",
-        "Handlebars, stem, and controls assembled",
-        "Saddle, seatpost, and brakes installed",
-        "Final polish revealing complete bicycle on clean workbench"
-    ]
-};
-
-// Scene plans for 30s (3 scenes) and 60s (6 scenes) - generated from vehicle assembly steps
-export const VEHICLE_SCENE_PLANS_30 = {
-    car: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.car.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.car.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.car.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    motorcycle: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.motorcycle.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.motorcycle.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.motorcycle.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    airplane: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.airplane.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.airplane.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.airplane.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    boat: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.boat.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.boat.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.boat.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    agricultural: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.agricultural.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.agricultural.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.agricultural.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    helicopter: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.helicopter.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.helicopter.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.helicopter.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    construction: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.construction.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.construction.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.construction.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    spaceship: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.spaceship.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Stage position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.spaceship.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Stage position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.spaceship.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Stage position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    tank: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.tank.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.tank.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.tank.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    bicycle: [
-        { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: VEHICLE_ASSEMBLY_STEPS.bicycle.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.bicycle.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: VEHICLE_ASSEMBLY_STEPS.bicycle.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ]
-};
-
-// 6-scene plans for 60s mode (generated from assembly steps)
-export const VEHICLE_SCENE_PLANS_60 = {
-    car: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.car[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.car[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.car[2], VEHICLE_ASSEMBLY_STEPS.car[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.car[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.car[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    motorcycle: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.motorcycle[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.motorcycle[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.motorcycle[2], VEHICLE_ASSEMBLY_STEPS.motorcycle[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.motorcycle[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.motorcycle[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    airplane: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.airplane[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.airplane[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.airplane[2], VEHICLE_ASSEMBLY_STEPS.airplane[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.airplane[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.airplane[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    boat: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.boat[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.boat[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.boat[2], VEHICLE_ASSEMBLY_STEPS.boat[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.boat[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.boat[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    agricultural: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.agricultural[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.agricultural[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.agricultural[2], VEHICLE_ASSEMBLY_STEPS.agricultural[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.agricultural[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.agricultural[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    helicopter: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.helicopter[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.helicopter[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.helicopter[2], VEHICLE_ASSEMBLY_STEPS.helicopter[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Fuselage position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.helicopter[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.helicopter[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    construction: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.construction[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.construction[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.construction[2], VEHICLE_ASSEMBLY_STEPS.construction[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.construction[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.construction[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    spaceship: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.spaceship[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Stage position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.spaceship[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Stage position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.spaceship[2], VEHICLE_ASSEMBLY_STEPS.spaceship[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Stage position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.spaceship[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.spaceship[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    tank: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.tank[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.tank[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.tank[2], VEHICLE_ASSEMBLY_STEPS.tank[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Hull position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.tank[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.tank[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ],
-    bicycle: [
-        { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.bicycle[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position"], input_mode: "MASTER_IMAGE" },
-        { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.bicycle[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.bicycle[2], VEHICLE_ASSEMBLY_STEPS.bicycle[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Frame position", "Powertrain"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.bicycle[4], "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: ["detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: "PREVIOUS_FINAL_FRAME" },
-        { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [VEHICLE_ASSEMBLY_STEPS.bicycle[5], "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: "PREVIOUS_FINAL_FRAME" }
-    ]
-};
-
-// 60s assembly steps (can be extended for 6-scene mode)
-export const VEHICLE_ASSEMBLY_STEPS_60 = {
-    car: [...VEHICLE_ASSEMBLY_STEPS.car, "detailing and inspection"],
-    motorcycle: [...VEHICLE_ASSEMBLY_STEPS.motorcycle, "detailing and inspection"],
-    airplane: [...VEHICLE_ASSEMBLY_STEPS.airplane, "detailing and inspection"],
-    boat: [...VEHICLE_ASSEMBLY_STEPS.boat, "detailing and inspection"],
-    agricultural: [...VEHICLE_ASSEMBLY_STEPS.agricultural, "detailing and inspection"],
-    helicopter: [...VEHICLE_ASSEMBLY_STEPS.helicopter, "detailing and inspection"],
-    construction: [...VEHICLE_ASSEMBLY_STEPS.construction, "detailing and inspection"],
-    spaceship: [...VEHICLE_ASSEMBLY_STEPS.spaceship, "detailing and inspection"],
-    tank: [...VEHICLE_ASSEMBLY_STEPS.tank, "detailing and inspection"],
-    bicycle: [...VEHICLE_ASSEMBLY_STEPS.bicycle, "detailing and inspection"]
-};
-
-export const VEHICLE_STYLE_BIBLES = {
-    car: {
-        materials: { primary: ["die-cast metal", "plastic", "rubber tires", "clear plastic glass"], secondary: ["paint", "chrome", "decals"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "file", "cement"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["metallic silver", "gunmetal", "chrome"], accent: ["model-specific paint"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    motorcycle: {
-        materials: { primary: ["die-cast metal", "plastic", "rubber tires", "chrome"], secondary: ["paint", "decals", "leather seat"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "torque wrench"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["metallic silver", "chrome", "black"], accent: ["model-specific paint"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    airplane: {
-        materials: { primary: ["die-cast metal", "plastic", "rubber tires"], secondary: ["paint", "decals", "panel lines"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "pin vise"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["metallic silver", "aluminum", "olive drab"], accent: ["model-specific markings"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    boat: {
-        materials: { primary: ["die-cast metal", "plastic", "wood", "fabric sails"], secondary: ["paint", "varnish", "rigging"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "needle"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["white", "navy", "wood tones"], accent: ["brass", "copper"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    agricultural: {
-        materials: { primary: ["die-cast metal", "plastic", "rubber tires/tracks"], secondary: ["paint", "decals", "hydraulic hoses"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "wrench"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["green", "red", "yellow", "blue"], accent: ["chrome", "black"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    helicopter: {
-        materials: { primary: ["die-cast metal", "plastic", "composite rotor blades"], secondary: ["paint", "decals", "clear canopy"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "pin vise"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["olive drab", "gray", "camouflage"], accent: ["red cross", "warning stripes"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    construction: {
-        materials: { primary: ["die-cast metal", "plastic", "rubber tracks/tires"], secondary: ["paint", "decals", "hydraulic hoses"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "wrench", "allen keys"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["yellow", "orange", "gray"], accent: ["black tracks", "chrome"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    spaceship: {
-        materials: { primary: ["die-cast metal", "plastic", "composite"], secondary: ["paint", "thermal tiles", "decals"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "torque wrench"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["white", "black", "metallic"], accent: ["engine glow", "grid fins"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    tank: {
-        materials: { primary: ["die-cast metal", "plastic", "rubber/metal tracks"], secondary: ["paint", "decals", "photo-etched parts"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "file", "cement"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["olive drab", "sand", "gray", "camouflage"], accent: ["gun metal", "glass"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
-    },
-    bicycle: {
-        materials: { primary: ["carbon fiber", "aluminum", "steel", "rubber tires"], secondary: ["paint", "decals", "bar tape"], tools: ["tweezers", "mini screwdriver", "soft brush", "nippers", "chain tool", "allen keys"] },
-        camera: { lens: "85mm", angle: "macro_closeup", movement: "fixed", distance: "macro" },
-        lighting: { key: "bright workshop overhead", fill: "soft diffuser", mood: "bright_clean", consistency: "locked" },
-        color_palette: { primary: ["carbon black", "metallic team colors"], accent: ["chrome", "anodized"], background: "clean workbench surface", tone: "cool_cinematic" },
-        workspace: { surface: "wooden workbench", environment: "bright workshop", clutter_rule: "parts_disappear" },
-        hands_rule: "giant_hands_with_tools",
-        motion_rule: "stop_motion_assembly"
+export async function loadVehicleData() {
+    if (!_vehicleDataPromise) {
+        _vehicleDataPromise = fetch('./data/vehicle.json')
+            .then(res => {
+                if (!res.ok) throw new Error(`Failed to load vehicle.json: ${res.status}`);
+                return res.json();
+            })
+            .catch(err => {
+                console.error('Vehicle data load failed:', err);
+                _vehicleDataPromise = null; // Allow retry
+                throw err;
+            });
     }
-};
+    return _vehicleDataPromise;
+}
 
-export const VEHICLE_NEGATIVE_BASE = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry.";
+export function getVehicleDataSync() {
+    // For synchronous access after initial load
+    if (_vehicleDataPromise && _vehicleDataPromise._cached) {
+        return _vehicleDataPromise._cached;
+    }
+    return null;
+}
 
 // ============================================================================
 // Default Configuration
@@ -864,21 +521,34 @@ export const DEFAULT_PROFILES = {
     // Vehicle Assembly - 10 Categories (car, motorcycle, airplane, boat, agricultural, helicopter, construction, spaceship, tank, bicycle)
 // Generated from reference prompts - each category has specific identity_lock, style_bible, scene_plans, prompts
 'vehicle.assembly': (() => {
-    const categories = ['car', 'motorcycle', 'airplane', 'boat', 'agricultural', 'helicopter', 'construction', 'spaceship', 'tank', 'bicycle'];
-    const models = VEHICLE_MODELS;
-    const identityLocks = VEHICLE_IDENTITY_LOCKS;
-    const styleBibles = VEHICLE_STYLE_BIBLES;
-    const keyParts = VEHICLE_KEY_PARTS;
-    const assemblySteps = VEHICLE_ASSEMBLY_STEPS;
-    const scenePlans30 = VEHICLE_SCENE_PLANS_30;
-    const scenePlans60 = VEHICLE_SCENE_PLANS_60;
-    const steps60 = VEHICLE_ASSEMBLY_STEPS_60;
+    // This IIFE runs at module load time, but vehicle data is loaded async.
+    // We return a function that builds the profile once data is available.
+    let _cachedProfile = null;
 
-    function buildVehicleProfile(category, modelName) {
+    function buildScenePlans30(data, category) {
+        const steps = data.assemblySteps[category] || data.assemblySteps.car;
+        return [
+            { scene_id: 1, name: "Foundation & Powertrain", start_state: "all parts disassembled on workbench", ordered_actions: steps.slice(0, 2), end_state: "powertrain foundation complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: InputMode.MASTER_IMAGE },
+            { scene_id: 2, name: "Running Gear & Structure", start_state: "Scene 1 final frame", ordered_actions: steps.slice(2, 4), end_state: "rolling chassis/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+            { scene_id: 3, name: "Body & Final Reveal", start_state: "Scene 2 final frame", ordered_actions: steps.slice(4), end_state: "complete model revealed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Running gear"], input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+        ];
+    }
+
+    function buildScenePlans60(data, category) {
+        const steps = data.assemblySteps[category] || data.assemblySteps.car;
+        return [
+            { scene_id: 1, name: "Frame & Engine Mounts", start_state: "all parts disassembled on workbench", ordered_actions: [steps[0], "engine mounts secured"], end_state: "frame with engine mounts ready", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: InputMode.MASTER_IMAGE },
+            { scene_id: 2, name: "Powertrain Installation", start_state: "Scene 1 final frame", ordered_actions: [steps[1], "transmission/driveshaft connected"], end_state: "powertrain fully installed", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position"], input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+            { scene_id: 3, name: "Running Gear", start_state: "Scene 2 final frame", ordered_actions: [steps[2], steps[3]], end_state: "rolling chassis complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"], input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+            { scene_id: 4, name: "Superstructure/Body", start_state: "Scene 3 final frame", ordered_actions: [steps[4] || "main body/structure fitted", "main body/structure fitted"], end_state: "main body/structure complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Running gear"], input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+            { scene_id: 5, name: "Details & Systems", start_state: "Scene 4 final frame", ordered_actions: [steps[5] || "detail parts installed", "systems connected"], end_state: "details and systems complete", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Body structure"], input_mode: InputMode.PREVIOUS_FINAL_FRAME },
+            { scene_id: 6, name: "Final Reveal", start_state: "Scene 5 final frame", ordered_actions: [steps[5] || "all tools removed", "all tools removed"], end_state: "complete model revealed on clean workbench", forbidden_changes: ["Workbench", "Lighting", "Camera angle", "Completed model"], input_mode: InputMode.PREVIOUS_FINAL_FRAME }
+        ];
+    }
+
+    async function buildVehicleProfile(data, category, modelName) {
         const cat = category;
-        const name = modelName || (models[cat]?.[0] || cat);
-        const plan30 = scenePlans30[cat] || [];
-        const plan60 = scenePlans60[cat] || [];
+        const name = modelName || (data.models[cat]?.[0] || cat);
 
         return {
             id: 'vehicle.assembly',
@@ -891,24 +561,36 @@ export const DEFAULT_PROFILES = {
             _subtype: cat,
             _model_name: name,
             scene_plans: {
-                30: plan30,
-                60: plan60,
+                30: buildScenePlans30(data, cat),
+                60: buildScenePlans60(data, cat),
             },
-            identity_lock: identityLocks[cat] || VEHICLE_IDENTITY_LOCKS.car,
-            style_bible: styleBibles[cat] || VEHICLE_STYLE_BIBLES.car,
-            negative_prompt_base: VEHICLE_NEGATIVE_BASE,
+            identity_lock: data.identityLocks[cat] || data.identityLocks.car,
+            style_bible: data.styleBibles[cat] || data.styleBibles.car,
+            negative_prompt_base: data.negativeBase,
             template_exclusions: ["completed model at start", "floating parts", "teleporting parts"],
-            first_frame_prompt_factory: (topic, detail) => `Hyper-realistic macro photo of 100% disassembled miniature ${name} model parts neatly arranged on a wooden workbench, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, chassis/body/frame components, ${keyParts[cat] || keyParts.car} separated clearly, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, ${name}, scene: Master Image.`,
+            first_frame_prompt_factory: (topic, detail) => `Hyper-realistic macro photo of 100% disassembled miniature ${name} model parts neatly arranged on a wooden workbench, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, no completed model visible, chassis/body/frame components, ${data.keyParts[cat] || data.keyParts.car} separated clearly, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, ${name}, scene: Master Image.`,
             scene_prompt_factory: (topic, detail, scenePlan, sceneIdx) => {
                 const sceneName = scenePlan.name;
-                const step = assemblySteps[cat]?.[sceneIdx - 1] || `assembly step ${sceneIdx}`;
-                return `hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, 100% disassembled parts to fully assembled model, no floating or teleporting parts, parts attach in realistic order and disappear from workbench as installed, final step leaves only the fully assembled model on a clean workbench, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting, ${name.toLowerCase()}, scene: ${sceneName}. ${step}. As parts are attached, they logically disappear from the workbench. By the final step, the workspace is completely clean, leaving only the fully assembled model. Negative Prompt: ${VEHICLE_NEGATIVE_BASE}.`;
+                const steps = data.assemblySteps[cat] || data.assemblySteps.car;
+                const step = steps[sceneIdx - 1] || `assembly step ${sceneIdx}`;
+                return `hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, 100% disassembled parts to fully assembled model, no floating or teleporting parts, parts attach in realistic order and disappear from workbench as installed, final step leaves only the fully assembled model on a clean workbench, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting, ${name.toLowerCase()}, scene: ${sceneName}. ${step}. As parts are attached, they logically disappear from the workbench. By the final step, the workspace is completely clean, leaving only the fully assembled model. Negative Prompt: ${data.negativeBase}.`;
             },
         };
     }
 
-    // Default to car
-    return buildVehicleProfile('car', models.car?.[0] || 'Porsche 911');
+    // Return an async function that lazy-loads vehicle data and builds the profile
+    return async function getVehicleProfile(category = 'car', modelName = null) {
+        if (!_cachedProfile) {
+            const data = await loadVehicleData();
+            _cachedProfile = await buildVehicleProfile(data, category, modelName);
+        }
+        // If different category/model requested, rebuild
+        if (_cachedProfile._subtype !== category || _cachedProfile._model_name !== (modelName || (await loadVehicleData()).models[category]?.[0] || category)) {
+            const data = await loadVehicleData();
+            _cachedProfile = await buildVehicleProfile(data, category, modelName);
+        }
+        return _cachedProfile;
+    };
 })(),
     'home_decor.diy': {
         id: 'home_decor.diy',
