@@ -29,6 +29,14 @@ def main() -> None:
     parser.add_argument("--base-dir", default="output")
     parser.add_argument("--final-output", default="output/exports/final_timeline.mp4")
     parser.add_argument("--summary", default="-")
+    # Stitching options (passed to OpenMontage VideoStitch)
+    parser.add_argument("--transition", choices=["cut", "crossfade", "fade"], default="cut")
+    parser.add_argument("--transition-duration", type=float, default=0.5)
+    parser.add_argument("--no-normalize", dest="auto_normalize", action="store_false", default=True)
+    parser.add_argument("--codec", default="libx264")
+    parser.add_argument("--crf", type=int, default=23)
+    parser.add_argument("--preset", default="medium")
+    parser.add_argument("--dry-run", action="store_true", help="Validate stitch only, don't render")
     args = parser.parse_args()
 
     if args.list_building_types:
@@ -46,7 +54,17 @@ def main() -> None:
     }
 
     if all_scene_renders_exist(render_status):
-        stitch_report = finalize_stitch(base_dir, Path(args.final_output))
+        stitch_report = finalize_stitch(
+            base_dir,
+            Path(args.final_output),
+            transition=args.transition,
+            transition_duration=args.transition_duration,
+            auto_normalize=args.auto_normalize,
+            codec=args.codec,
+            crf=args.crf,
+            preset=args.preset,
+            dry_run=args.dry_run,
+        )
 
     full_report = {
         "pipeline_summary": summary,

@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Miniature Timelapse — Relay Runner</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260726" />
 </head>
 <body>
   <div class="app" id="app">
@@ -92,6 +95,63 @@
             </div>
           </div>
 
+          <!-- Stitching Options -->
+          <div class="setup-card stitch-card">
+            <h3>스티칭 옵션</h3>
+            <p class="card-desc">최종 비디오 연결 방식 설정 (OpenMontage VideoStitch)</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="stitchTransition">트랜지션</label>
+                <select id="stitchTransition">
+                  <option value="cut">Cut (단순 연결, 가장 빠름)</option>
+                  <option value="crossfade">Crossfade (교차 페이드)</option>
+                  <option value="fade">Fade Through Black (블랙 페이드)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="stitchTransitionDuration">트랜지션 길이 (초)</label>
+                <input id="stitchTransitionDuration" type="number" step="0.1" min="0.1" max="5" value="0.5" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="stitchCodec">비디오 코덱</label>
+                <select id="stitchCodec">
+                  <option value="libx264">H.264 (libx264)</option>
+                  <option value="libx265">H.265 (libx265)</option>
+                  <option value="prores_ks">ProRes (prores_ks)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="stitchCrf">품질 (CRF, 낮을수록 고화질)</label>
+                <input id="stitchCrf" type="number" min="0" max="51" value="23" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="stitchPreset">인코딩 프리셋</label>
+                <select id="stitchPreset">
+                  <option value="ultrafast">Ultrafast</option>
+                  <option value="superfast">Superfast</option>
+                  <option value="veryfast">Veryfast</option>
+                  <option value="faster">Faster</option>
+                  <option value="fast">Fast</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="slow">Slow</option>
+                  <option value="slower">Slower</option>
+                  <option value="veryslow">Veryslow</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="stitchAutoNormalize" class="toggle inline">
+                  <input type="checkbox" id="stitchAutoNormalize" checked />
+                  <span class="toggle-slider"></span>
+                  <span class="toggle-label">자동 정규화 (해상도/fps/codec 통일)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- Topic Input -->
           <div class="setup-card topic-card">
             <h3>주제 및 아이디어</h3>
@@ -140,12 +200,12 @@
           <div class="nim-header">
             <h3>NVIDIA NIM 연동</h3>
             <label class="toggle" for="nimEnabled">
-              <input type="checkbox" id="nimEnabled" />
+              <input type="checkbox" id="nimEnabled" checked />
               <span class="toggle-slider"></span>
               <span class="toggle-label">프롬프트 생성에 NIM 사용</span>
             </label>
           </div>
-          <div class="nim-fields" id="nimFields" hidden>
+          <div class="nim-fields" id="nimFields">
             <div class="field-row">
               <div class="field">
                 <label for="nimModel">모델</label>
@@ -169,6 +229,55 @@
               <span class="toggle-label">가변 필드만 NIM으로 정제 (불변 필드 보호)</span>
             </label>
           </div>
+        </div>
+
+        <!-- Stitching Options (Final Video Assembly) -->
+        <div class="setup-card stitch-card" id="stitchCard">
+          <h3>최종 영상 스티칭 설정</h3>
+          <p class="card-desc">여러 씬 클립을 하나의 타임라인으로 결합할 때 사용할 옵션</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="stitchTransition">트랜지션</label>
+              <select id="stitchTransition">
+                <option value="cut">Cut (단순 연결)</option>
+                <option value="crossfade">Crossfade (교차 페이드)</option>
+                <option value="fade">Fade Through Black (블랙 페이드)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="stitchTransitionDuration">트랜지션 길이 (초)</label>
+              <input id="stitchTransitionDuration" type="number" step="0.1" min="0.1" max="2" value="0.5" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="stitchCodec">비디오 코덱</label>
+              <input id="stitchCodec" type="text" value="libx264" />
+            </div>
+            <div class="field">
+              <label for="stitchCrf">CRF (품질)</label>
+              <input id="stitchCrf" type="number" min="18" max="28" value="23" />
+            </div>
+            <div class="field">
+              <label for="stitchPreset">프리셋</label>
+              <select id="stitchPreset">
+                <option value="ultrafast">Ultrafast</option>
+                <option value="superfast">Superfast</option>
+                <option value="veryfast">Veryfast</option>
+                <option value="faster">Faster</option>
+                <option value="fast">Fast</option>
+                <option value="medium" selected>Medium</option>
+                <option value="slow">Slow</option>
+                <option value="slower">Slower</option>
+                <option value="veryslow">Veryslow</option>
+              </select>
+            </div>
+          </div>
+          <label class="toggle inline" for="stitchAutoNormalize">
+            <input type="checkbox" id="stitchAutoNormalize" checked />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">자동 정규화 (fps/해상도/codec 불일치 시 변환)</span>
+          </label>
         </div>
 
         <!-- Build Button -->
@@ -379,6 +488,12 @@
     const buildHint = document.getElementById('buildHint');
     const nimEnabledEl = document.getElementById('nimEnabled');
     const nimFields = document.getElementById('nimFields');
+    const stitchTransitionEl = document.getElementById('stitchTransition');
+    const stitchTransitionDurationEl = document.getElementById('stitchTransitionDuration');
+    const stitchCodecEl = document.getElementById('stitchCodec');
+    const stitchCrfEl = document.getElementById('stitchCrf');
+    const stitchPresetEl = document.getElementById('stitchPreset');
+    const stitchAutoNormalizeEl = document.getElementById('stitchAutoNormalize');
     const planChips = document.getElementById('planChips');
     const planMeta = document.getElementById('planMeta');
     const sceneTimeline = document.getElementById('sceneTimeline');
@@ -484,6 +599,38 @@
         localStorage.setItem('miniature_timelapse_nim_base_url', nimBaseUrlEl.value));
       nimApiKeyEl.addEventListener('input', () =>
         localStorage.setItem('miniature_timelapse_nim_api_key', nimApiKeyEl.value));
+
+      // Stitch options persistence
+      ['stitchTransition', 'stitchTransitionDuration', 'stitchCodec', 'stitchCrf', 'stitchPreset', 'stitchAutoNormalize'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', () => {
+            const prefs = {
+              transition: stitchTransitionEl.value,
+              transition_duration: parseFloat(stitchTransitionDurationEl.value),
+              codec: stitchCodecEl.value,
+              crf: parseInt(stitchCrfEl.value, 10),
+              preset: stitchPresetEl.value,
+              auto_normalize: stitchAutoNormalizeEl.checked
+            };
+            localStorage.setItem('miniature_timelapse_stitch_options', JSON.stringify(prefs));
+          });
+        }
+      });
+
+      // Restore stitch options
+      const storedStitch = localStorage.getItem('miniature_timelapse_stitch_options');
+      if (storedStitch) {
+        try {
+          const prefs = JSON.parse(storedStitch);
+          stitchTransitionEl.value = prefs.transition || 'cut';
+          stitchTransitionDurationEl.value = prefs.transition_duration ?? 0.5;
+          stitchCodecEl.value = prefs.codec || 'libx264';
+          stitchCrfEl.value = prefs.crf ?? 23;
+          stitchPresetEl.value = prefs.preset || 'medium';
+          stitchAutoNormalizeEl.checked = prefs.auto_normalize ?? true;
+        } catch (_) {}
+      }
 
       const storedBaseUrl = localStorage.getItem('miniature_timelapse_nim_base_url');
       if (storedBaseUrl) nimBaseUrlEl.value = storedBaseUrl;
@@ -662,6 +809,14 @@
         nim_model_id: nimEnabled ? nimModelEl.value : undefined,
         nim_refinement_policy: nimEnabled ? (nimRefinementPolicyEl.checked ? 'mutable_only' : 'all') : undefined,
         provenance: { source: 'local' },
+        stitch_options: {
+          transition: stitchTransitionEl.value,
+          transition_duration: parseFloat(stitchTransitionDurationEl.value),
+          codec: stitchCodecEl.value,
+          crf: parseInt(stitchCrfEl.value, 10),
+          preset: stitchPresetEl.value,
+          auto_normalize: stitchAutoNormalizeEl.checked
+        },
         scenes: []
       };
 
@@ -678,6 +833,7 @@
         clip_duration_seconds: project.clip_duration_seconds,
         aspect_ratio: project.aspect_ratio,
         style_bible: project.style_bible,
+        stitch_options: project.stitch_options,
         scene_plans: scenePlans.map(sp => ({
           scene_id: sp.scene_id,
           name: sp.name,
@@ -756,6 +912,7 @@
       // Chips
       const profile = PROFILES[currentProfileId];
       const execProfile = EXECUTION_PROFILES.find(e => e.id === currentExecProfileId);
+      const stitch = project.stitch_options || {};
       planChips.innerHTML = `
         <span class="chip chip-profile">${profile.display_name}</span>
         <span class="chip chip-workflow">${project.workflow_mode}</span>
@@ -764,6 +921,7 @@
         <span class="chip chip-ratio">${project.aspect_ratio}</span>
         <span class="chip chip-exec">${execProfile?.label || currentExecProfileId}</span>
         ${project.nim_enabled ? '<span class="chip chip-nim">NIM Enabled</span>' : ''}
+        <span class="chip chip-stitch">Stitch: ${stitch.transition || 'cut'}${stitch.transition !== 'cut' ? ` ${stitch.transition_duration}s` : ''}</span>
       `;
 
       // Meta
@@ -772,6 +930,7 @@
         ${project.narration ? `<div class="meta-item"><strong>아이디어 시드:</strong> ${project.narration}</div>` : ''}
         <div class="meta-item"><strong>Source Revision:</strong> <code>${project.source_revision}</code></div>
         <div class="meta-item"><strong>워크플로우:</strong> ${project.workflow_mode} (${project.scene_count} 씬)</div>
+        <div class="meta-item"><strong>스티칭:</strong> ${stitch.transition || 'cut'}${stitch.transition !== 'cut' ? ` ${stitch.transition_duration}s` : ''} · ${stitch.codec || 'libx264'} CRF ${stitch.crf || 23} ${stitch.preset || 'medium'} · ${stitch.auto_normalize ? '정규화 ON' : '정규화 OFF'}</div>
       `;
 
       // Scene Timeline
@@ -1077,6 +1236,16 @@
 
       currentProfileId = project.profile_id;
       currentExecProfileId = project.flow_execution_profile_id || 'flow.frames_first.10s';
+
+      // Restore stitch options from saved project
+      if (project.stitch_options) {
+        stitchTransitionEl.value = project.stitch_options.transition || 'cut';
+        stitchTransitionDurationEl.value = project.stitch_options.transition_duration ?? 0.5;
+        stitchCodecEl.value = project.stitch_options.codec || 'libx264';
+        stitchCrfEl.value = project.stitch_options.crf ?? 23;
+        stitchPresetEl.value = project.stitch_options.preset || 'medium';
+        stitchAutoNormalizeEl.checked = project.stitch_options.auto_normalize ?? true;
+      }
 
       renderProfileGrid();
       renderExecProfileList();

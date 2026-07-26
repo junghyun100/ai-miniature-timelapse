@@ -469,6 +469,8 @@ select:disabled, input:disabled {
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease, background 0.18s ease;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-primary {
@@ -1032,6 +1034,8 @@ button:disabled {
   font-size: 16px;
   background: linear-gradient(135deg, #2e7d32, #1b5e20);
   box-shadow: 0 12px 28px rgba(46, 125, 50, 0.25);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-confirm:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(46, 125, 50, 0.3); }
