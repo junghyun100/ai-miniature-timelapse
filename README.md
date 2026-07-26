@@ -168,36 +168,6 @@ All profile prompt factories now match the reference prompts in `docs/reference_
 - All template/fallback prompt generators removed from `nim_client.py`, `prompt_templates.py`, `pipeline.py`
 - Legacy `prompt_templates.py` marked for deletion (replaced by profile factories)
 
-### Polished Final Render (Remotion Pipeline) — NEW
-A new **Remotion-based rendering pipeline** (`remotion-timelapse/`) provides professional video composition with:
-
-- **Scene transitions**: Crossfade (0.5s) between consecutive scenes
-- **Captions**: Scene name + timestamp overlay with fade animations using `interpolate`
-- **Progress bar**: Segmented progress indicator at top (configurable simple/segmented)
-- **Watermark**: Text/image watermark with position presets (top-left, top-right, bottom-left, bottom-right, center)
-- **Input**: `render_manifest.json` from Python pipeline (scene list, durations, video paths)
-- **Output**: `final_timeline.mp4` with H.264 codec
-
-**Architecture** (Remotion 4.x):
-- `src/index.tsx` — Entry point with `registerRoot` + `getCompositions()` for Studio/CLI
-- `src/components/SceneSequence.tsx` — Main orchestrator using `Sequence`, `Video`, `AbsoluteFill`
-- `src/components/Caption.tsx` — Scene name + timestamp with `interpolate`/`Easing` animations
-- `src/components/ProgressBar.tsx` — Top progress bar (simple + segmented variants)
-- `src/components/Watermark.tsx` — Image/text watermark with position enum
-- `src/utils/loadManifest.ts` — Manifest types, validation, frame calculations
-- `cli-entry.cjs` — CommonJS entry for CLI composition discovery
-
-**Rendering & Fallback**:
-```bash
-# Primary: Remotion (higher quality, effects)
-npx remotion render timelapse out/final_timeline.mp4 --config=remotion.config.ts
-
-# Fallback: ffmpeg concat (if Remotion unavailable)
-python3 src/stitch_finalize.py <base_dir> <output_path>
-```
-
-The Python `stitch_finalize.py` automatically tries Remotion first, then falls back to ffmpeg concatenation.
-
 ## License
 
 Internal project — not for distribution.
