@@ -56,10 +56,9 @@ def test_pipeline_scripts_syntax():
 
 def test_orchestrator_import():
     """오케스트레이터 모듈 임포트 테스트."""
-    from orchestrator import ProfilePlan, ScenePlan, WorkflowMode
-    assert ProfilePlan
-    assert ScenePlan
-    assert WorkflowMode
+    import orchestrator
+
+    assert callable(orchestrator.run)
 
 
 def test_vehicle_module_import():

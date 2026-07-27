@@ -7,15 +7,27 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Miniature Timelapse — Relay Runner</title>
-  <link rel="stylesheet" href="styles.css?v=20260726" />
+  <link rel="stylesheet" href="styles.css?v=20260728" />
 </head>
 <body>
   <div class="app" id="app">
     <!-- Loading State -->
-    <div class="loading-screen" id="loadingScreen" role="status" aria-live="polite">
-      <div class="loading-spinner"></div>
-      <p>Relay Runner 로딩 중...</p>
+    <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Relay Runner 로딩 중...</p>
+      </div>
     </div>
+
+    <section id="runtimeWarning" class="runtime-warning" hidden role="alert">
+      <div class="runtime-warning-card">
+        <p class="runtime-kicker">LOCAL SERVER REQUIRED</p>
+        <h1>파일을 직접 열 수 없습니다</h1>
+        <p>Relay Runner는 ES module을 사용하므로 프로젝트 루트에서 로컬 서버를 실행해야 합니다.</p>
+        <code>python3 -m http.server 4173 --bind 127.0.0.1</code>
+        <p>실행 후 <strong>http://127.0.0.1:4173/ui/</strong>로 접속하세요.</p>
+      </div>
+    </section>
 
     <!-- Main Application -->
     <header class="header" hidden id="header">
@@ -32,7 +44,7 @@
       </div>
     </header>
 
-    <main class="main" id="main">
+    <main class="main" id="main" hidden>
       <!-- Phase 1: Project Setup -->
       <section class="phase phase-setup" id="phaseSetup" aria-labelledby="setupTitle">
         <div class="phase-header">
@@ -163,90 +175,43 @@
               <label for="ideaSeed">아이디어 시드 (선택)</label>
               <input id="ideaSeed" type="text" placeholder="비워두면 자동 생성됨" />
             </div>
-
-        <!-- NIM Integration - Always Visible -->
-        <div class="setup-card nim-card" id="nimCard">
-          <div class="nim-header">
-            <h3>NVIDIA NIM 연동</h3>
-            <label class="toggle" for="nimEnabled">
-              <input type="checkbox" id="nimEnabled" checked />
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">프롬프트 생성에 NIM 사용</span>
-            </label>
           </div>
-          <div class="nim-fields" id="nimFields">
-            <div class="field-row">
-              <div class="field">
-                <label for="nimModel">모델</label>
-                <select id="nimModel">
-                  <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
-                  <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
-                </select>
+
+          <!-- NIM Integration - Always Visible -->
+          <div class="setup-card nim-card" id="nimCard">
+            <div class="nim-header">
+              <h3>NVIDIA NIM 연동</h3>
+              <label class="toggle" for="nimEnabled">
+                <input type="checkbox" id="nimEnabled" checked />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">프롬프트 생성에 NIM 사용</span>
+              </label>
+            </div>
+            <div class="nim-fields" id="nimFields">
+              <div class="field-row">
+                <div class="field">
+                  <label for="nimModel">모델</label>
+                  <select id="nimModel">
+                    <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
+                    <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="nimBaseUrl">API 엔드포인트</label>
+                  <input id="nimBaseUrl" type="url" placeholder="https://integrate.api.nvidia.com/v1" />
+                </div>
               </div>
               <div class="field">
-                <label for="nimBaseUrl">API 엔드포인트</label>
-                <input id="nimBaseUrl" type="url" placeholder="https://integrate.api.nvidia.com/v1" />
+                <label for="nimApiKey">API 키</label>
+                <input id="nimApiKey" type="password" placeholder="NGC 또는 NIM API 키 입력" />
               </div>
-            </div>
-            <div class="field">
-              <label for="nimApiKey">API 키</label>
-              <input id="nimApiKey" type="password" placeholder="NGC 또는 NIM API 키 입력" />
-            </div>
-            <label class="toggle inline" for="nimRefinementPolicy">
-              <input type="checkbox" id="nimRefinementPolicy" checked />
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">가변 필드만 NIM으로 정제 (불변 필드 보호)</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Stitching Options (Final Video Assembly) -->
-        <div class="setup-card stitch-card" id="stitchCard">
-          <h3>최종 영상 스티칭 설정</h3>
-          <p class="card-desc">여러 씬 클립을 하나의 타임라인으로 결합할 때 사용할 옵션</p>
-          <div class="field-row">
-            <div class="field">
-              <label for="stitchTransition">트랜지션</label>
-              <select id="stitchTransition">
-                <option value="cut">Cut (단순 연결)</option>
-                <option value="crossfade">Crossfade (교차 페이드)</option>
-                <option value="fade">Fade Through Black (블랙 페이드)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="stitchTransitionDuration">트랜지션 길이 (초)</label>
-              <input id="stitchTransitionDuration" type="number" step="0.1" min="0.1" max="2" value="0.5" />
+              <label class="toggle inline" for="nimRefinementPolicy">
+                <input type="checkbox" id="nimRefinementPolicy" checked />
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">가변 필드만 NIM으로 정제 (불변 필드 보호)</span>
+              </label>
             </div>
           </div>
-          <div class="field-row">
-            <div class="field">
-              <label for="stitchCodec">비디오 코덱</label>
-              <input id="stitchCodec" type="text" value="libx264" />
-            </div>
-            <div class="field">
-              <label for="stitchCrf">CRF (품질)</label>
-              <input id="stitchCrf" type="number" min="18" max="28" value="23" />
-            </div>
-            <div class="field">
-              <label for="stitchPreset">프리셋</label>
-              <select id="stitchPreset">
-                <option value="ultrafast">Ultrafast</option>
-                <option value="superfast">Superfast</option>
-                <option value="veryfast">Veryfast</option>
-                <option value="faster">Faster</option>
-                <option value="fast">Fast</option>
-                <option value="medium" selected>Medium</option>
-                <option value="slow">Slow</option>
-                <option value="slower">Slower</option>
-                <option value="veryslow">Veryslow</option>
-              </select>
-            </div>
-          </div>
-          <label class="toggle inline" for="stitchAutoNormalize">
-            <input type="checkbox" id="stitchAutoNormalize" checked />
-            <span class="toggle-slider"></span>
-            <span class="toggle-label">자동 정규화 (fps/해상도/codec 불일치 시 변환)</span>
-          </label>
         </div>
 
         <!-- Build Button -->
@@ -331,23 +296,23 @@
 
           <!-- Right: Active Scene Detail -->
           <div class="execute-main">
-            <div class="scene-detail-panel" id="sceneDetailPanel">
-              <div class="scene-header" id="sceneHeader"></div>
+              <div class="scene-detail-panel" id="sceneDetailPanel">
+                <div class="scene-header" id="sceneHeader"></div>
 
-              <div class="scene-instruction" id="sceneInstruction" role="alert" aria-live="polite"></div>
+                <div class="scene-instruction" id="sceneInstruction" role="alert" aria-live="polite"></div>
 
               <div class="action-buttons" id="actionButtons">
                 <button class="btn-secondary copy-btn" id="copyMasterBtn" title="Master Image Prompt 복사" disabled>
                   <span class="btn-icon" aria-hidden="true">📋</span>
-                  Master Image Prompt
+                  <span class="copy-btn-label">Master Image Prompt</span>
                 </button>
                 <button class="btn-secondary copy-btn" id="copyVideoBtn" title="Scene Video Prompt 복사" disabled>
                   <span class="btn-icon" aria-hidden="true">📋</span>
-                  Scene Video Prompt
+                  <span class="copy-btn-label">Scene Video Prompt</span>
                 </button>
                 <button class="btn-secondary copy-btn" id="copyFullSceneBtn" title="Full Scene 복사" disabled>
                   <span class="btn-icon" aria-hidden="true">📋</span>
-                  Full Scene
+                  <span class="copy-btn-label">Full Scene</span>
                 </button>
                 <button class="btn-primary btn-confirm" id="confirmStepBtn" disabled>
                   <span class="btn-icon" aria-hidden="true">✓</span>
@@ -358,19 +323,19 @@
 
               <!-- Source / Target Prompts -->
               <div class="prompt-panels">
-                <div class="prompt-panel">
-                  <div class="prompt-header">
-                    <h4>Video Prompt → Flow "Frames to Video"용</h4>
-                    <button class="btn-copy-small" data-target="videoPrompt">복사</button>
-                  </div>
-                  <pre id="videoPrompt" class="prompt-content"></pre>
-                </div>
                 <div class="prompt-panel" id="masterPromptPanel" hidden>
                   <div class="prompt-header">
                     <h4>Master Image Prompt (Scene 1만) → 정지 이미지 생성기용</h4>
                     <button class="btn-copy-small" data-target="masterPrompt">복사</button>
                   </div>
                   <pre id="masterPrompt" class="prompt-content"></pre>
+                </div>
+                <div class="prompt-panel">
+                  <div class="prompt-header">
+                    <h4>Video Prompt → Flow "Frames to Video"용</h4>
+                    <button class="btn-copy-small" data-target="videoPrompt">복사</button>
+                  </div>
+                  <pre id="videoPrompt" class="prompt-content"></pre>
                 </div>
               </div>
 
@@ -389,8 +354,15 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-  <script type="module">
-    import {
+    <script>
+      if (window.location.protocol === 'file:') {
+        document.getElementById('loadingScreen').hidden = true;
+        document.getElementById('runtimeWarning').hidden = false;
+      }
+    </script>
+
+    <script type="module">
+      import {
       SceneStatus,
       WorkflowMode,
       InputMode,
@@ -429,9 +401,15 @@
     async function getVehicleProfile(category = 'car', modelName = null) {
       const profileFactory = PROFILES['vehicle.assembly'];
       if (typeof profileFactory === 'function') {
-        return await profileFactory(category, modelName);
+        vehicleProfileCache = await profileFactory(category, modelName);
+        return vehicleProfileCache;
       }
       return profileFactory; // fallback for sync version
+    }
+
+    function getResolvedProfile(profileId) {
+      const profile = PROFILES[profileId];
+      return typeof profile === 'function' ? vehicleProfileCache : profile;
     }
 
     const EXECUTION_PROFILES = [
@@ -513,23 +491,27 @@
     // Initialization
     // ============================================================================
     async function init() {
-      await loadVehicleData(); // Load vehicle JSON first for dropdowns
-      renderProfileGrid();
-      renderExecProfileList();
-      setupEventListeners();
-      checkResumeAvailability();
-
-      loadingScreen.hidden = true;
-      header.hidden = false;
-      main.hidden = false;
+      try {
+        await loadVehicleData(); // Load vehicle JSON first for dropdowns
+        renderProfileGrid();
+        renderExecProfileList();
+        setupEventListeners();
+        checkResumeAvailability();
+      } catch (err) {
+        console.error('[init] ERROR:', err);
+        showToast(`초기화 실패: ${err.message}`, 'error');
+      } finally {
+        loadingScreen.hidden = true;
+        header.hidden = false;
+        main.hidden = false;
+      }
     }
 
     async function loadVehicleData() {
       try {
         const profileFactory = PROFILES['vehicle.assembly'];
         if (typeof profileFactory === 'function') {
-          // Trigger loadVehicleData in app.js to populate cache
-          await profileFactory('car', null); // Pre-load
+          vehicleProfileCache = await profileFactory('car', null);
         }
       } catch (err) {
         console.warn('Vehicle data preload failed:', err);
@@ -675,7 +657,9 @@
     // ============================================================================
     function renderProfileGrid() {
       profileGrid.innerHTML = '';
-      for (const [id, profile] of Object.entries(PROFILES)) {
+      for (const [id] of Object.entries(PROFILES)) {
+        const profile = getResolvedProfile(id);
+        if (!profile) continue;
         const isSelected = id === currentProfileId;
         const workflowLabel = profile.workflow_mode === WorkflowMode.REFERENCE_FRAME_RELAY
           ? '릴레이 (순차)'
@@ -725,7 +709,11 @@
     }
 
     function updateDurationOptions() {
-      const profile = PROFILES[currentProfileId];
+      const profile = getResolvedProfile(currentProfileId);
+      if (!profile) {
+        durationEl.innerHTML = '';
+        return;
+      }
       durationEl.innerHTML = profile.allowed_total_durations.map(d =>
         `<option value="${d}" ${d === profile.default_total_duration ? 'selected' : ''}>${d}초</option>`
       ).join('');
@@ -975,11 +963,10 @@
     // ============================================================================
     function renderPlanPhase() {
       // Chips
-      const profile = PROFILES[currentProfileId];
       const execProfile = EXECUTION_PROFILES.find(e => e.id === currentExecProfileId);
       const stitch = project.stitch_options || {};
       planChips.innerHTML = `
-        <span class="chip chip-profile">${profile.display_name}</span>
+        <span class="chip chip-profile">${project.profile_display_name}</span>
         <span class="chip chip-workflow">${project.workflow_mode}</span>
         <span class="chip chip-duration">${project.duration_seconds}s</span>
         <span class="chip chip-clips">${project.scene_count} clips × ${project.clip_duration_seconds}s</span>
@@ -1140,20 +1127,20 @@
       if (isFirstScene) {
         copyMasterBtn.innerHTML = `
           <span class="btn-icon" aria-hidden="true">📋</span>
-          Master Image Prompt 복사 (정지 이미지용)
+          <span class="copy-btn-label">Master Image Prompt 복사 (정지 이미지용)</span>
         `;
         copyVideoBtn.innerHTML = `
           <span class="btn-icon" aria-hidden="true">📋</span>
-          Video Prompt 복사 (Flow 10초 비디오용)
+          <span class="copy-btn-label">Video Prompt 복사 (Flow 10초 비디오용)</span>
         `;
       } else {
         copyMasterBtn.innerHTML = `
           <span class="btn-icon" aria-hidden="true">📋</span>
-          Master Image Prompt
+          <span class="copy-btn-label">Master Image Prompt</span>
         `;
         copyVideoBtn.innerHTML = `
           <span class="btn-icon" aria-hidden="true">📋</span>
-          Scene Video Prompt
+          <span class="copy-btn-label">Scene Video Prompt</span>
         `;
       }
 
@@ -1440,7 +1427,7 @@
     // ============================================================================
     // Start
     // ============================================================================
-    init();
+    void init();
   </script>
 </body>
 </html>
