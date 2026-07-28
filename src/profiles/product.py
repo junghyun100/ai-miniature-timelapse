@@ -14,6 +14,7 @@ from ..profile_types import (
     Profile,
     ScenePlan,
     StyleBible,
+    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )
@@ -213,6 +214,7 @@ PRODUCT_IDENTITY_LOCK_BASE = (
     "hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
     "no miniature people, no small people, no tiny workers, no human figures, no characters, "
     "precise mechanical/organic assembly logic, "
+    f"{STATE_PERMANENCE_RULE}, "
     "parts attach in realistic order and disappear from workbench as installed, "
     "camera angle, scale, workbench position, and lighting physically fixed throughout, "
     "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, "
@@ -314,8 +316,12 @@ def _build_scene_plans(subtype: str, duration_seconds: int) -> list[ScenePlan]:
         exact_stop_state = (
             f"Completed actions in this scene: {completed_summary}. "
             f"The {PRODUCT_SUBTYPES[subtype]['label'].lower()} remains visibly incomplete, with future parts still separate, visible, and untouched on the workbench: {future_summary}."
+            f" Installed parts remain visible and fixed."
             if not is_final
-            else f"{PRODUCT_SUBTYPES[subtype]['label']} fully assembled alone on a clean workbench"
+            else (
+                f"{PRODUCT_SUBTYPES[subtype]['label']} fully assembled alone on a clean workbench. "
+                "Installed parts remain visible and fixed."
+            )
         )
         plans.append(
             ScenePlan(

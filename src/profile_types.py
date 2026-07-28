@@ -61,6 +61,14 @@ class AssetScope(str, Enum):
     SCENE = "scene"
 
 
+# Shared state continuity rule used across profiles.
+STATE_PERMANENCE_RULE = (
+    "keep every already-installed, already-placed, or already-prepared element visible and fixed; "
+    "do not remove, swap, reset, or rebuild existing work; "
+    "do not introduce later-stage parts, ingredients, or details before their turn"
+)
+
+
 # ============================================================================
 # Domain Models
 # ============================================================================

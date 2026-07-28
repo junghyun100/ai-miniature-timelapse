@@ -16,6 +16,7 @@ from ..profile_types import (
     Profile,
     ScenePlan,
     StyleBible,
+    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )
@@ -363,7 +364,8 @@ ARCH_NEGATIVE_BASE = (
 
 ARCHITECTURE_INITIAL_STATE = (
     "Completely unstarted site: bare sand or soil, all subtype materials separated and unused, "
-    "no foundation, no walls, no posts, no roof structure, no finish work."
+    "no foundation, no walls, no posts, no roof structure, no finish work, "
+    "no later-stage elements already visible."
 )
 
 
@@ -668,6 +670,7 @@ def make_first_frame_prompt(subtype: str) -> str:
         "giant human fingers interacting with miniature materials, tiny realistic construction tools, "
         f"exact starting state: {ARCHITECTURE_INITIAL_STATE} "
         "The hands begin only the first material placement; nothing has been built yet. "
+        "Later-stage walls, roof, and finish details remain separate and unused. "
         "8K detail, cinematic studio lighting, shallow depth of field. "
         f"Architecture subtype: {st['label']}. "
         f"Primary subtype materials: {materials}. "
@@ -729,6 +732,7 @@ def make_scene_video_prompt(
     boundary_rules = (
         f"This clip covers only {plan.completion_range} of the construction phase. "
         f"Exact stop state: {plan.exact_stop_state}. "
+        f"{STATE_PERMANENCE_RULE}. "
         "Stop immediately once the exact stop state is reached. "
         "Do not proceed beyond this construction state. "
     )
@@ -741,6 +745,7 @@ def make_scene_video_prompt(
     else:
         body = (
             "Later-stage materials remain visible, separated, and unused. "
+            f"{STATE_PERMANENCE_RULE}. "
             "Do not move on to the next construction stage. "
         )
 

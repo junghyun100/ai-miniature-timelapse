@@ -15,6 +15,7 @@ from ..profile_types import (
     Profile,
     ScenePlan,
     StyleBible,
+    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )
@@ -527,7 +528,7 @@ def _scene_exact_stop_state(
     if is_final_scene:
         return (
             f"Final reveal only: the fully assembled {label.lower()} model sits alone on a clean workbench "
-            f"after the final polish."
+            f"after the final polish. {STATE_PERMANENCE_RULE.capitalize()}."
         )
     completed_summary = _summarize_actions(ordered_actions) or scene_name
     future_summary = _summarize_reserved_future_actions(
@@ -536,7 +537,7 @@ def _scene_exact_stop_state(
     return (
         f"Exact stop state after this scene's completed actions: {completed_summary}. "
         f"The {label.lower()} must remain visibly incomplete, with future parts still separate, visible, and unused: "
-        f"{future_summary}."
+        f"{future_summary}. {STATE_PERMANENCE_RULE.capitalize()}."
     )
 
 
@@ -1056,6 +1057,7 @@ def make_scene_video_prompt(
                 f"Ordered current actions: {ordered_actions}.",
                 f"Exact stop state: {resolved_plan.exact_stop_state}.",
                 "Final-only permissions: final polish, cleanup, and hero reveal are allowed only here.",
+                f"{STATE_PERMANENCE_RULE.capitalize()}.",
                 "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
                 "Hands only. No floating or teleporting parts.",
                 f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
@@ -1072,6 +1074,7 @@ def make_scene_video_prompt(
             f"Exact stop state: {resolved_plan.exact_stop_state}.",
             reserved_future_clause,
             "The model must remain visibly incomplete, with future parts still separate, visible, and unused.",
+            f"{STATE_PERMANENCE_RULE.capitalize()}.",
             "Do not proceed beyond this stop state.",
             "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
             "Hands only. No floating or teleporting parts.",

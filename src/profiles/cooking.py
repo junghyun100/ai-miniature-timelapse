@@ -15,6 +15,7 @@ from ..profile_types import (
     Profile,
     ScenePlan,
     StyleBible,
+    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )
@@ -26,7 +27,8 @@ COOKING_IDENTITY_LOCK = (
     "except hands, all tools miniature, all ingredients miniature, "
     "identical kitchen, lighting, cutting board, stove, camera style throughout, "
     "physical realism: logical cooking steps never skipped, food reactions "
-    "(sizzle, browning, steam) realistic"
+    "(sizzle, browning, steam) realistic, "
+    f"{STATE_PERMANENCE_RULE}"
 )
 
 
@@ -271,9 +273,18 @@ KOREAN_DISHES = {
 }
 
 
-SCENE_1_PREP_STOP = "All ingredients prepped and arranged in miniature bowls, ready for cooking"
-SCENE_2_COOK_STOP = "Dish fully cooked with steam visible, all finishing materials still untouched"
-SCENE_3_FINAL_STOP = "Finished plated dish in serveware with natural steam and hero reveal"
+SCENE_1_PREP_STOP = (
+    "All ingredients prepped and arranged in miniature bowls, ready for cooking. "
+    "Raw ingredients stay visible and fixed."
+)
+SCENE_2_COOK_STOP = (
+    "Dish fully cooked with steam visible, all finishing materials still untouched. "
+    "Prepared ingredients and cookware remain visible and fixed."
+)
+SCENE_3_FINAL_STOP = (
+    "Finished plated dish in serveware with natural steam and hero reveal. "
+    "Earlier prep and cooking elements remain visible and fixed."
+)
 
 
 def _future_action_block(actions: list[str]) -> tuple[list[str], list[str]]:
@@ -470,7 +481,7 @@ def _build_scene_prompt(scene_id: int, dish: dict) -> str:
             f"ingredients only, before any heat or cookware is used. Exact stop state: {SCENE_1_PREP_STOP}. "
             f"Stop immediately at this exact state and do not advance beyond the current preparation stage. "
             f"Same kitchen, same lighting, same "
-            f"camera, same hand choreography. No voices, no music, "
+            f"camera, same hand choreography. {STATE_PERMANENCE_RULE.capitalize()}. No voices, no music, "
             f"only satisfying ASMR sounds. Negative Prompt: {COOKING_NEGATIVE_BASE}."
         )
     if scene_id == 2:
@@ -483,6 +494,7 @@ def _build_scene_prompt(scene_id: int, dish: dict) -> str:
             f"cooked. Exact input/start state: {SCENE_1_PREP_STOP}. Exact stop state: {SCENE_2_COOK_STOP}. "
             f"Stop immediately at this exact state and do not advance beyond the current cooking stage. Same "
             f"kitchen, same lighting, same camera, same heat source, same ASMR-only soundscape. "
+            f"{STATE_PERMANENCE_RULE.capitalize()}. "
             f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
         )
     return (
@@ -493,7 +505,8 @@ def _build_scene_prompt(scene_id: int, dish: dict) -> str:
         f"garnish, and reveal the plated steam-filled hero shot. Exact input/start state: "
         f"{SCENE_2_COOK_STOP}. Exact stop state: {SCENE_3_FINAL_STOP}. "
         f"All earlier prep and cooking steps remain complete and unchanged. Same kitchen, same "
-        f"lighting, same camera, same ASMR-only soundscape. Negative Prompt: {COOKING_NEGATIVE_BASE}."
+        f"lighting, same camera, same ASMR-only soundscape. {STATE_PERMANENCE_RULE.capitalize()}. "
+        f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
     )
 
 

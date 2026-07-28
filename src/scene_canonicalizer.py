@@ -13,6 +13,7 @@ Invariants:
 from __future__ import annotations
 
 from .domain import InputMode, Scene
+from .profile_types import STATE_PERMANENCE_RULE
 from .serializers import IMMUTABLE_NEGATIVE
 
 
@@ -31,6 +32,19 @@ def ensure_identity_lock(prompt: str, identity_lock: str) -> str:
     if trimmed.endswith("."):
         return f"{trimmed} {identity_lock}"
     return f"{trimmed}, {identity_lock}"
+
+
+def ensure_state_permanence(prompt: str) -> str:
+    """Append the shared state permanence rule once if missing."""
+    if not prompt or not prompt.strip():
+        return STATE_PERMANENCE_RULE
+    if STATE_PERMANENCE_RULE in prompt:
+        return prompt.strip()
+
+    trimmed = prompt.strip()
+    if trimmed.endswith("."):
+        return f"{trimmed} {STATE_PERMANENCE_RULE}"
+    return f"{trimmed}. {STATE_PERMANENCE_RULE}"
 
 
 def canonicalize_scene(
@@ -60,7 +74,9 @@ def canonicalize_scene(
         scene.first_frame_prompt = None
 
     # 2. Identity Lock in Video Prompt
-    scene.video_prompt = ensure_identity_lock(scene.video_prompt, identity_lock)
+    scene.video_prompt = ensure_state_permanence(
+        ensure_identity_lock(scene.video_prompt, identity_lock)
+    )
 
     # 3. Negative Once-Last (Immutable Negative)
     # Failure Rule: negative line must not be mutated or altered
