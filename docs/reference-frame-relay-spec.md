@@ -1232,6 +1232,12 @@ Every architecture subtype MUST define:
 
 Hanok additionally follows Section 12.
 
+Architecture Scene 1 has an extra start-state rule:
+
+- it begins from almost bare ground or a bare site
+- only the minimum initial marks, guide strings, or foundation prep may be visible
+- finished walls, roofs, openings, and decorative elements must not appear in Scene 1 start state
+
 #### Minimum Architecture Subtype Registry
 
 The first release MUST include at least the following editable presets. Values
@@ -1446,6 +1452,16 @@ and only the completed model and finishing brush remain.
 ```
 
 Do not use unexplained "disappear" wording without the physical-contact clause.
+
+#### Object Permanence Rule
+
+All profiles must preserve object permanence across scenes:
+
+- Already-installed, already-placed, or already-prepared elements stay visible and fixed unless the current scene explicitly removes them.
+- Later-stage parts, ingredients, or details do not appear before their turn.
+- A scene may add new work, but it may not silently erase prior work and replace it with a future state.
+
+Use this rule as a prompt-writing contract, not as a claim about perfect generation control.
 
 #### Vehicle Audio
 

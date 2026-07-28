@@ -124,7 +124,7 @@ def _make_scene_video_prompt(
         f"captured from a clean, top-down perspective. Macro close-up, hands only, "
         f"fixed top-down 45-degree angle, steady camera, bright even studio lighting, "
         f"shallow depth of field, clean background, pastel and jewel-tone palette, "
-        f"9:16 vertical, photorealistic 8K. {STATE_PERMANENCE_RULE.capitalize()}. "
+        f"9:16 vertical, photorealistic 8K. {STATE_PERMANENCE_RULE}. "
         f"Korean female voiceover narrates continuously "
         f'without pause: "{korean_narration}". No background music. '
         f"Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, "
