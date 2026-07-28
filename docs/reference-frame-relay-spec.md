@@ -731,7 +731,19 @@ Every video prompt must then state:
 - a concrete stop condition
 - final-frame hold for extraction
 
-### 11.4 Final-Frame Handoff Contract
+### 11.4 Scene Tempo and Density Rule
+
+ASMR pacing should feel brisk, but each scene must still show meaningful work.
+
+- Non-final scenes should usually contain several distinct manipulation beats rather than one isolated action.
+- Prefer 3 to 5 visible beats per scene when the duration allows it.
+- A beat may be a setup action, an installation action, a tightening or fastening action, a detail action, or a cleanup action.
+- Compression may merge time, but it must not collapse the scene into a single step, a before/after jump, or an already-finished state.
+- Different scenes must still be clearly distinguishable by their main construction milestone.
+
+If a profile only allows a short clip, preserve the same logic with fewer but still clearly separated beats.
+
+### 11.5 Final-Frame Handoff Contract
 
 Every non-final scene ends with:
 
@@ -749,7 +761,7 @@ subject, then perform one subtle cinematic pull-back without changing the
 subject design.
 ```
 
-### 11.5 No-Cut Motion Rule
+### 11.6 No-Cut Motion Rule
 
 Use:
 
@@ -765,7 +777,7 @@ multiple rapid scene cuts
 
 when cross-scene continuity is the priority.
 
-### 11.6 Canonical Prompt Serialization
+### 11.7 Canonical Prompt Serialization
 
 The canonical full-plan serializer uses this field order:
 
