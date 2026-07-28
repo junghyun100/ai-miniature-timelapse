@@ -67,9 +67,9 @@ curl -s http://127.0.0.1:4174/health
 
 ### Step 5: Start Relay Runner UI HTTP Server (Terminal 2)
 ```bash
-cd ui && python3 -m http.server 4173 --bind 127.0.0.1
+python3 -m http.server 4173 --bind 127.0.0.1
 ```
-Access UI at `http://127.0.0.1:4173/index.html`.
+Run this from the project root, then access the UI at `http://127.0.0.1:4173/ui/`.
 
 ### Step 6: Rewrite Smoke Check
 ```bash

@@ -88,14 +88,13 @@ curl -s http://127.0.0.1:4174/health
 Start the local HTTP static file server to serve the ES module web app:
 
 ```bash
-# Navigate to ui directory and start Python HTTP server
-cd ui && python3 -m http.server 4173 --bind 127.0.0.1
+python3 -m http.server 4173 --bind 127.0.0.1
 ```
 
 ### Step 6: Access Relay Runner UI
 Open your browser and navigate to:
 ```text
-http://127.0.0.1:4173/index.html
+http://127.0.0.1:4173/ui/
 ```
 
 ---

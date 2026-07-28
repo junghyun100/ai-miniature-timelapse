@@ -1463,6 +1463,18 @@ All profiles must preserve object permanence across scenes:
 
 Use this rule as a prompt-writing contract, not as a claim about perfect generation control.
 
+#### Sequence Integrity Rule
+
+All video outputs must advance through work in strict order:
+
+- Every scene may only include work that is either already completed in the prior scene or is being completed in the current scene.
+- Work that has not yet been performed must not appear early as if it were already done.
+- Work that has already been performed must not disappear, reset, or be omitted from later scenes.
+- Scene boundaries are state transitions, not restarts: each scene starts from the exact prior end state and ends with a monotonic superset of that state.
+- When a profile compresses multiple steps into one scene, the compression may merge time, but it may not reorder steps, skip intermediate state changes, or introduce unearned finished details.
+
+This rule applies to architecture, vehicle, product, cooking, and home-decor profiles alike.
+
 #### Vehicle Audio
 
 Default audio:
@@ -2966,6 +2978,9 @@ optional constrained LLM wording layer.
 The most important implementation decisions are:
 
 > Scene continuity is enforced by asset lineage first and prompt wording second.
+
+> Scene order is monotonic: nothing unfinished may appear early, and nothing
+> already completed may vanish from later scenes.
 
 > The four supplied prompt references keep their own workflow, duration, camera,
 > audio, and transformation logic instead of being flattened into one template.
