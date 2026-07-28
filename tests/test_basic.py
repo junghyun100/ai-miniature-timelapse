@@ -1,9 +1,8 @@
 """Tests for ai-miniature-timelapse pipeline."""
 
+import inspect
 import json
 from pathlib import Path
-
-import pytest
 
 
 def test_vehicle_json_exists():
@@ -55,10 +54,20 @@ def test_pipeline_scripts_syntax():
 
 
 def test_orchestrator_import():
-    """오케스트레이터 모듈 임포트 테스트."""
-    import orchestrator
+    """현재 package import와 오케스트레이터 공개 API를 확인."""
+    from src import orchestrator
 
     assert callable(orchestrator.run)
+    assert tuple(inspect.signature(orchestrator.run).parameters) == (
+        "topic",
+        "duration",
+        "format_",
+        "variant",
+        "base_dir",
+        "building_type",
+        "refine_prompts",
+        "use_nim_generate",
+    )
 
 
 def test_vehicle_module_import():

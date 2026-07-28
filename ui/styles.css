@@ -401,7 +401,7 @@ body {
 
 .required { color: #c0392b; }
 
-select, input {
+select, input, textarea {
   width: 100%;
   appearance: none;
   border: 1px solid var(--line);
@@ -414,14 +414,74 @@ select, input {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-select:focus, input:focus {
+textarea {
+  resize: vertical;
+  min-height: 96px;
+  font-family: inherit;
+  line-height: 1.55;
+}
+
+select:focus, input:focus, textarea:focus {
   border-color: rgba(143, 95, 52, 0.55);
   box-shadow: var(--focus-ring);
 }
 
-select:disabled, input:disabled {
+select:disabled, input:disabled, textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.profile-selection-card {
+  border-color: rgba(143, 95, 52, 0.3);
+  background:
+    linear-gradient(145deg, rgba(255, 250, 242, 0.98), rgba(246, 235, 220, 0.9));
+}
+
+.selection-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.selection-field-korean_narration,
+.selection-field-materials {
+  grid-column: 1 / -1;
+}
+
+.topic-label-preview {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 13px 15px;
+  border: 1px solid rgba(143, 95, 52, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.topic-label-preview span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topic-label-preview strong {
+  overflow-wrap: anywhere;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.field-validation {
+  min-height: 18px;
+  margin: 10px 2px 0;
+  color: #2e7d32;
+  font-size: 12px;
+}
+
+.field-validation.has-error {
+  color: #b3261e;
 }
 
 /* Topic Card */
@@ -1076,7 +1136,7 @@ button:disabled {
 }
 
 .copy-btn {
-  flex: 1 1 220px;
+  flex: 1 1 260px;
   min-width: 0;
   justify-content: flex-start;
   align-items: center;
@@ -1092,9 +1152,12 @@ button:disabled {
 }
 
 .copy-btn-label {
+  display: block;
+  flex: 1 1 auto;
   min-width: 0;
   white-space: normal;
   overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .btn-confirm {
@@ -1242,6 +1305,9 @@ button:disabled {
   .setup-grid { grid-template-columns: 1fr; }
   .topic-card, .nim-card { grid-column: auto; }
   .field-row { grid-template-columns: 1fr; }
+  .selection-fields { grid-template-columns: 1fr; }
+  .selection-field-korean_narration,
+  .selection-field-materials { grid-column: auto; }
   .execute-sidebar { flex-direction: column; }
   .phase-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .action-buttons { flex-direction: column; }

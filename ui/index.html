@@ -62,22 +62,17 @@
             <input type="hidden" id="selectedProfile" />
           </div>
 
-          <!-- Vehicle Category & Model Selection (shown when Vehicle Assembly selected) -->
-          <div class="setup-card" id="vehicleCard" hidden>
-            <h3>차량 상세 설정</h3>
-            <p class="card-desc">차량 카테고리와 모델을 선택하세요</p>
-            <div class="field-row">
-              <div class="field">
-                <label for="vehicleCategory">카테고리</label>
-                <select id="vehicleCategory"></select>
-              </div>
-              <div class="field">
-                <label for="vehicleModel">모델</label>
-                <select id="vehicleModel"></select>
-              </div>
+          <!-- Common profile-specific selection renderer -->
+          <div class="setup-card profile-selection-card" id="profileSelectionCard">
+            <h3 id="selectionTitle">프로필 상세 설정</h3>
+            <p class="card-desc" id="selectionDescription">선택한 프로필에 필요한 값을 입력하세요</p>
+            <div class="selection-fields" id="selectionFields"></div>
+            <div class="topic-label-preview" aria-live="polite">
+              <span>Topic label</span>
+              <strong id="topicLabelPreview"></strong>
             </div>
-            <input type="hidden" id="selectedVehicleCategory" />
-            <input type="hidden" id="selectedVehicleModel" />
+            <p class="field-validation" id="selectionValidation" aria-live="polite"></p>
+            <input type="hidden" id="topic" />
           </div>
 
           <!-- Flow Execution Profile -->
@@ -164,13 +159,9 @@
             </div>
           </div>
 
-          <!-- Topic Input -->
+          <!-- Optional refinement input -->
           <div class="setup-card topic-card">
-            <h3>주제 및 아이디어</h3>
-            <div class="field">
-              <label for="topic">주제 <span class="required" aria-hidden="true">*</span></label>
-              <input id="topic" type="text" placeholder="예: 한국 한옥 건축, 자동차 조립, 한지 공예, 김치찌개 요리" />
-            </div>
+            <h3>추가 아이디어</h3>
             <div class="field">
               <label for="ideaSeed">아이디어 시드 (선택)</label>
               <input id="ideaSeed" type="text" placeholder="비워두면 자동 생성됨" />
@@ -374,6 +365,7 @@
       serializeSceneVideoPrompt,
       serializeFullScene,
       serializeAssetRef,
+      getSceneInputLabel,
       performCopyAction,
       createInitialRelayBranch,
       getNextActionableScene,
@@ -387,7 +379,15 @@
       copyToClipboard,
       showToast,
       DEFAULT_FLOW_PROFILE,
-      DEFAULT_PROFILES
+      DEFAULT_PROFILES,
+      PROFILE_SELECTION_CONFIG,
+      getDefaultSelectionValues,
+      deriveTopicLabel,
+      getLegacySelectionFields,
+      getCanonicalSelection,
+      validateSelectionValues,
+      countNarrationCharacters,
+      resolveProjectWorkflowMode
     } from './app.js';
 
     // ============================================================================
@@ -426,6 +426,8 @@
     let relayBranch = null;
     let activeSceneIndex = 0;
     let currentPhase = 'setup'; // 'setup' | 'plan' | 'execute'
+    let selectionValues = getDefaultSelectionValues(currentProfileId);
+    let vehicleDataCache = null;
 
     // DOM Elements
     const loadingScreen = document.getElementById('loadingScreen');
@@ -439,6 +441,12 @@
     const durationEl = document.getElementById('duration');
     const aspectRatioEl = document.getElementById('aspectRatio');
     const topicEl = document.getElementById('topic');
+    const profileSelectionCard = document.getElementById('profileSelectionCard');
+    const selectionTitle = document.getElementById('selectionTitle');
+    const selectionDescription = document.getElementById('selectionDescription');
+    const selectionFields = document.getElementById('selectionFields');
+    const topicLabelPreview = document.getElementById('topicLabelPreview');
+    const selectionValidation = document.getElementById('selectionValidation');
     const ideaSeedEl = document.getElementById('ideaSeed');
     const selectedProfileEl = document.getElementById('selectedProfile');
     const selectedExecProfileEl = document.getElementById('selectedExecProfile');
@@ -480,13 +488,6 @@
     const nimApiKeyEl = document.getElementById('nimApiKey');
     const nimRefinementPolicyEl = document.getElementById('nimRefinementPolicy');
 
-    // Vehicle selection elements
-    const vehicleCard = document.getElementById('vehicleCard');
-    const vehicleCategoryEl = document.getElementById('vehicleCategory');
-    const vehicleModelEl = document.getElementById('vehicleModel');
-    const selectedVehicleCategoryEl = document.getElementById('selectedVehicleCategory');
-    const selectedVehicleModelEl = document.getElementById('selectedVehicleModel');
-
     // ============================================================================
     // Initialization
     // ============================================================================
@@ -494,6 +495,7 @@
       try {
         await loadVehicleData(); // Load vehicle JSON first for dropdowns
         renderProfileGrid();
+        await renderSelectionFields(currentProfileId);
         renderExecProfileList();
         setupEventListeners();
         checkResumeAvailability();
@@ -509,6 +511,8 @@
 
     async function loadVehicleData() {
       try {
+        const { loadVehicleData: loadVehicleDataModule } = await import('./app.js');
+        vehicleDataCache = await loadVehicleDataModule();
         const profileFactory = PROFILES['vehicle.assembly'];
         if (typeof profileFactory === 'function') {
           vehicleProfileCache = await profileFactory('car', null);
@@ -531,27 +535,6 @@
         if (item) selectExecProfile(item.dataset.execProfileId);
       });
 
-      // Vehicle category change -> update models
-      vehicleCategoryEl.addEventListener('change', async () => {
-        const category = vehicleCategoryEl.value;
-        selectedVehicleCategoryEl.value = category;
-        try {
-          const profileFactory = PROFILES['vehicle.assembly'];
-          if (typeof profileFactory === 'function') {
-            await profileFactory(category, null); // Trigger data load
-          }
-          const { loadVehicleData: loadVehicleDataModule } = await import('./app.js');
-          const data = await loadVehicleDataModule();
-          populateVehicleModels(data, category);
-        } catch (err) {
-          console.warn('Failed to update vehicle models:', err);
-        }
-      });
-
-      vehicleModelEl.addEventListener('change', () => {
-        selectedVehicleModelEl.value = vehicleModelEl.value;
-      });
-
       // NIM toggle
       nimEnabledEl.addEventListener('change', () => {
         nimFields.hidden = !nimEnabledEl.checked;
@@ -560,8 +543,6 @@
       // Duration change
       durationEl.addEventListener('change', validateSetup);
 
-      // Topic input
-      topicEl.addEventListener('input', validateSetup);
       ideaSeedEl.addEventListener('input', validateSetup);
 
       // Build plan
@@ -656,7 +637,7 @@
     // Rendering Functions
     // ============================================================================
     function renderProfileGrid() {
-      profileGrid.innerHTML = '';
+      profileGrid.replaceChildren();
       for (const [id] of Object.entries(PROFILES)) {
         const profile = getResolvedProfile(id);
         if (!profile) continue;
@@ -672,15 +653,29 @@
         card.dataset.profileId = id;
         card.setAttribute('role', 'radio');
         card.setAttribute('aria-checked', isSelected);
-        card.innerHTML = `
-          <div class="profile-icon" aria-hidden="true">${getProfileIcon(id)}</div>
-          <div class="profile-info">
-            <h4>${profile.display_name}</h4>
-            <p class="profile-meta">${workflowLabel} · ${durations}s · ${profile.clip_duration_seconds}s/clips</p>
-            <p class="profile-desc">${getProfileDescription(id)}</p>
-          </div>
-          ${isSelected ? '<span class="profile-check" aria-hidden="true">✓</span>' : ''}
-        `;
+        const icon = document.createElement('div');
+        icon.className = 'profile-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = getProfileIcon(id);
+        const info = document.createElement('div');
+        info.className = 'profile-info';
+        const title = document.createElement('h4');
+        title.textContent = profile.display_name;
+        const meta = document.createElement('p');
+        meta.className = 'profile-meta';
+        meta.textContent = `${workflowLabel} · ${durations}s · ${profile.clip_duration_seconds}s/clips`;
+        const description = document.createElement('p');
+        description.className = 'profile-desc';
+        description.textContent = getProfileDescription(id);
+        info.append(title, meta, description);
+        card.append(icon, info);
+        if (isSelected) {
+          const check = document.createElement('span');
+          check.className = 'profile-check';
+          check.setAttribute('aria-hidden', 'true');
+          check.textContent = '✓';
+          card.appendChild(check);
+        }
         profileGrid.appendChild(card);
       }
       selectedProfileEl.value = currentProfileId;
@@ -689,7 +684,7 @@
     }
 
     function renderExecProfileList() {
-      execProfileList.innerHTML = '';
+      execProfileList.replaceChildren();
       for (const ep of EXECUTION_PROFILES) {
         const isSelected = ep.id === currentExecProfileId;
         const item = document.createElement('button');
@@ -698,11 +693,20 @@
         item.dataset.execProfileId = ep.id;
         item.setAttribute('role', 'radio');
         item.setAttribute('aria-checked', isSelected);
-        item.innerHTML = `
-          <span class="exec-profile-label">${ep.label}</span>
-          <span class="exec-profile-meta">${ep.provider} · ${ep.clipDuration}s</span>
-          ${isSelected ? '<span class="exec-profile-check" aria-hidden="true">✓</span>' : ''}
-        `;
+        const label = document.createElement('span');
+        label.className = 'exec-profile-label';
+        label.textContent = ep.label;
+        const meta = document.createElement('span');
+        meta.className = 'exec-profile-meta';
+        meta.textContent = `${ep.provider} · ${ep.clipDuration}s`;
+        item.append(label, meta);
+        if (isSelected) {
+          const check = document.createElement('span');
+          check.className = 'exec-profile-check';
+          check.setAttribute('aria-hidden', 'true');
+          check.textContent = '✓';
+          item.appendChild(check);
+        }
         execProfileList.appendChild(item);
       }
       selectedExecProfileEl.value = currentExecProfileId;
@@ -711,66 +715,143 @@
     function updateDurationOptions() {
       const profile = getResolvedProfile(currentProfileId);
       if (!profile) {
-        durationEl.innerHTML = '';
+        durationEl.replaceChildren();
         return;
       }
-      durationEl.innerHTML = profile.allowed_total_durations.map(d =>
-        `<option value="${d}" ${d === profile.default_total_duration ? 'selected' : ''}>${d}초</option>`
-      ).join('');
+      durationEl.replaceChildren();
+      for (const duration of profile.allowed_total_durations) {
+        const option = document.createElement('option');
+        option.value = String(duration);
+        option.textContent = `${duration}초`;
+        option.selected = duration === profile.default_total_duration;
+        durationEl.appendChild(option);
+      }
     }
 
     function validateSetup() {
-      const hasTopic = topicEl.value.trim().length > 0;
-      buildPlanBtn.disabled = !hasTopic;
-      buildHint.textContent = hasTopic ? '준비 완료 - 릴레이 플랜 생성' : '주제를 입력하세요';
+      const result = validateSelectionValues(currentProfileId, selectionValues);
+      const narrationCount = currentProfileId === 'home_decor.diy'
+        ? countNarrationCharacters(selectionValues.korean_narration)
+        : null;
+      selectionValidation.textContent = result.valid
+        ? (narrationCount === null ? '' : `Narration: ${narrationCount}/60 characters excluding spaces`)
+        : result.errors.join(' ');
+      selectionValidation.classList.toggle('has-error', !result.valid);
+      buildPlanBtn.disabled = !result.valid;
+      buildHint.textContent = result.valid
+        ? '준비 완료 - 릴레이 플랜 생성'
+        : '프로필 상세 설정의 필수 값을 확인하세요';
     }
 
-    async function populateVehicleDropdowns() {
-      try {
-        const profileFactory = PROFILES['vehicle.assembly'];
-        if (typeof profileFactory === 'function') {
-          // Trigger loading vehicle data
-          const dummyProfile = await profileFactory('car', null);
-        }
-        // Now get the loaded data
-        const { loadVehicleData: loadVehicleDataModule } = await import('./app.js');
-        const data = await loadVehicleDataModule();
+    function appendOption(select, value, selectedValue) {
+      const option = document.createElement('option');
+      const optionValue = typeof value === 'object' ? value.value : value;
+      const optionLabel = typeof value === 'object' ? value.label : value;
+      option.value = optionValue;
+      option.textContent = optionLabel;
+      option.selected = optionValue === selectedValue;
+      select.appendChild(option);
+    }
 
-        // Populate category dropdown
-        if (data && data.categories) {
-          const currentCategory = vehicleCategoryEl.value || 'car';
-          vehicleCategoryEl.innerHTML = data.categories.map(cat =>
-            `<option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`
-          ).join('');
-
-          // Populate model dropdown for current category
-          populateVehicleModels(data, currentCategory);
-        }
-      } catch (err) {
-        console.warn('Failed to populate vehicle dropdowns:', err);
+    function getSelectionOptions(field) {
+      if (field.type === 'vehicle-category') {
+        return vehicleDataCache?.categories || ['car'];
       }
-    }
-
-    function populateVehicleModels(data, category) {
-      if (data && data.models && data.models[category]) {
-        const currentModel = vehicleModelEl.value || '';
-        vehicleModelEl.innerHTML = data.models[category].map(model =>
-          `<option value="${model}" ${model === currentModel ? 'selected' : ''}>${model}</option>`
-        ).join('');
+      if (field.type === 'vehicle-model') {
+        const category = selectionValues.category || 'car';
+        return vehicleDataCache?.models?.[category] || [];
       }
+      return field.options || [];
     }
 
-    function selectProfile(profileId) {
+    function updateSelectionSummary() {
+      const legacy = getLegacySelectionFields(currentProfileId, selectionValues);
+      topicEl.value = legacy.topic || '';
+      topicLabelPreview.textContent = deriveTopicLabel(currentProfileId, selectionValues);
+      validateSetup();
+    }
+
+    function handleSelectionChange(field, control) {
+      selectionValues[field.key] = control.value;
+      if (currentProfileId === 'vehicle.assembly' && field.key === 'category') {
+        const models = vehicleDataCache?.models?.[control.value] || [];
+        selectionValues.model = models[0] || '';
+        const modelControl = document.getElementById('selection-model');
+        if (modelControl) {
+          modelControl.replaceChildren();
+          for (const model of models) appendOption(modelControl, model, selectionValues.model);
+        }
+      }
+      updateSelectionSummary();
+    }
+
+    async function renderSelectionFields(profileId, initialValues = null) {
+      const config = PROFILE_SELECTION_CONFIG[profileId];
+      if (!config) {
+        profileSelectionCard.hidden = true;
+        return;
+      }
+      profileSelectionCard.hidden = false;
+      selectionValues = {
+        ...getDefaultSelectionValues(profileId),
+        ...(initialValues || {})
+      };
+      if (profileId === 'vehicle.assembly') {
+        const category = selectionValues.category || 'car';
+        const models = vehicleDataCache?.models?.[category] || [];
+        if (!models.includes(selectionValues.model)) selectionValues.model = models[0] || '';
+      }
+
+      selectionTitle.textContent = `${config.genre_label} details`;
+      selectionDescription.textContent = 'These values drive the topic label, prompt, scene plan, and saved source revision.';
+      selectionFields.replaceChildren();
+
+      for (const field of config.fields) {
+        const wrapper = document.createElement('div');
+        wrapper.className = `field selection-field selection-field-${field.key}`;
+        const label = document.createElement('label');
+        label.htmlFor = `selection-${field.key}`;
+        label.textContent = field.label;
+        if (field.required) {
+          const required = document.createElement('span');
+          required.className = 'required';
+          required.setAttribute('aria-hidden', 'true');
+          required.textContent = ' *';
+          label.appendChild(required);
+        }
+
+        let control;
+        if (field.type === 'textarea') {
+          control = document.createElement('textarea');
+          control.rows = 3;
+        } else if (field.type === 'select' || field.type.startsWith('vehicle-')) {
+          control = document.createElement('select');
+          const options = getSelectionOptions(field);
+          for (const option of options) appendOption(control, option, selectionValues[field.key]);
+        } else {
+          control = document.createElement('input');
+          control.type = 'text';
+          control.placeholder = field.placeholder || '';
+        }
+        control.id = `selection-${field.key}`;
+        control.name = field.key;
+        control.required = Boolean(field.required);
+        control.value = selectionValues[field.key] || '';
+        control.addEventListener(field.type === 'select' || field.type.startsWith('vehicle-') ? 'change' : 'input', () => {
+          handleSelectionChange(field, control);
+        });
+
+        wrapper.append(label, control);
+        selectionFields.appendChild(wrapper);
+      }
+      updateSelectionSummary();
+    }
+
+    async function selectProfile(profileId) {
       currentProfileId = profileId;
+      selectionValues = getDefaultSelectionValues(profileId);
       renderProfileGrid();
-
-      // Vehicle assembly profile selected - show vehicle card and populate dropdowns
-      const isVehicle = profileId === 'vehicle.assembly';
-      vehicleCard.hidden = !isVehicle;
-
-      if (isVehicle) {
-        populateVehicleDropdowns();
-      }
+      await renderSelectionFields(profileId);
     }
 
     function selectExecProfile(execProfileId) {
@@ -782,6 +863,7 @@
       const icons = {
         'architecture.korean': '🏯',
         'vehicle.assembly': '🚗',
+        'product.assembly': '⌚',
         'home_decor.diy': '🪟',
         'cooking.miniature': '🍲'
       };
@@ -792,8 +874,9 @@
       const descs = {
         'architecture.korean': '한옥 건축 과정 - 기초부터 조경까지 단계별 릴레이 (30s/60s)',
         'vehicle.assembly': '차량 조립 공정 - 섀시부터 완성까지 단계별 릴레이 (30s/60s)',
-        'home_decor.diy': '한국 전통 공예 DIY - 한지/자개/매듭 공예 릴레이 (30s/60s)',
-        'cooking.miniature': '미니어처 요리 - 손질/조리/플레이팅 릴레이 (30s/60s)'
+        'product.assembly': '제품 조립 공정 - 부품부터 완제품까지 (10s/30s/60s)',
+        'home_decor.diy': '한국 전통 공예 DIY - 단일 10초 튜토리얼',
+        'cooking.miniature': '미니어처 요리 - 손질/조리/플레이팅 30초 릴레이'
       };
       return descs[profileId] || '';
     }
@@ -821,8 +904,22 @@
       let profile = PROFILES[currentProfileId];
       const duration = parseInt(durationEl.value, 10);
       const aspectRatio = aspectRatioEl.value;
-      const topic = topicEl.value.trim();
+      const selectionValidationResult = validateSelectionValues(currentProfileId, selectionValues);
+      if (!selectionValidationResult.valid) {
+        validateSetup();
+        showToast(selectionValidationResult.errors.join(' '), 'error');
+        return;
+      }
+      const legacyFields = getLegacySelectionFields(currentProfileId, selectionValues);
+      const canonicalSelection = getCanonicalSelection(currentProfileId, selectionValues);
+      const topic = legacyFields.topic || topicEl.value.trim();
+      const topicLabel = deriveTopicLabel(currentProfileId, selectionValues);
       const ideaSeed = ideaSeedEl.value.trim() || undefined;
+      const selectionDetail = Object.entries(selectionValues)
+        .filter(([, value]) => String(value || '').trim())
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(' | ');
+      const promptDetail = [selectionDetail, ideaSeed].filter(Boolean).join(' | ');
       const nimEnabled = nimEnabledEl.checked;
 
       buildPlanBtn.disabled = true;
@@ -830,25 +927,33 @@
 
       // Handle vehicle.assembly async profile loading
       if (currentProfileId === 'vehicle.assembly') {
-        // Get selected vehicle category/model from UI
-        const vehicleCategory = document.getElementById('vehicleCategory')?.value || 'car';
-        const vehicleModel = document.getElementById('vehicleModel')?.value || null;
+        const vehicleCategory = selectionValues.category || 'car';
+        const vehicleModel = selectionValues.model || null;
         profile = await getVehicleProfile(vehicleCategory, vehicleModel);
+      } else if (typeof profile.resolve_selection === 'function') {
+        profile = profile.resolve_selection(selectionValues);
       }
 
       // Get scene plans for duration
-      const scenePlans = profile.scene_plans[duration] || profile.scene_plans[30];
+      const selectedScenePlans = profile.scene_plans[duration] || profile.scene_plans[profile.default_total_duration];
+      const scenePlans = selectedScenePlans.map((scenePlan, index) => ({
+        ...scenePlan,
+        input_mode: index === 0 ? InputMode.MASTER_IMAGE : InputMode.PREVIOUS_FINAL_FRAME
+      }));
 
       // Build project object
       project = {
         profile_id: profile.id,
         profile_version: profile.version,
         profile_display_name: profile.display_name,
-        workflow_mode: profile.workflow_mode,
+        workflow_mode: resolveProjectWorkflowMode(currentProfileId, duration, profile.workflow_mode),
         topic,
-        topic_label: topic,
+        topic_label: topicLabel,
         genre: profile.id.split('.')[0],
-        subtype: profile.id.split('.')[1],
+        subtype: legacyFields.subtype || profile.id.split('.')[1],
+        selection: { ...selectionValues },
+        derived_fields: { selection: canonicalSelection },
+        ...legacyFields,
         duration_seconds: duration,
         clip_duration_seconds: profile.clip_duration_seconds,
         aspect_ratio: aspectRatio,
@@ -882,6 +987,18 @@
         genre: project.genre,
         subtype: project.subtype,
         topic_label: project.topic_label,
+        selection: project.selection,
+        derived_fields: project.derived_fields,
+        subject: project.subject,
+        category: project.category,
+        model_name: project.model_name,
+        dish_name: project.dish_name,
+        dish_key: project.dish_key,
+        craft_name: project.craft_name,
+        idea_name: project.idea_name,
+        materials: project.materials,
+        final_object: project.final_object,
+        korean_narration: project.korean_narration,
         duration_seconds: project.duration_seconds,
         clip_duration_seconds: project.clip_duration_seconds,
         aspect_ratio: project.aspect_ratio,
@@ -893,10 +1010,15 @@
           start_state: sp.start_state,
           ordered_actions: sp.ordered_actions,
           end_state: sp.end_state,
+          completion_range: sp.completion_range,
+          is_final_scene: sp.is_final_scene,
+          exact_stop_state: sp.exact_stop_state,
+          reserved_future_actions: sp.reserved_future_actions,
+          forbidden_future_actions: sp.forbidden_future_actions,
           forbidden_changes: sp.forbidden_changes,
           input_mode: sp.input_mode
         })),
-        narration: ideaSeed,
+        narration: project.korean_narration || ideaSeed,
         idea_seed: ideaSeed,
         flow_execution_profile_id: project.flow_execution_profile_id,
         nim_enabled: project.nim_enabled,
@@ -904,6 +1026,7 @@
         nim_refinement_policy: project.nim_refinement_policy
       };
 
+      project.source_draft = sourceDraft;
       project.source_revision = await computeSourceRevision(sourceDraft);
 
       // Build scenes with prompts
@@ -912,12 +1035,12 @@
         const isFirst = i === 0;
 
         const firstFramePrompt = isFirst
-          ? profile.first_frame_prompt_factory(topic, ideaSeed || '')
+          ? profile.first_frame_prompt_factory(topic, promptDetail)
           : '';
 
         const videoPrompt = profile.scene_prompt_factory
-          ? profile.scene_prompt_factory(topic, ideaSeed || '', sp, i + 1)
-          : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Identity: ${profile.identity_lock}`;
+          ? profile.scene_prompt_factory(topic, promptDetail, sp, i + 1)
+          : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Selection: ${promptDetail}. Identity: ${profile.identity_lock}`;
 
         const assetRef = {
           logical_id: `scene_${i + 1}_final`,
@@ -939,8 +1062,14 @@
           start_state: sp.start_state,
           ordered_actions: sp.ordered_actions,
           end_state: sp.end_state,
+          completion_range: sp.completion_range,
+          is_final_scene: sp.is_final_scene,
+          exact_stop_state: sp.exact_stop_state,
+          reserved_future_actions: sp.reserved_future_actions,
+          forbidden_future_actions: sp.forbidden_future_actions,
           first_frame_prompt: firstFramePrompt,
           video_prompt: videoPrompt,
+          negative_prompt_base: project.negative_prompt_base,
           template_exclusions: project.template_exclusions,
           asset_ref: assetRef
         });
@@ -977,13 +1106,26 @@
       `;
 
       // Meta
-      planMeta.innerHTML = `
-        <div class="meta-item"><strong>주제:</strong> ${project.topic}</div>
-        ${project.narration ? `<div class="meta-item"><strong>아이디어 시드:</strong> ${project.narration}</div>` : ''}
-        <div class="meta-item"><strong>Source Revision:</strong> <code>${project.source_revision}</code></div>
-        <div class="meta-item"><strong>워크플로우:</strong> ${project.workflow_mode} (${project.scene_count} 씬)</div>
-        <div class="meta-item"><strong>스티칭:</strong> ${stitch.transition || 'cut'}${stitch.transition !== 'cut' ? ` ${stitch.transition_duration}s` : ''} · ${stitch.codec || 'libx264'} CRF ${stitch.crf || 23} ${stitch.preset || 'medium'} · ${stitch.auto_normalize ? '정규화 ON' : '정규화 OFF'}</div>
-      `;
+      planMeta.replaceChildren();
+      const appendMeta = (label, value, useCode = false) => {
+        const row = document.createElement('div');
+        row.className = 'meta-item';
+        const strong = document.createElement('strong');
+        strong.textContent = `${label}: `;
+        const content = document.createElement(useCode ? 'code' : 'span');
+        content.textContent = value;
+        row.append(strong, content);
+        planMeta.appendChild(row);
+      };
+      appendMeta('주제', project.topic);
+      appendMeta('Topic label', project.topic_label);
+      if (project.narration) appendMeta('아이디어 시드', project.narration);
+      appendMeta('Source Revision', project.source_revision, true);
+      appendMeta('워크플로우', `${project.workflow_mode} (${project.scene_count} 씬)`);
+      appendMeta(
+        '스티칭',
+        `${stitch.transition || 'cut'}${stitch.transition !== 'cut' ? ` ${stitch.transition_duration}s` : ''} · ${stitch.codec || 'libx264'} CRF ${stitch.crf || 23} ${stitch.preset || 'medium'} · ${stitch.auto_normalize ? '정규화 ON' : '정규화 OFF'}`
+      );
 
       // Scene Timeline
       sceneTimeline.innerHTML = project.scenes.map((scene, i) => `
@@ -996,7 +1138,8 @@
             <h4>${scene.name}</h4>
             <div class="timeline-meta">
               <span class="input-mode-badge">${scene.input_mode}</span>
-              <span>입력: ${scene.asset_ref?.flow_asset_label || 'pending'}</span>
+              <span>입력: ${getSceneInputLabel(i + 1, scene.input_mode)}</span>
+              <span>출력: ${scene.asset_ref?.flow_asset_label || 'pending'}</span>
             </div>
             <p class="timeline-actions">${scene.ordered_actions.join(' → ')}</p>
           </div>
@@ -1106,12 +1249,21 @@
 
       // Asset info
       const assetRef = scene.asset_ref;
-      assetInfoEl.innerHTML = `
-        <div class="asset-item"><strong>입력 애셋:</strong> ${serializeAssetRef(assetRef)}</div>
-        <div class="asset-item"><strong>로컬 경로:</strong> <code>${assetRef?.local_path || 'pending'}</code></div>
-        ${isFirstScene ? `<div class="asset-item"><strong>마스터 이미지:</strong> ${scene.first_frame_prompt.slice(0, 100)}...</div>` : ''}
-        ${nextScene ? `<div class="asset-item"><strong>다음 씬 전달:</strong> <code>${nextScene.asset_ref?.local_path || 'pending'}</code></div>` : ''}
-      `;
+      assetInfoEl.replaceChildren();
+      const appendAsset = (label, value, useCode = false) => {
+        const row = document.createElement('div');
+        row.className = 'asset-item';
+        const strong = document.createElement('strong');
+        strong.textContent = `${label}: `;
+        const content = document.createElement(useCode ? 'code' : 'span');
+        content.textContent = value;
+        row.append(strong, content);
+        assetInfoEl.appendChild(row);
+      };
+      appendAsset('입력 애셋', serializeAssetRef(assetRef));
+      appendAsset('로컬 경로', assetRef?.local_path || 'pending', true);
+      if (isFirstScene) appendAsset('마스터 이미지', `${scene.first_frame_prompt.slice(0, 100)}...`);
+      if (nextScene) appendAsset('다음 씬 전달', nextScene.asset_ref?.local_path || 'pending', true);
     }
 
     function updateActionButtons(status, isFirstScene) {
@@ -1265,7 +1417,20 @@
       resumeProjectBtn.disabled = !saved;
     }
 
-    function resumeLastProject() {
+    function getProjectSelection(savedProject) {
+      if (savedProject.selection) return savedProject.selection;
+      const config = PROFILE_SELECTION_CONFIG[savedProject.profile_id];
+      const restored = getDefaultSelectionValues(savedProject.profile_id);
+      for (const field of config?.fields || []) {
+        const legacyKey = field.key === 'model' ? 'model_name' : field.key;
+        if (savedProject[legacyKey] !== undefined) restored[field.key] = savedProject[legacyKey];
+      }
+      if (savedProject.profile_id === 'architecture.korean') restored.topic = savedProject.topic;
+      if (savedProject.profile_id === 'product.assembly') restored.subject = savedProject.subject || savedProject.topic;
+      return restored;
+    }
+
+    async function resumeLastProject() {
       const saved = loadProjectState();
       if (!saved) {
         showToast('저장된 프로젝트 없음', 'error');
@@ -1300,6 +1465,7 @@
       }
 
       renderProfileGrid();
+      await renderSelectionFields(currentProfileId, getProjectSelection(project));
       renderExecProfileList();
       durationEl.value = project.duration_seconds;
 
@@ -1307,15 +1473,14 @@
       showToast('프로젝트 복원됨', 'success');
     }
 
-    function startNewProject() {
+    async function startNewProject() {
       project = null;
       relayBranch = null;
       activeSceneIndex = 0;
       switchPhase('setup');
-      topicEl.value = '';
+      selectionValues = getDefaultSelectionValues(currentProfileId);
+      await renderSelectionFields(currentProfileId);
       ideaSeedEl.value = '';
-      buildPlanBtn.disabled = true;
-      buildHint.textContent = '주제를 입력하세요';
       showToast('새 프로젝트 시작', 'info');
     }
 

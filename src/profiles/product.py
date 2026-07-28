@@ -3,9 +3,11 @@ Product Assembly Profile (product.assembly)
 
 Per Section 13.7:
 - Workflow: SINGLE_CLIP_FROM_MASTER
-- Duration: 10s (single clip)
+- Duration: 10s single clip, 30s and 60s progressive assembly variants
 - Subtypes: watch, camera, sneaker, robot, dinosaur, wizard_house, spaceship, hoverbike, mech, dragon
 """
+
+from __future__ import annotations
 
 from ..profile_types import (
     Profile, ScenePlan, WorkflowMode, StyleBible, InputMode, register_profile
@@ -67,24 +69,103 @@ PRODUCT_SUBTYPES = {
 }
 
 
-PRODUCT_ASSEMBLY_STEPS = [
-    "Core structure placed on workbench",
-    "Major sub-assemblies built (engine, movement, frame)",
-    "Sub-assemblies joined to core",
-    "External components attached (panels, covers, details)",
-    "Fine details added (decals, paint touches, small parts)",
-    "Final brush sweep — completed model alone on clean workbench",
-]
+PRODUCT_SUBTYPE_STAGES = {
+    "watch": [
+        "Place the main plate and movement bridge into the open case base",
+        "Seat the gear train and mainspring barrel, then lock the movement screws",
+        "Align the dial and press the hour and minute hands into place",
+        "Close the case with bezel, crystal, and crown fitted",
+        "Thread the leather strap through the lugs and fasten the buckle",
+        "Sweep away dust and reveal the finished mechanical watch",
+    ],
+    "camera": [
+        "Lock the shutter box and body shell to the base frame",
+        "Install the lens barrel and glass elements into the front mount",
+        "Fit the film chamber, winding spool, and viewfinder assembly",
+        "Close the top plate and back door, then add control dials",
+        "Attach leatherette panels, strap lugs, and small branding details",
+        "Brush away debris and reveal the finished vintage camera",
+    ],
+    "sneaker": [
+        "Stretch the upper over the last and align the toe box",
+        "Glue the foam midsole to the rubber outsole",
+        "Pull the laces through the eyelets and settle the tongue",
+        "Attach the heel counter and side overlays for structure",
+        "Add stitching lines, logo marks, and texture touches",
+        "Sweep away fibers and reveal the finished sneaker",
+    ],
+    "robot": [
+        "Assemble the torso frame and power core housing",
+        "Mount the arms, shoulder joints, and elbow actuators",
+        "Attach the legs, hips, and knee joints",
+        "Install the head, sensor array, and chest armor",
+        "Add armor plates, wiring, and light details",
+        "Brush away dust and reveal the finished robot",
+    ],
+    "dinosaur": [
+        "Pin the skull and spine into the metal armature",
+        "Attach ribs, pelvis, and tail vertebrae in sequence",
+        "Add the front legs, hind legs, and claw joints",
+        "Shape the neck, tail, and posture on the display base",
+        "Add surface texture, color wash, and fossil detail",
+        "Brush away crumbs and reveal the finished dinosaur skeleton",
+    ],
+    "wizard_house": [
+        "Set the stone base and lower walls on the foundation",
+        "Raise upper walls, door frame, and window openings",
+        "Build the roof structure and chimney",
+        "Attach tower pieces, balconies, and trims",
+        "Add crystals, potion bottles, lanterns, and magical details",
+        "Sweep away dust and reveal the finished wizard house",
+    ],
+    "spaceship": [
+        "Assemble the fuselage shell and central hull frame",
+        "Mount the engines, thrusters, and power conduits",
+        "Fit the cockpit, canopy, and antenna array",
+        "Attach wings, fins, landing gear, and exterior panels",
+        "Add decals, panel lines, and energy details",
+        "Brush away debris and reveal the finished spaceship",
+    ],
+    "hoverbike": [
+        "Build the frame and anti-gravity engine core",
+        "Mount the seat, handlebars, and dashboard housing",
+        "Attach thrusters and stabilizers under the frame",
+        "Fit the fairings, control lines, and body covers",
+        "Add light strips, decals, and mechanical detailing",
+        "Sweep away dust and reveal the finished hoverbike",
+    ],
+    "mech": [
+        "Assemble the torso core and hip frame",
+        "Mount the legs, feet, and hydraulic pistons",
+        "Attach the arms, shoulders, and hand assemblies",
+        "Install the head unit, cockpit, and joint covers",
+        "Add armor plates, weapons, and wiring details",
+        "Brush away debris and reveal the finished mech",
+    ],
+    "dragon": [
+        "Shape the head and neck over the internal armature",
+        "Attach body segments, wings, and shoulder joints",
+        "Mount the front legs, hind legs, and claws",
+        "Extend the tail, horns, and back spikes",
+        "Add scale texture, paint wash, and eye details",
+        "Brush away dust and reveal the finished dragon figure",
+    ],
+}
 
-
-PRODUCT_IDENTITY_LOCK = (
+PRODUCT_IDENTITY_LOCK_BASE = (
     "hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
-    "no miniature people, precise mechanical/organic assembly logic, "
-    "100% disassembled parts to fully assembled model, "
+    "no miniature people, no small people, no tiny workers, no human figures, no characters, "
+    "precise mechanical/organic assembly logic, "
     "parts attach in realistic order and disappear from workbench as installed, "
-    "final step leaves only the fully assembled model on a clean workbench, "
+    "camera angle, scale, workbench position, and lighting physically fixed throughout, "
     "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, "
     "8K product quality, bright workshop lighting"
+)
+
+PRODUCT_FINAL_ONLY_LOCK = (
+    "100% disassembled parts to fully assembled model, "
+    "final brush sweep, final polish, final reveal, "
+    "final step leaves only the fully assembled model on a clean workbench"
 )
 
 
@@ -95,10 +176,130 @@ PRODUCT_NEGATIVE_BASE = (
 )
 
 
+def _sanitize_reserved_future_action(action: str) -> str:
+    lowered = action.lower()
+    if any(token in lowered for token in ("final reveal", "final polish", "clean workbench", "final finish")):
+        return "later finishing stage"
+    return action
+
+
+def _sanitize_reserved_future_actions(actions: list[str]) -> list[str]:
+    sanitized: list[str] = []
+    for action in actions:
+        cleaned_action = _sanitize_reserved_future_action(action)
+        if cleaned_action not in sanitized:
+            sanitized.append(cleaned_action)
+    return sanitized
+
+
+def _summarize_actions(actions: list[str]) -> str:
+    return "; ".join(action for action in actions if action)
+
+
+def _summarize_future_actions(actions: list[str]) -> str:
+    return ", ".join(actions[:3]) if actions else "no remaining actions"
+
+
+def _get_stage_actions(subtype: str) -> list[str]:
+    if subtype not in PRODUCT_SUBTYPE_STAGES:
+        raise KeyError(f"Unknown product subtype: {subtype}")
+    return PRODUCT_SUBTYPE_STAGES[subtype]
+
+
+def _scene_ranges_for_duration(duration_seconds: int) -> list[str]:
+    if duration_seconds == 30:
+        return ["0-30%", "30-75%", "75-100%"]
+    if duration_seconds == 60:
+        return ["0-15%", "15-35%", "35-55%", "55-75%", "75-90%", "90-100%"]
+    return ["0-100%"]
+
+
+def _scene_names_for_duration(duration_seconds: int) -> list[str]:
+    if duration_seconds == 30:
+        return ["Core Assembly", "Integration", "Detail Reveal"]
+    if duration_seconds == 60:
+        return [
+            "Core Structure",
+            "Major Sub-Assemblies",
+            "Sub-assembly Integration",
+            "External Components",
+            "Fine Details",
+            "Final Reveal",
+        ]
+    return ["Full Assembly"]
+
+
+def _scene_action_groups(stage_actions: list[str], duration_seconds: int) -> list[list[str]]:
+    if duration_seconds == 30:
+        return [stage_actions[0:2], stage_actions[2:4], stage_actions[4:6]]
+    if duration_seconds == 60:
+        return [[stage_actions[i]] for i in range(len(stage_actions))]
+    return [stage_actions]
+
+
+def _build_scene_plans(subtype: str, duration_seconds: int) -> list[ScenePlan]:
+    stage_actions = _get_stage_actions(subtype)
+    action_groups = _scene_action_groups(stage_actions, duration_seconds)
+    ranges = _scene_ranges_for_duration(duration_seconds)
+    names = _scene_names_for_duration(duration_seconds)
+    plans: list[ScenePlan] = []
+
+    for idx, actions in enumerate(action_groups):
+        is_final = idx == len(action_groups) - 1
+        future_actions = _sanitize_reserved_future_actions(
+            [action for later in action_groups[idx + 1 :] for action in later]
+        )
+        completed_summary = _summarize_actions(actions) or PRODUCT_SUBTYPES[subtype]["label"]
+        future_summary = _summarize_future_actions(future_actions)
+        exact_stop_state = (
+            f"Completed actions in this scene: {completed_summary}. "
+            f"The {PRODUCT_SUBTYPES[subtype]['label'].lower()} remains visibly incomplete, with future parts still separate, visible, and untouched on the workbench: {future_summary}."
+            if not is_final
+            else f"{PRODUCT_SUBTYPES[subtype]['label']} fully assembled alone on a clean workbench"
+        )
+        plans.append(
+            ScenePlan(
+                scene_id=idx + 1,
+                name=names[idx],
+                start_state=(
+                    "All parts disassembled on workbench"
+                    if idx == 0
+                    else plans[idx - 1].exact_stop_state
+                ),
+                ordered_actions=actions,
+                end_state=exact_stop_state,
+                forbidden_changes=[
+                    "Camera angle",
+                    "Lighting",
+                    "Workbench surface",
+                    "No floating parts",
+                    "No teleporting parts",
+                ],
+                input_mode=InputMode.MASTER_IMAGE if idx == 0 else InputMode.PREVIOUS_FINAL_FRAME,
+                estimated_clip_duration_seconds=10,
+                completion_range=ranges[idx],
+                is_final_scene=is_final,
+                reserved_future_actions=future_actions,
+                forbidden_future_actions=[] if is_final else future_actions,
+                exact_stop_state=exact_stop_state,
+            )
+        )
+
+    return plans
+
+
+DEFAULT_PRODUCT_SUBTYPE = "watch"
+
+
+SCENE_PLAN_10S = _build_scene_plans(DEFAULT_PRODUCT_SUBTYPE, 10)
+SCENE_PLANS_30S = _build_scene_plans(DEFAULT_PRODUCT_SUBTYPE, 30)
+SCENE_PLANS_60S = _build_scene_plans(DEFAULT_PRODUCT_SUBTYPE, 60)
+
+
 def _make_style_bible(subtype: str) -> StyleBible:
     st = PRODUCT_SUBTYPES[subtype]
     return StyleBible(
-        identity_lock=PRODUCT_IDENTITY_LOCK,
+        identity_lock=PRODUCT_IDENTITY_LOCK_BASE,
         materials={
             "primary": st["materials"],
             "secondary": ["paint", "decals", "adhesive", "lubricant"],
@@ -171,138 +372,68 @@ def _make_scene_video_prompt(subtype: str) -> str:
     )
 
 
-# Single scene (10s)
-SCENE_PLAN_10S = [
-    ScenePlan(
-        scene_id=1,
-        name="Assembly",
-        start_state="All parts disassembled on workbench",
-        ordered_actions=PRODUCT_ASSEMBLY_STEPS,
-        end_state="Fully assembled model alone on clean workbench",
-        forbidden_changes=[
-            "Camera angle", "Lighting", "Workbench surface", "Tool positions",
-            "Parts must not float/teleport", "Completed model cannot appear before final step"
-        ],
-        input_mode=InputMode.MASTER_IMAGE,
-        estimated_clip_duration_seconds=10,
-    ),
-]
-
-
-# 30s plan (3 scenes × 10s)
-SCENE_PLANS_30S = [
-    ScenePlan(
-        scene_id=1,
-        name="Core Structure & Sub-assemblies",
-        start_state="All parts disassembled on workbench",
-        ordered_actions=PRODUCT_ASSEMBLY_STEPS[:2],
-        end_state="Core structure with major sub-assemblies ready",
-        forbidden_changes=[
-            "Camera angle", "Lighting", "Workbench surface", "Tool positions"
-        ],
-        input_mode=InputMode.MASTER_IMAGE,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=2,
-        name="Integration & Assembly",
-        start_state="Scene 1 final frame — core with sub-assemblies",
-        ordered_actions=PRODUCT_ASSEMBLY_STEPS[2:4],
-        end_state="Model integrated, external components being attached",
-        forbidden_changes=[
-            "Camera angle", "Lighting", "Workbench surface", "Core structure"
-        ],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=3,
-        name="Final Details & Reveal",
-        start_state="Scene 2 final frame — model integrated",
-        ordered_actions=PRODUCT_ASSEMBLY_STEPS[4:],
-        end_state="Fully assembled model alone on clean workbench",
-        forbidden_changes=[
-            "Camera angle", "Lighting", "Workbench surface", "Assembled model"
-        ],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-]
-
-
-# 60s plan (6 scenes × 10s) - same as 30s but with more granular steps
-SCENE_PLANS_60S = [
-    ScenePlan(
-        scene_id=1,
-        name="Core Structure",
-        start_state="All parts disassembled on workbench",
-        ordered_actions=[PRODUCT_ASSEMBLY_STEPS[0]],
-        end_state="Core structure placed on workbench",
-        forbidden_changes=["Camera angle", "Lighting", "Workbench surface", "Tool positions"],
-        input_mode=InputMode.MASTER_IMAGE,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=2,
-        name="Major Sub-assemblies",
-        start_state="Scene 1 final frame — core structure",
-        ordered_actions=[PRODUCT_ASSEMBLY_STEPS[1]],
-        end_state="Major sub-assemblies built (engine, movement, frame)",
-        forbidden_changes=["Camera angle", "Lighting", "Workbench surface", "Core structure"],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=3,
-        name="Sub-assembly Integration",
-        start_state="Scene 2 final frame — sub-assemblies ready",
-        ordered_actions=[PRODUCT_ASSEMBLY_STEPS[2]],
-        end_state="Sub-assemblies joined to core",
-        forbidden_changes=["Camera angle", "Lighting", "Workbench surface", "Core structure", "Sub-assemblies"],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=4,
-        name="External Components",
-        start_state="Scene 3 final frame — core integrated",
-        ordered_actions=[PRODUCT_ASSEMBLY_STEPS[3]],
-        end_state="External components attached (panels, covers, details)",
-        forbidden_changes=["Camera angle", "Lighting", "Workbench surface", "Core integration"],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=5,
-        name="Fine Details",
-        start_state="Scene 4 final frame — externals attached",
-        ordered_actions=[PRODUCT_ASSEMBLY_STEPS[4]],
-        end_state="Fine details added (decals, paint touches, small parts)",
-        forbidden_changes=["Camera angle", "Lighting", "Workbench surface", "External components"],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-    ScenePlan(
-        scene_id=6,
-        name="Final Reveal",
-        start_state="Scene 5 final frame — details complete",
-        ordered_actions=[PRODUCT_ASSEMBLY_STEPS[5]],
-        end_state="Fully assembled model alone on clean workbench",
-        forbidden_changes=["Camera angle", "Lighting", "Workbench surface", "Completed model"],
-        input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        estimated_clip_duration_seconds=10,
-    ),
-]
-
-
 PRODUCT_SELECTION_SCHEMA = {
     "type": "object",
+    "title": "Product Assembly Options",
     "required": ["subtype"],
     "properties": {
-        "subtype": {"type": "string", "enum": list(PRODUCT_SUBTYPES.keys())},
-        "duration_seconds": {"type": "integer", "enum": [10, 30, 60]},
+        "subtype": {
+            "type": "string",
+            "title": "Product subtype",
+            "enum": list(PRODUCT_SUBTYPES.keys()),
+            "x-enum-labels": [
+                subtype["label"] for subtype in PRODUCT_SUBTYPES.values()
+            ],
+        },
     },
+    "x-ui-order": ["subtype"],
 }
+
+
+def _select_scene_plan(duration_seconds: int, scene_id: int, subtype: str) -> ScenePlan:
+    plans = _build_scene_plans(subtype, duration_seconds)
+    if scene_id < 1 or scene_id > len(plans):
+        raise ValueError(f"scene_id {scene_id} is out of range for duration {duration_seconds}")
+    return plans[scene_id - 1]
+
+
+def _build_prompt_prefix(subtype: str, scene_plan: ScenePlan, duration_seconds: int) -> str:
+    label = PRODUCT_SUBTYPES[subtype]["label"]
+    current_actions = _summarize_actions(scene_plan.ordered_actions)
+    reserved_future_actions = _sanitize_reserved_future_actions(scene_plan.reserved_future_actions)
+    prohibited_future_work = (
+        f"Prohibited future work: {', '.join(reserved_future_actions)}."
+        if reserved_future_actions and not scene_plan.is_final_scene
+        else "Prohibited future work: none remain."
+    )
+    base = (
+        f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
+        f"no miniature people, no small people, no tiny workers, no human figures, no characters, "
+        f"precise mechanical assembly logic, no floating or teleporting parts, "
+        f"tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
+        f"8K product quality, bright workshop lighting, {label}, scene: {scene_plan.name}. "
+        f"Completion range: {scene_plan.completion_range}. "
+        f"Exact input/start state: {scene_plan.start_state}. "
+        f"Ordered current actions: {current_actions}. "
+        f"Exact stop state: {scene_plan.exact_stop_state}. "
+    )
+
+    if scene_plan.is_final_scene or duration_seconds == 10:
+        return (
+            base
+            + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
+            + f"{PRODUCT_FINAL_ONLY_LOCK}. "
+            + "As parts are attached, they logically disappear from the workbench. "
+            + "By the final step, the workspace is completely clean, leaving only the fully assembled model. "
+        )
+
+    return (
+        base
+        + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
+        + prohibited_future_work + " "
+        + "Leave all future parts separate, visible, and untouched. "
+        + "Do not advance to any later-stage operation in this scene. "
+    )
 
 
 product_profile = Profile(
@@ -314,17 +445,22 @@ product_profile = Profile(
     default_total_duration=10,
     clip_duration_seconds=10,
     scene_plans=SCENE_PLAN_10S,
-    scene_plans_factory=lambda topic, dur, ctx: SCENE_PLANS_60S if dur == 60 else (SCENE_PLANS_30S if dur == 30 else SCENE_PLAN_10S),
+    scene_plans_factory=lambda topic, dur, ctx: _build_scene_plans(ctx["subtype"], dur),
     selection_schema=PRODUCT_SELECTION_SCHEMA,
     style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["subtype"]),
     first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["subtype"])} if ctx.get("scene_id") == 1 else {},
-    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["subtype"])},
+    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["subtype"], dur, ctx.get("scene_plan"))},
     audio_contract={
         "type": "asmr_only",
         "description": "Assembly sounds: clicks, snaps, screw turns, brush sweeps. No voices, no music."
     },
     negative_prompt_base=PRODUCT_NEGATIVE_BASE,
     template_exclusions=["completed model at start", "floating parts", "teleporting parts", "messy final workbench"],
+    workflow_mode_by_duration={
+        10: WorkflowMode.SINGLE_CLIP_FROM_MASTER,
+        30: WorkflowMode.REFERENCE_FRAME_RELAY,
+        60: WorkflowMode.REFERENCE_FRAME_RELAY,
+    },
 )
 
 register_profile(product_profile)
@@ -338,40 +474,18 @@ def make_first_frame_prompt(subtype: str) -> str:
     return _make_first_frame_prompt(subtype)
 
 
-def make_scene_video_prompt(scene_id: int, subtype: str) -> str:
-    st = PRODUCT_SUBTYPES[subtype]
-    model_lower = st["label"].lower()
-    steps_str = " ".join([
-        "1. Core structure placed on workbench. "
-        "2. Major sub-assemblies built (engine, movement, frame). "
-        "3. Sub-assemblies joined to core. "
-        "4. External components attached (panels, covers, details). "
-        "5. Fine details added (decals, paint touches, small parts). "
-        "6. Final brush sweep — completed model alone on clean workbench. "
-    ])
-
-    if scene_id == 1:
-        scene_desc = "Core structure placed on workbench with precision"
-    elif scene_id == 2:
-        scene_desc = "Major sub-assemblies built: engine, movement, frame come together"
-    elif scene_id == 3:
-        scene_desc = "Sub-assemblies joined to core structure with careful alignment"
-    elif scene_id == 4:
-        scene_desc = "External components attached: panels, covers, detail parts fitted"
-    elif scene_id == 5:
-        scene_desc = "Fine details added: decals applied, paint touches, small parts placed"
+def make_scene_video_prompt(
+    scene_id: int,
+    subtype: str,
+    duration_seconds: int | None = None,
+    scene_plan: ScenePlan | None = None,
+) -> str:
+    if scene_plan is None:
+        resolved_duration = duration_seconds if duration_seconds is not None else 10
+        scene_plan = _select_scene_plan(resolved_duration, scene_id, subtype)
+        duration_seconds = resolved_duration
     else:
-        scene_desc = "Final brush sweep — completed model revealed alone on clean workbench"
+        duration_seconds = duration_seconds if duration_seconds is not None else 10
 
-    return (
-        f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
-        f"no miniature people, no small people, no tiny workers, no human figures, no characters, "
-        f"precise assembly logic, 100% disassembled parts to fully assembled model, "
-        f"no floating or teleporting parts, parts attach in realistic order and disappear from "
-        f"workbench as installed, final step leaves only the fully assembled model on a clean "
-        f"workbench, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth "
-        f"of field, 8K product quality, bright workshop lighting, {model_lower}, scene: Assembly - {scene_desc}. "
-        f"As parts are attached, they logically disappear from the workbench. "
-        f"By the final step, the workspace is completely clean, leaving only the fully assembled model. "
-        f"Negative Prompt: {PRODUCT_NEGATIVE_BASE}."
-    )
+    prompt = _build_prompt_prefix(subtype, scene_plan, duration_seconds)
+    return prompt + f"Negative Prompt: {PRODUCT_NEGATIVE_BASE}."

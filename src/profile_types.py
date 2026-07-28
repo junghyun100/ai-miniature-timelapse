@@ -140,6 +140,11 @@ class ScenePlan:
     forbidden_changes: list[str]
     input_mode: InputMode = InputMode.NONE
     estimated_clip_duration_seconds: int = 10
+    completion_range: str = ""
+    is_final_scene: bool = False
+    reserved_future_actions: list[str] = field(default_factory=list)
+    forbidden_future_actions: list[str] = field(default_factory=list)
+    exact_stop_state: str = ""
 
     def to_dict(self) -> dict:
         d = {k: v for k, v in self.__dict__.items()}
@@ -149,7 +154,10 @@ class ScenePlan:
     @classmethod
     def from_dict(cls, data: dict) -> ScenePlan:
         data = data.copy()
-        data["input_mode"] = InputMode(data["input_mode"])
+        input_mode = data.get("input_mode", InputMode.NONE)
+        if not isinstance(input_mode, InputMode):
+            input_mode = InputMode(input_mode)
+        data["input_mode"] = input_mode
         return cls(**data)
 
 
@@ -174,6 +182,7 @@ class Profile:
     audio_contract: dict = field(default_factory=dict)
     negative_prompt_base: str = ""
     template_exclusions: list[str] = field(default_factory=list)
+    workflow_mode_by_duration: dict[int, WorkflowMode] = field(default_factory=dict)
 
     def make_style_bible(self, topic: str, subtype: str, **kwargs) -> StyleBible:
         raise NotImplementedError
@@ -187,6 +196,10 @@ class Profile:
     def get_selection_schema(self) -> dict:
         """Return JSON Schema for user selection validation."""
         return self.selection_schema
+
+    def get_workflow_mode(self, duration_seconds: int) -> WorkflowMode:
+        """Resolve the workflow for a duration without changing the legacy default."""
+        return self.workflow_mode_by_duration.get(duration_seconds, self.workflow_mode)
 
 
 # Registry
@@ -211,23 +224,36 @@ def load_all_profiles() -> None:
     # Modules register themselves on import
 
 
-# Convenience function for serialization
-def profile_to_json(profile: Profile) -> str:
-    """Serialize profile to JSON for schema registry."""
-    return json.dumps({
+# Convenience functions for serialization
+def profile_to_dict(profile: Profile) -> dict:
+    """Return manifest-safe metadata without serializing executable factories."""
+    workflow_mode_by_duration = {
+        str(duration): profile.get_workflow_mode(duration).value
+        for duration in profile.allowed_total_durations
+    }
+    return {
         "profile_id": profile.profile_id,
         "version": profile.version,
         "topic_label": profile.topic_label,
+        "genre": profile.genre,
+        "subtype": profile.subtype,
         "workflow_mode": profile.workflow_mode.value,
+        "workflow_mode_by_duration": workflow_mode_by_duration,
         "allowed_total_durations": profile.allowed_total_durations,
         "default_total_duration": profile.default_total_duration,
         "clip_duration_seconds": profile.clip_duration_seconds,
         "scene_plans": [sp.to_dict() for sp in profile.scene_plans],
         "selection_schema": profile.selection_schema,
-        "style_bible_factory": profile.style_bible_factory,
-        "first_frame_factory": profile.first_frame_factory,
-        "scene_prompt_factory": profile.scene_prompt_factory,
+        "scene_plans_factory": profile.scene_plans_factory is not None,
+        "style_bible_factory": profile.style_bible_factory is not None,
+        "first_frame_factory": profile.first_frame_factory is not None,
+        "scene_prompt_factory": profile.scene_prompt_factory is not None,
         "audio_contract": profile.audio_contract,
         "negative_prompt_base": profile.negative_prompt_base,
         "template_exclusions": profile.template_exclusions,
-    }, ensure_ascii=False)
+    }
+
+
+def profile_to_json(profile: Profile) -> str:
+    """Serialize profile metadata to JSON for the schema registry."""
+    return json.dumps(profile_to_dict(profile), ensure_ascii=False)

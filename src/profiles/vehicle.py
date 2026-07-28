@@ -5,6 +5,8 @@ Reference prompt based implementation per vehicle_assembly_reference.md
 Each category has specific identity_lock, style_bible, scene_prompts, and assembly steps.
 """
 
+from __future__ import annotations
+
 from enum import Enum
 from typing import Any, Optional, Callable
 
@@ -73,7 +75,7 @@ VEHICLE_KEY_PARTS: dict[VehicleCategory, str] = {
 VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
     VehicleCategory.CAR: [
         "Engine block placed into chassis with precision",
-        "Fasteners tightened securing powertrain",
+        "engine mounts secured",
         "Wheels and suspension mounted",
         "Steering rack installed and connected",
         "Body panels fitted seamlessly",
@@ -88,11 +90,11 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Final polish revealing complete bike on clean workbench"
     ],
     VehicleCategory.AIRPLANE: [
-        "Engine mounted to fuselage/wing",
-        "Fasteners securing powerplant and mounts",
-        "Landing gear retracted and locked",
-        "Control surfaces connected and tested",
-        "Wings and tail surfaces fitted",
+        "Airframe skeleton and fuselage frame assembled",
+        "Engine and cockpit mount secured",
+        "Wings and tail attached",
+        "Landing gear and control linkages installed",
+        "Exterior panels, canopy, and propeller fitted",
         "Final polish revealing complete aircraft on clean workbench"
     ],
     VehicleCategory.BOAT: [
@@ -152,6 +154,302 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Final polish revealing complete bicycle on clean workbench"
     ],
 }
+
+
+def _coerce_category(category: VehicleCategory | str) -> VehicleCategory:
+    if isinstance(category, VehicleCategory):
+        return category
+    return VehicleCategory(category)
+
+
+def _category_label(category: VehicleCategory | str) -> str:
+    return _coerce_category(category).value.replace("_", " ").title()
+
+
+VEHICLE_SCENE_TITLES_30S: dict[VehicleCategory, list[str]] = {
+    VehicleCategory.CAR: ["Foundation & Chassis", "Running Gear & Cabin", "Body Panels & Final Reveal"],
+    VehicleCategory.MOTORCYCLE: ["Frame & Engine", "Wheels, Fork & Controls", "Tank, Seat & Final Reveal"],
+    VehicleCategory.AIRPLANE: [
+        "Airframe Skeleton & Engine Mount",
+        "Wings, Tail, Landing Gear & Controls",
+        "Exterior Panels, Canopy, Propeller & Final Reveal",
+    ],
+    VehicleCategory.BOAT: ["Hull & Engine", "Deck, Mast & Rigging", "Trim & Final Reveal"],
+    VehicleCategory.AGRICULTURAL: ["Chassis & Engine", "Cab, Wheels & Hydraulics", "Implements & Final Reveal"],
+    VehicleCategory.HELICOPTER: ["Fuselage & Engine", "Rotor System & Skids", "Canopy & Final Reveal"],
+    VehicleCategory.CONSTRUCTION: ["Chassis & Hydraulics", "Boom, Arm & Tracks", "Cab & Final Reveal"],
+    VehicleCategory.SPACESHIP: ["Booster Core", "Stages, Tanks & Guidance", "Fairings & Final Reveal"],
+    VehicleCategory.TANK: ["Hull & Engine", "Suspension, Tracks & Turret", "Armor & Final Reveal"],
+    VehicleCategory.BICYCLE: ["Frame & Drivetrain", "Wheels, Fork & Brakes", "Cockpit & Final Reveal"],
+}
+
+
+VEHICLE_SCENE_TITLES_60S: dict[VehicleCategory, list[str]] = {
+    VehicleCategory.CAR: [
+        "Foundation & Chassis",
+        "Engine & Powertrain",
+        "Suspension & Steering",
+        "Body Panels & Doors",
+        "Paint & Trim",
+        "Final Reveal",
+    ],
+    VehicleCategory.MOTORCYCLE: [
+        "Frame & Engine",
+        "Fasteners & Mounts",
+        "Wheels & Fork",
+        "Controls & Handlebars",
+        "Bodywork & Paint",
+        "Final Reveal",
+    ],
+    VehicleCategory.AIRPLANE: [
+        "Airframe Skeleton & Engine Mount",
+        "Wings & Tail",
+        "Landing Gear & Controls",
+        "Exterior Panels",
+        "Canopy, Propeller & Paint",
+        "Final Reveal",
+    ],
+    VehicleCategory.BOAT: [
+        "Hull & Keel",
+        "Engine & Propulsion",
+        "Deck & Mast",
+        "Rigging & Railings",
+        "Paint & Finish",
+        "Final Reveal",
+    ],
+    VehicleCategory.AGRICULTURAL: [
+        "Chassis & Engine",
+        "Transmission & Wheels",
+        "Cab & Hydraulics",
+        "Implements & Controls",
+        "Paint & Decals",
+        "Final Reveal",
+    ],
+    VehicleCategory.HELICOPTER: [
+        "Fuselage & Engine",
+        "Rotor System",
+        "Tail Boom & Rotor",
+        "Skids & Controls",
+        "Canopy & Paint",
+        "Final Reveal",
+    ],
+    VehicleCategory.CONSTRUCTION: [
+        "Chassis & Engine",
+        "Boom & Arm",
+        "Tracks & Suspension",
+        "Hydraulics & Controls",
+        "Cab & Counterweight",
+        "Final Reveal",
+    ],
+    VehicleCategory.SPACESHIP: [
+        "Booster Core",
+        "Engines & Tanks",
+        "Guidance & Separation",
+        "Fins & Fairings",
+        "Paint & Markings",
+        "Final Reveal",
+    ],
+    VehicleCategory.TANK: [
+        "Hull & Engine",
+        "Suspension & Tracks",
+        "Turret & Gun",
+        "Armor & Optics",
+        "Paint & Weathering",
+        "Final Reveal",
+    ],
+    VehicleCategory.BICYCLE: [
+        "Frame & Drivetrain",
+        "Wheels & Brakes",
+        "Handlebars & Controls",
+        "Saddle & Fitments",
+        "Paint & Decals",
+        "Final Reveal",
+    ],
+}
+
+
+VEHICLE_COMPLETION_RANGES_30S = ["0-30%", "30-75%", "75-100%"]
+VEHICLE_COMPLETION_RANGES_60S = ["0-15%", "15-35%", "35-55%", "55-75%", "75-90%", "90-100%"]
+
+
+def _ordered_action_groups(category: VehicleCategory, duration_seconds: int) -> list[list[str]]:
+    steps = VEHICLE_ASSEMBLY_STEPS[category]
+    if duration_seconds == 30:
+        return [steps[:2], steps[2:4], steps[4:6]]
+    return [[step] for step in steps[:6]]
+
+
+def _scene_titles(category: VehicleCategory, duration_seconds: int) -> list[str]:
+    if duration_seconds == 30:
+        return VEHICLE_SCENE_TITLES_30S[category]
+    return VEHICLE_SCENE_TITLES_60S[category]
+
+
+def _completion_ranges(duration_seconds: int) -> list[str]:
+    return VEHICLE_COMPLETION_RANGES_30S if duration_seconds == 30 else VEHICLE_COMPLETION_RANGES_60S
+
+
+def _reserved_future_actions(action_groups: list[list[str]], scene_index: int) -> list[str]:
+    future_actions: list[str] = []
+    for group in action_groups[scene_index + 1:]:
+        future_actions.extend(group)
+    return future_actions
+
+
+def _forbidden_future_actions(reserved_actions: list[str]) -> list[str]:
+    return [f"Do not perform this later-stage action in the current scene: {action}" for action in reserved_actions]
+
+
+def _sanitize_reserved_future_action(action: str) -> str:
+    lowered = action.lower()
+    if any(
+        token in lowered
+        for token in (
+            "final polish",
+            "final reveal",
+            "clean workbench",
+            "hero reveal",
+            "final finish",
+        )
+    ):
+        return "later finishing stage"
+    return action
+
+
+def _sanitize_reserved_future_actions(reserved_actions: list[str]) -> list[str]:
+    sanitized: list[str] = []
+    for action in reserved_actions:
+        cleaned_action = _sanitize_reserved_future_action(action)
+        if cleaned_action not in sanitized:
+            sanitized.append(cleaned_action)
+    return sanitized
+
+
+def _summarize_actions(actions: list[str]) -> str:
+    return "; ".join(action for action in actions if action)
+
+
+def _summarize_reserved_future_actions(reserved_actions: list[str]) -> str:
+    return ", ".join(reserved_actions[:3]) if reserved_actions else "no remaining actions"
+
+
+def _scene_start_state(scene_index: int, duration_seconds: int, category: VehicleCategory, previous_stop_state: str | None) -> str:
+    label = _category_label(category)
+    if scene_index == 0:
+        return f"Empty workbench with all {label.lower()} parts disassembled and ready for the first placement."
+    return previous_stop_state or f"Scene {scene_index} final frame"
+
+
+def _scene_end_state(
+    *,
+    scene_name: str,
+    ordered_actions: list[str],
+    reserved_future_actions: list[str],
+    is_final_scene: bool,
+    category: VehicleCategory,
+) -> str:
+    label = _category_label(category)
+    if is_final_scene:
+        return f"Fully assembled {label.lower()} model revealed on a clean workbench."
+    completed_summary = _summarize_actions(ordered_actions) or scene_name
+    future_summary = _summarize_reserved_future_actions(reserved_future_actions)
+    return (
+        f"Completed actions in this scene: {completed_summary}. "
+        f"The {label.lower()} remains visibly incomplete, with future parts still separate, visible, and unused: "
+        f"{future_summary}."
+    )
+
+
+def _scene_exact_stop_state(
+    *,
+    scene_name: str,
+    ordered_actions: list[str],
+    reserved_future_actions: list[str],
+    is_final_scene: bool,
+    category: VehicleCategory,
+) -> str:
+    label = _category_label(category)
+    if is_final_scene:
+        return (
+            f"Final reveal only: the fully assembled {label.lower()} model sits alone on a clean workbench "
+            f"after the final polish."
+        )
+    completed_summary = _summarize_actions(ordered_actions) or scene_name
+    future_summary = _summarize_reserved_future_actions(
+        _sanitize_reserved_future_actions(reserved_future_actions)
+    )
+    return (
+        f"Exact stop state after this scene's completed actions: {completed_summary}. "
+        f"The {label.lower()} must remain visibly incomplete, with future parts still separate, visible, and unused: "
+        f"{future_summary}."
+    )
+
+
+def _build_scene_plans(category: VehicleCategory, duration_seconds: int) -> list[ScenePlan]:
+    category = _coerce_category(category)
+    action_groups = _ordered_action_groups(category, duration_seconds)
+    titles = _scene_titles(category, duration_seconds)
+    ranges = _completion_ranges(duration_seconds)
+
+    plans: list[ScenePlan] = []
+    previous_stop_state: str | None = None
+    for index, (scene_name, ordered_actions, completion_range) in enumerate(zip(titles, action_groups, ranges)):
+        is_final_scene = index == len(action_groups) - 1
+        reserved_actions = _sanitize_reserved_future_actions(_reserved_future_actions(action_groups, index))
+        forbidden_actions = _forbidden_future_actions(reserved_actions)
+        end_state = _scene_end_state(
+            scene_name=scene_name,
+            ordered_actions=ordered_actions,
+            reserved_future_actions=reserved_actions,
+            is_final_scene=is_final_scene,
+            category=category,
+        )
+        exact_stop_state = _scene_exact_stop_state(
+            scene_name=scene_name,
+            ordered_actions=ordered_actions,
+            reserved_future_actions=reserved_actions,
+            is_final_scene=is_final_scene,
+            category=category,
+        )
+        start_state = _scene_start_state(index, duration_seconds, category, previous_stop_state)
+        forbidden_changes = [
+            "Camera angle",
+            "Lighting",
+            "Workbench layout",
+            "Camera scale",
+            "Model identity",
+        ]
+
+        plans.append(
+            ScenePlan(
+                scene_id=index + 1,
+                name=scene_name,
+                start_state=start_state,
+                ordered_actions=ordered_actions,
+                end_state=exact_stop_state,
+                forbidden_changes=forbidden_changes,
+                input_mode=InputMode.MASTER_IMAGE if index == 0 else InputMode.PREVIOUS_FINAL_FRAME,
+                estimated_clip_duration_seconds=10,
+                completion_range=completion_range,
+                is_final_scene=is_final_scene,
+                reserved_future_actions=reserved_actions,
+                forbidden_future_actions=forbidden_actions,
+                exact_stop_state=exact_stop_state,
+            )
+        )
+        previous_stop_state = exact_stop_state
+
+    return plans
+
+
+def build_scene_plans_30s(category: VehicleCategory | str) -> list[ScenePlan]:
+    """3 scenes for 30s total (3 x 10s)."""
+    return _build_scene_plans(_coerce_category(category), 30)
+
+
+def build_scene_plans_60s(category: VehicleCategory | str) -> list[ScenePlan]:
+    """6 scenes for 60s total (6 x 10s)."""
+    return _build_scene_plans(_coerce_category(category), 60)
 
 # Style Bible per category
 VEHICLE_STYLE_BIBLES: dict[VehicleCategory, dict[str, Any]] = {
@@ -250,104 +548,9 @@ VEHICLE_STYLE_BIBLES: dict[VehicleCategory, dict[str, Any]] = {
 # Immutable negative prompt (fixed per spec — matches reference prompt exactly)
 VEHICLE_NEGATIVE_BASE = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry."
 
-# Scene plans for 30s (3 scenes) and 60s (6 scenes)
-def build_scene_plans_30s(category: VehicleCategory) -> list[ScenePlan]:
-    """3 scenes for 30s total (3 x 10s)"""
-    steps = VEHICLE_ASSEMBLY_STEPS[category]
-    return [
-        ScenePlan(
-            scene_id=1,
-            name="Foundation & Powertrain",
-            start_state="all parts disassembled on workbench",
-            ordered_actions=steps[:2],
-            end_state="powertrain foundation complete",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Chassis position"],
-            input_mode=InputMode.MASTER_IMAGE,
-        ),
-        ScenePlan(
-            scene_id=2,
-            name="Running Gear & Structure",
-            start_state="Scene 1 final frame",
-            ordered_actions=steps[2:4],
-            end_state="rolling chassis/structure complete",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-        ScenePlan(
-            scene_id=3,
-            name="Body & Final Reveal",
-            start_state="Scene 2 final frame",
-            ordered_actions=steps[4:],
-            end_state="complete model revealed",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Chassis position", "Running gear"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-    ]
-
-
-def build_scene_plans_60s(category: VehicleCategory) -> list[ScenePlan]:
-    """6 scenes for 60s total (6 x 10s)"""
-    steps = VEHICLE_ASSEMBLY_STEPS[category]
-    return [
-        ScenePlan(
-            scene_id=1,
-            name="Frame & Engine Mounts",
-            start_state="all parts disassembled on workbench",
-            ordered_actions=[steps[0], "engine mounts secured"],
-            end_state="frame with engine mounts ready",
-            forbidden_changes=InputMode.MASTER_IMAGE,
-            input_mode=InputMode.MASTER_IMAGE,
-        ),
-        ScenePlan(
-            scene_id=2,
-            name="Powertrain Installation",
-            start_state="Scene 1 final frame",
-            ordered_actions=[steps[1], "transmission/driveshaft connected"],
-            end_state="powertrain fully installed",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Chassis position"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-        ScenePlan(
-            scene_id=3,
-            name="Running Gear",
-            start_state="Scene 2 final frame",
-            ordered_actions=[steps[2], steps[3] if len(steps) > 3 else "suspension/steering completed"],
-            end_state="rolling chassis complete",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Chassis position", "Powertrain"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-        ScenePlan(
-            scene_id=4,
-            name="Superstructure/Body",
-            start_state="Scene 3 final frame",
-            ordered_actions=[steps[min(4, len(steps)-1)], "main body/structure fitted"],
-            end_state="main body/structure complete",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Running gear"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-        ScenePlan(
-            scene_id=5,
-            name="Details & Systems",
-            start_state="Scene 4 final frame",
-            ordered_actions=[steps[min(5, len(steps)-1)] if len(steps) > 5 else "detail parts installed", "systems connected"],
-            end_state="details and systems complete",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Body structure"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-        ScenePlan(
-            scene_id=6,
-            name="Final Reveal",
-            start_state="Scene 5 final frame",
-            ordered_actions=[steps[-1], "all tools removed"],
-            end_state="complete model revealed on clean workbench",
-            forbidden_changes=["Workbench", "Lighting", "Camera angle", "Completed model"],
-            input_mode=InputMode.PREVIOUS_FINAL_FRAME,
-        ),
-    ]
-
-
 def make_first_frame_prompt(category: VehicleCategory, model_name: str) -> str:
-    """Generate Master Image prompt for category — matches reference prompt skeleton exactly."""
+    """Generate Master Image prompt for category."""
+    category = _coerce_category(category)
     parts = VEHICLE_KEY_PARTS[category]
     return (
         f"Hyper-realistic macro photo of 100% disassembled miniature {model_name} model parts "
@@ -357,61 +560,110 @@ def make_first_frame_prompt(category: VehicleCategory, model_name: str) -> str:
         f"tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
         f"8K product photo quality, bright workshop lighting, {model_name}, scene: Master Image."
     )
+def _resolve_scene_plan(
+    category: VehicleCategory,
+    scene_id: int,
+    scene_name: str,
+    scene_plan: ScenePlan | None = None,
+    total_duration: int | None = None,
+) -> ScenePlan:
+    category = _coerce_category(category)
+    if scene_plan is not None:
+        return scene_plan
 
+    duration_hint = total_duration if total_duration in {30, 60} else (60 if scene_id > 3 else 30)
+    plans = build_scene_plans_60s(category) if duration_hint == 60 else build_scene_plans_30s(category)
+    if 1 <= scene_id <= len(plans):
+        return plans[scene_id - 1]
 
-def make_scene_video_prompt(category: VehicleCategory, model_name: str, scene_id: int, scene_name: str) -> str:
-    """Generate Video Prompt for specific scene — adapted from reference prompt 6-stage skeleton for multi-scene relay."""
-    steps = VEHICLE_ASSEMBLY_STEPS[category]
-
-    # Reference prompt base (exact wording from reference)
-    base = (
-        f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
-        f"no miniature people, no small people, no tiny workers, no human figures, no characters, "
-        f"precise mechanical assembly logic, 100% disassembled parts to fully assembled model, "
-        f"no floating or teleporting parts, parts attach in a realistic order and disappear from "
-        f"workbench as installed, final step leaves only the fully assembled model on a clean "
-        f"workbench, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth "
-        f"of field, 8K product quality, bright workshop lighting, {model_name.lower()}, scene: {scene_name}. "
+    is_final_scene = "final" in scene_name.lower() or "reveal" in scene_name.lower()
+    start_state = "all parts disassembled on workbench" if scene_id == 1 else f"Scene {scene_id - 1} final frame"
+    ordered_actions = VEHICLE_ASSEMBLY_STEPS[category][:1]
+    reserved_future_actions = []
+    exact_stop_state = (
+        "Final reveal only: the fully assembled model sits alone on a clean workbench after the final polish."
+        if is_final_scene
+        else "Stop immediately when the current stage is finished. The model must remain visibly incomplete."
+    )
+    return ScenePlan(
+        scene_id=scene_id,
+        name=scene_name,
+        start_state=start_state,
+        ordered_actions=ordered_actions,
+        end_state=exact_stop_state,
+        forbidden_changes=["Camera angle", "Lighting", "Workbench layout"],
+        input_mode=InputMode.MASTER_IMAGE if scene_id == 1 else InputMode.PREVIOUS_FINAL_FRAME,
+        completion_range="0-30%" if scene_id == 1 else "30-75%" if scene_id == 2 else "75-100%",
+        is_final_scene=is_final_scene,
+        reserved_future_actions=reserved_future_actions,
+        forbidden_future_actions=[],
+        exact_stop_state=exact_stop_state,
     )
 
-    cleanup_rule = (
-        "As parts are attached, they logically disappear from the workbench. "
-        "By the final step, the workspace is completely clean, leaving only the fully assembled model. "
+
+def make_scene_video_prompt(
+    category: VehicleCategory,
+    model_name: str,
+    scene_id: int,
+    scene_name: str,
+    scene_plan: ScenePlan | None = None,
+    total_duration: int | None = None,
+) -> str:
+    """Generate a scene-bounded video prompt that stops before the next scene."""
+    category = _coerce_category(category)
+    resolved_plan = _resolve_scene_plan(category, scene_id, scene_name, scene_plan, total_duration)
+    model_lower = model_name.lower()
+    reserved_future_actions = _sanitize_reserved_future_actions(resolved_plan.reserved_future_actions)
+    reserved_future_clause = (
+        f"Prohibited future work: {', '.join(reserved_future_actions)}."
+        if reserved_future_actions
+        else "Prohibited future work: none remain."
+    )
+    current_actions = _summarize_actions(resolved_plan.ordered_actions)
+
+    core_rules = (
+        "hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
+        "no miniature people, no small people, no tiny workers, no human figures, no characters, "
+        "precise mechanical assembly logic, no floating or teleporting parts, "
+        "parts attach in realistic order and disappear from the workbench as installed, "
+        "tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
+        "8K product quality, bright workshop lighting"
     )
 
-    negative = f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}."
+    ordered_actions = current_actions or "continue the current build step"
 
-    # Map scenes to reference's 6 stages
-    if scene_id == 1:
-        # Stage 1-2: Engine + Fasteners
-        stage_desc = (
-            f"Giant hands pick up engine block with tweezers and place it precisely into chassis. "
-            f"Mini screwdriver rotates, tightening fasteners securing powertrain. "
-            f"{steps[0]}. {steps[1] if len(steps) > 1 else ''}. "
+    if resolved_plan.is_final_scene:
+        body = " ".join(
+            [
+                f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
+                f"Completion range: {resolved_plan.completion_range}.",
+                f"Exact input/start state: {resolved_plan.start_state}.",
+                f"Ordered current actions: {ordered_actions}.",
+                f"Exact stop state: {resolved_plan.exact_stop_state}.",
+                "Final-only permissions: final polish, cleanup, and hero reveal are allowed only here.",
+                "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
+                "Hands only. No floating or teleporting parts.",
+                f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
+            ]
         )
-    elif scene_id == 2:
-        # Stage 3-4: Wheels/Suspension + Steering
-        stage_desc = (
-            f"Hands mount wheels and suspension components onto chassis. "
-            f"Steering rack installed and connected with precise alignment. "
-            f"{steps[2] if len(steps) > 2 else ''}. {steps[3] if len(steps) > 3 else ''}. "
-        )
-    elif scene_id == 3:
-        # Stage 5-6: Body Panels + Final Polish
-        stage_desc = (
-            f"External body panels fitted seamlessly onto frame. "
-            f"Soft brush sweeps away dust, revealing pristine completed model on immaculate workbench. "
-            f"{steps[4] if len(steps) > 4 else ''}. {steps[5] if len(steps) > 5 else ''}. "
-        )
-    else:
-        # For 60s mode (6 scenes) - distribute 6 stages across 6 scenes
-        stage_idx = scene_id - 1
-        if stage_idx < len(steps):
-            stage_desc = f"{steps[stage_idx]}. "
-        else:
-            stage_desc = "Assembly continues with precision. "
+        return body
 
-    return base + stage_desc + cleanup_rule + negative
+    body = " ".join(
+        [
+            f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
+            f"Completion range: {resolved_plan.completion_range}.",
+            f"Exact input/start state: {resolved_plan.start_state}.",
+            f"Ordered current actions: {ordered_actions}.",
+            f"Exact stop state: {resolved_plan.exact_stop_state}.",
+            reserved_future_clause,
+            "The model must remain visibly incomplete, with future parts still separate, visible, and unused.",
+            "Do not proceed beyond this stop state.",
+            "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
+            "Hands only. No floating or teleporting parts.",
+            f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
+        ]
+    )
+    return body
 
 
 # Alias for backward compatibility
@@ -420,6 +672,7 @@ make_video_prompt = make_scene_video_prompt
 
 def make_style_bible(category: VehicleCategory, model_name: str) -> StyleBible:
     """Create StyleBible for category"""
+    category = _coerce_category(category)
     sb = VEHICLE_STYLE_BIBLES[category]
     return StyleBible(
         identity_lock=VEHICLE_IDENTITY_LOCKS[category],
@@ -439,7 +692,38 @@ def get_categories() -> list[str]:
 
 
 def get_models_for_category(category: str) -> list[str]:
-    return VEHICLE_MODELS.get(VehicleCategory(category), [])
+    return VEHICLE_MODELS.get(_coerce_category(category), [])
+
+
+VEHICLE_SELECTION_SCHEMA = {
+    "type": "object",
+    "title": "Vehicle Assembly Options",
+    "required": ["vehicle_category", "model_name"],
+    "properties": {
+        "vehicle_category": {
+            "type": "string",
+            "title": "Vehicle category",
+            "enum": [category.value for category in VehicleCategory],
+            "x-enum-labels": [
+                category.value.replace("_", " ").title()
+                for category in VehicleCategory
+            ],
+        },
+        "model_name": {
+            "type": "string",
+            "title": "Model",
+            "minLength": 1,
+            "x-dependent-options": {
+                "field": "vehicle_category",
+                "options": {
+                    category.value: models
+                    for category, models in VEHICLE_MODELS.items()
+                },
+            },
+        },
+    },
+    "x-ui-order": ["vehicle_category", "model_name"],
+}
 
 
 # Vehicle Assembly Profile export
@@ -451,15 +735,15 @@ vehicle_profile = Profile(
     subtype="assembly",
     workflow_mode=WorkflowMode.REFERENCE_FRAME_RELAY,
     allowed_total_durations=[30, 60],
-    default_total_duration=60,
+    default_total_duration=30,
     clip_duration_seconds=10,
-    scene_plans=build_scene_plans_60s(VehicleCategory.CAR),  # placeholder, factory will override
+    scene_plans=build_scene_plans_30s(VehicleCategory.CAR),  # placeholder, factory will override
     scene_plans_factory=lambda topic, dur, ctx: build_scene_plans_30s(ctx.get("vehicle_category")) if dur == 30 else build_scene_plans_60s(ctx.get("vehicle_category")),
-    selection_schema={"vehicle_category": {"type": "string", "enum": [c.value for c in VehicleCategory], "required": True}, "model_name": {"type": "string", "required": True}},
+    selection_schema=VEHICLE_SELECTION_SCHEMA,
     style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["vehicle_category"], ctx["model_name"]),
-    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["vehicle_category"], ctx["model_name"])} if dur == 30 or ctx.get("scene_id") == 1 else {},
-    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_video_prompt(ctx["vehicle_category"], ctx["model_name"], ctx["scene_id"], ctx["scene_name"])},
-    audio_contract=None,
+    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["vehicle_category"], ctx["model_name"])} if ctx.get("scene_id") == 1 else {},
+    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_video_prompt(ctx["vehicle_category"], ctx["model_name"], ctx["scene_id"], ctx["scene_name"], ctx.get("scene_plan"), dur)},
+    audio_contract={"type": "asmr_only", "description": "Hands-only assembly sounds. No voices, no music."},
     negative_prompt_base=VEHICLE_NEGATIVE_BASE,
     template_exclusions=["text, subtitle, caption, watermark, logo, burnt-in text, overlay text", "bad anatomy, deformed hands, blurry", "miniature people, small people, tiny workers, human figures, characters", "floating parts, teleporting parts, completed model at start"],
 )

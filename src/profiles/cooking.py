@@ -33,6 +33,34 @@ COOKING_NEGATIVE_BASE = (
 )
 
 
+COOKING_PREP_ACTIONS = [
+    "washing ingredients",
+    "sorting ingredients into prep bowls",
+    "slicing and chopping",
+    "cubing and trimming",
+    "mincing aromatics",
+    "arranging everything in order before heat begins",
+]
+
+
+COOKING_COOK_ACTIONS = [
+    "heating oil in the cookware",
+    "stir-frying aromatics",
+    "adding the main ingredients",
+    "pouring liquid and bringing it to a boil",
+    "simmering until fully cooked",
+    "keeping all finishing materials untouched",
+]
+
+
+COOKING_PLATING_ACTIONS = [
+    "ladling the cooked dish into the serveware",
+    "drizzling finishing oil",
+    "sprinkling garnish",
+    "revealing the steam presentation",
+]
+
+
 KOREAN_DISHES = {
     "kimchi_jjigae": {
         "name": "Kimchi Jjigae",
@@ -103,53 +131,97 @@ KOREAN_DISHES = {
 }
 
 
+SCENE_1_PREP_STOP = "All ingredients prepped and arranged in miniature bowls, ready for cooking"
+SCENE_2_COOK_STOP = "Dish fully cooked with steam visible, all finishing materials still untouched"
+SCENE_3_FINAL_STOP = "Finished plated dish in serveware with natural steam and hero reveal"
+
+
+def _future_action_block(actions: list[str]) -> tuple[list[str], list[str]]:
+    reserved = list(actions)
+    forbidden = [
+        f"Do not perform this later-stage action in the current scene: {action}"
+        for action in actions
+    ]
+    return reserved, forbidden
+
+
+SCENE_1_RESERVED, SCENE_1_FORBIDDEN = _future_action_block(
+    COOKING_COOK_ACTIONS + COOKING_PLATING_ACTIONS
+)
+SCENE_2_RESERVED, SCENE_2_FORBIDDEN = _future_action_block(COOKING_PLATING_ACTIONS)
+
+
 # Scene plans for 30s (3 scenes × 10s)
 SCENE_PLANS_30S = [
     ScenePlan(
         scene_id=1,
         name="Preparation",
-        start_state="Empty cutting board, ingredients raw",
-        ordered_actions=["washing", "slicing", "cubing", "chopping", "mincing", "arranging in prep bowls"],
-        end_state="All ingredients prepped and arranged in miniature bowls, ready for cooking",
+        start_state="Raw ingredients only on the cutting board, before any heat or cookware is used",
+        ordered_actions=COOKING_PREP_ACTIONS,
+        end_state=SCENE_1_PREP_STOP,
         forbidden_changes=[
             "Kitchen", "Lighting", "Cutting board", "Camera style", "Hand position"
         ],
         input_mode=InputMode.MASTER_IMAGE,
         estimated_clip_duration_seconds=10,
+        completion_range="0-35%",
+        is_final_scene=False,
+        reserved_future_actions=SCENE_1_RESERVED,
+        forbidden_future_actions=SCENE_1_FORBIDDEN,
+        exact_stop_state=SCENE_1_PREP_STOP,
     ),
     ScenePlan(
         scene_id=2,
         name="Cooking",
-        start_state="Ingredients ready, cookware on heat",
-        ordered_actions=["heating oil/pan", "stir-frying aromatics", "adding protein", "adding liquid", "simmering/grilling", "ingredients melding"],
-        end_state="Dish cooking, steam rising, bubbles/sizzle visible",
+        start_state=SCENE_1_PREP_STOP,
+        ordered_actions=COOKING_COOK_ACTIONS,
+        end_state=SCENE_2_COOK_STOP,
         forbidden_changes=[
             "Kitchen", "Lighting", "Cookware", "Heat source", "Camera style"
         ],
         input_mode=InputMode.PREVIOUS_FINAL_FRAME,
         estimated_clip_duration_seconds=10,
+        completion_range="35-80%",
+        is_final_scene=False,
+        reserved_future_actions=SCENE_2_RESERVED,
+        forbidden_future_actions=SCENE_2_FORBIDDEN,
+        exact_stop_state=SCENE_2_COOK_STOP,
     ),
     ScenePlan(
         scene_id=3,
         name="Finishing & Plating",
-        start_state="Dish cooked, ready for plating",
-        ordered_actions=["ladling/plating", "adding garnish", "final drizzles", "hero close-up with steam"],
-        end_state="Finished dish in serveware, cinematic hero shot with natural steam",
+        start_state=SCENE_2_COOK_STOP,
+        ordered_actions=COOKING_PLATING_ACTIONS,
+        end_state=SCENE_3_FINAL_STOP,
         forbidden_changes=[
             "Kitchen", "Lighting", "Serveware", "Camera style", "Cooking state continuity"
         ],
         input_mode=InputMode.PREVIOUS_FINAL_FRAME,
         estimated_clip_duration_seconds=10,
+        completion_range="80-100%",
+        is_final_scene=True,
+        reserved_future_actions=[],
+        forbidden_future_actions=[],
+        exact_stop_state=SCENE_3_FINAL_STOP,
     ),
 ]
 
 
 COOKING_SELECTION_SCHEMA = {
     "type": "object",
+    "title": "Miniature Cooking Options",
     "required": ["dish_key"],
     "properties": {
-        "dish_key": {"type": "string", "enum": list(KOREAN_DISHES.keys())},
+        "dish_key": {
+            "type": "string",
+            "title": "Dish",
+            "enum": list(KOREAN_DISHES.keys()),
+            "x-enum-labels": [
+                dish["name"] for dish in KOREAN_DISHES.values()
+            ],
+        },
     },
+    "x-ui-order": ["dish_key"],
 }
 
 
@@ -218,59 +290,60 @@ def make_style_bible(dish_key: str) -> StyleBible:
 
 def make_first_frame_prompt(dish_key: str) -> str:
     dish = KOREAN_DISHES[dish_key]
-    actions_preview = "; ".join(dish["actions_prep"][:3])
     return (
         f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
-        f"soft focus pulls. Giant human hands only, no miniature people, preparing ingredients "
-        f"for {dish['name']} on a natural wooden cutting board in a clean modern kitchen with "
-        f"softly blurred background. {actions_preview} — every motion fluid and ASMR-rich "
-        f"(knife chopping sounds, water drips). All ingredients neatly arranged in miniature "
-        f"prep bowls, ready for cooking. Identical kitchen, lighting, cutting board, and hand "
-        f"position carry into next scene. No voices, no music, only satisfying ASMR sounds. "
-        f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
+        f"soft focus pulls. Giant human hands only, no miniature people, raw ingredients for "
+        f"{dish['name']} laid out on a natural wooden cutting board in a clean modern kitchen "
+        f"with softly blurred background. No cutting or heat yet; the ingredients are still "
+        f"unprepared and ready to begin the prep stage. Miniature knife, ladle, spatula, and "
+        f"tea light candle remain visible but unused. Identical kitchen, lighting, cutting "
+        f"board, and hand position carry into the next scene. No voices, no music, only "
+        f"satisfying ASMR sounds. Negative Prompt: {COOKING_NEGATIVE_BASE}."
+    )
+
+
+def _build_scene_prompt(scene_id: int, dish: dict) -> str:
+    if scene_id == 1:
+        return (
+            f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
+            f"soft focus pulls. Giant human hands only, no miniature people, {dish['name']} "
+            f"prep stage on a natural wooden cutting board in a clean modern kitchen with a "
+            f"miniature knife, ladle, spatula, and tea light candle visible but still unused. "
+            f"Start from raw ingredients only and complete washing, sorting, slicing, cubing, "
+            f"chopping, and mincing into miniature prep bowls. Exact input/start state: raw "
+            f"ingredients only, before any heat or cookware is used. Exact stop state: {SCENE_1_PREP_STOP}. "
+            f"Stop immediately at this exact state and do not advance beyond the current preparation stage. "
+            f"Same kitchen, same lighting, same "
+            f"camera, same hand choreography. No voices, no music, "
+            f"only satisfying ASMR sounds. Negative Prompt: {COOKING_NEGATIVE_BASE}."
+        )
+    if scene_id == 2:
+        return (
+            f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
+            f"seamless continuation from the previous exact stop state. Giant human hands only, "
+            f"same kitchen, same cutting board, same lighting, same camera. Move the prepared "
+            f"ingredients into {dish['cookware']} over {dish['heat_source']} and cook them with "
+            f"realistic sizzling, bubbling, simmering, and browning until the dish is fully "
+            f"cooked. Exact input/start state: {SCENE_1_PREP_STOP}. Exact stop state: {SCENE_2_COOK_STOP}. "
+            f"Stop immediately at this exact state and do not advance beyond the current cooking stage. Same "
+            f"kitchen, same lighting, same camera, same heat source, same ASMR-only soundscape. "
+            f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
+        )
+    return (
+        f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
+        f"seamless continuation from the previous exact stop state. Giant human hands only, "
+        f"same kitchen, same cookware, same lighting, same camera. Ladle the fully cooked "
+        f"{dish['name']} into {dish['serveware']}, drizzle the finishing oil, sprinkle the "
+        f"garnish, and reveal the plated steam-filled hero shot. Exact input/start state: "
+        f"{SCENE_2_COOK_STOP}. Exact stop state: {SCENE_3_FINAL_STOP}. "
+        f"All earlier prep and cooking steps remain complete and unchanged. Same kitchen, same "
+        f"lighting, same camera, same ASMR-only soundscape. Negative Prompt: {COOKING_NEGATIVE_BASE}."
     )
 
 
 def make_scene_video_prompt(scene_id: int, dish_key: str) -> str:
     dish = KOREAN_DISHES[dish_key]
-
-    if scene_id == 1:
-        actions = "; ".join(dish["actions_prep"])
-        return (
-            f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
-            f"soft focus pulls. Giant human hands only, no miniature people, preparing ingredients "
-            f"for {dish['name']} on a natural wooden cutting board in a clean modern kitchen with "
-            f"softly blurred background. {actions} — every motion fluid and ASMR-rich (knife "
-            f"chopping sounds, water drips). All ingredients neatly arranged in miniature prep "
-            f"bowls, ready for cooking. Identical kitchen, lighting, cutting board, and hand "
-            f"position carry into next scene. No voices, no music, only satisfying ASMR sounds. "
-            f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
-        )
-    elif scene_id == 2:
-        actions = "; ".join(dish["actions_cook"])
-        return (
-            f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
-            f"seamless continuation from previous scene. Giant human hands only, same kitchen, "
-            f"same wooden cutting board, same lighting, same camera. Hands transfer prepped "
-            f"ingredients into {dish['cookware']} over {dish['heat_source']}. Realistic cooking "
-            f"physics: oil shimmer, vigorous bubbling steam, browning Maillard reaction, reduction "
-            f"of broth, ingredients melding — all captured in hypnotic extreme close-up with "
-            f"authentic ASMR (sizzle, boil, simmer). Logical cooking sequence without skipped "
-            f"steps. Identical environment carries into next scene. No voices, no music, only "
-            f"satisfying ASMR sounds. Negative Prompt: {COOKING_NEGATIVE_BASE}."
-        )
-    else:
-        actions = "; ".join(dish["actions_finish"])
-        return (
-            f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
-            f"seamless continuation. Giant human hands only, same kitchen, same cookware, same "
-            f"lighting. Hands ladle finished {dish['name']} into {dish['serveware']} using "
-            f"miniature utensils. Delicate garnish: {dish['garnish']}. Final cinematic hero shot: "
-            f"steam rising naturally, textures hyper-detailed (tofu pores, kimchi fibers, oil "
-            f"sheen), focus pull to hero angle. Hands gently exit frame. Satisfying ASMR (pour, "
-            f"drizzle, gentle clink). No voices, no music, only ASMR. Negative Prompt: "
-            f"{COOKING_NEGATIVE_BASE}."
-        )
+    return _build_scene_prompt(scene_id, dish)
 
 
 def get_available_dishes() -> dict:

@@ -1,11 +1,14 @@
-"""pytest configuration - add source and project roots to Python path."""
+"""Keep project and legacy source imports stable during test collection."""
 
 import sys
 from pathlib import Path
 
-# Support both legacy bare imports like `import orchestrator`
-# and package imports like `import src.profile_types`.
-project_root = Path(__file__).resolve().parent.parent
-src_path = project_root / "src"
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(src_path))
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = PROJECT_ROOT / "src"
+
+# Root enables `src.*`; src remains available for legacy bare imports used by
+# executable modules such as `orchestrator`.
+for import_root in (SRC_ROOT, PROJECT_ROOT):
+    import_path = str(import_root)
+    if import_path not in sys.path:
+        sys.path.insert(0, import_path)

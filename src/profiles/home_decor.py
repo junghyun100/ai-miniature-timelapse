@@ -27,6 +27,21 @@ KOREAN_MATERIALS = [
     "cheongsachorong (traditional lantern) motifs",
 ]
 
+HOME_DECOR_NARRATION_MAX_NON_WHITESPACE = 60
+
+
+def count_narration_characters(value: str) -> int:
+    """Count narration characters using the channel's whitespace-excluded rule."""
+    return sum(not character.isspace() for character in value)
+
+
+def validate_korean_narration(value: str) -> bool:
+    """Return whether narration is non-empty and at most 60 non-whitespace chars."""
+    if not isinstance(value, str):
+        return False
+    count = count_narration_characters(value)
+    return 1 <= count <= HOME_DECOR_NARRATION_MAX_NON_WHITESPACE
+
 
 HOME_DECOR_IDENTITY_LOCK = (
     "tactile mixed-media papercraft and craft ASMR style, specifically featuring "
@@ -81,8 +96,13 @@ def _make_scene_video_prompt(
     materials: list[str],
     final_object: str
 ) -> str:
+    if not validate_korean_narration(korean_narration):
+        raise ValueError(
+            "korean_narration must contain 1 to 60 non-whitespace characters"
+        )
     materials_str = ", ".join(materials)
     return (
+        f"Single 10-second continuous clip, not split into multiple scenes. "
         f"[Opening Hook: close-up of discarded materials, Korean female voiceover speaks narration], "
         f"[Introducing Materials: Korean materials introduced — {materials_str}], "
         f"[Building Begins: hands cut paper, bend wire, start folding], "
@@ -106,7 +126,7 @@ SCENE_PLAN = [
     ScenePlan(
         scene_id=1,
         name="DIY Craft Tutorial",
-        start_state="Discarded materials on clean table",
+        start_state="Raw craft materials and tools only on clean table, no finished object visible",
         ordered_actions=[
             "Opening Hook: close-up of materials with narration",
             "Introducing Materials: Korean materials shown",
@@ -122,19 +142,47 @@ SCENE_PLAN = [
         ],
         input_mode=InputMode.MASTER_IMAGE,
         estimated_clip_duration_seconds=10,
+        completion_range="0-100%",
+        is_final_scene=True,
+        reserved_future_actions=[],
+        forbidden_future_actions=[],
+        exact_stop_state="Final object reveal on clean desk",
     ),
 ]
 
 
 HOME_DECOR_SELECTION_SCHEMA = {
     "type": "object",
+    "title": "Home Decor DIY Options",
     "required": ["idea_name", "korean_narration", "materials", "final_object"],
     "properties": {
-        "idea_name": {"type": "string", "minLength": 1},
-        "korean_narration": {"type": "string", "minLength": 1, "maxLength": 50},
-        "materials": {"type": "array", "items": {"type": "string"}, "minItems": 1},
-        "final_object": {"type": "string", "minLength": 1},
+        "idea_name": {
+            "type": "string",
+            "title": "Idea name",
+            "minLength": 1,
+        },
+        "korean_narration": {
+            "type": "string",
+            "title": "Korean narration",
+            "minLength": 1,
+            "x-length-contract": {
+                "max": HOME_DECOR_NARRATION_MAX_NON_WHITESPACE,
+                "counting": "non-whitespace-characters",
+            },
+        },
+        "materials": {
+            "type": "array",
+            "title": "Materials",
+            "items": {"type": "string", "minLength": 1},
+            "minItems": 1,
+        },
+        "final_object": {
+            "type": "string",
+            "title": "Final object",
+            "minLength": 1,
+        },
     },
+    "x-ui-order": ["idea_name", "korean_narration", "materials", "final_object"],
 }
 
 
@@ -167,7 +215,7 @@ def _make_first_frame_prompt(craft_name: str, materials: list[str]) -> str:
     """Generate Master Image prompt for home decor"""
     materials_str = ", ".join(materials)
     return (
-        f"Ultra-realistic 8K macro photo of craft materials neatly arranged on clean craft table, "
+        f"Ultra-realistic 8K macro photo of raw craft materials neatly arranged on clean craft table, "
         f"giant human hands only, no miniature people, no small people, no tiny workers, "
         f"no human figures, no characters, no completed craft visible, "
         f"{materials_str}, paper, cardstock, wire, glue, scissors laid out clearly, "
