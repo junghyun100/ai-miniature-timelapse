@@ -1487,6 +1487,18 @@ All video outputs must advance through work in strict order:
 
 This rule applies to architecture, vehicle, product, cooking, and home-decor profiles alike.
 
+#### Carry-Forward Preservation Rule
+
+Retention is not implicit; it must be restated in each later scene.
+
+- Every non-final scene must explicitly carry forward the prior scene's installed parts, completed structures, and fixed surface state.
+- The prompt generator should treat the previous scene's end state as an immutable ledger of things that must remain visible unless the scene explicitly removes them.
+- If a part, panel, wall, tile, tool, ingredient, or decorative element was already installed or placed, later scenes must mention it as still present and unchanged.
+- A later scene may not drop carried-forward items simply because they are not part of the current action focus.
+- Removal is only allowed when a scene explicitly includes a removal action and the profile supports removal as a normal step; otherwise, removal is forbidden.
+
+For assembly workflows, this means the prompt should preserve the already-built chassis, frame, base layer, wall section, or other completed subassembly while adding the next step on top of it.
+
 #### Workspace Material Continuity Rule
 
 The visible workspace must evolve from the same prepared material set:
