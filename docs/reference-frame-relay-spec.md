@@ -1487,6 +1487,31 @@ All video outputs must advance through work in strict order:
 
 This rule applies to architecture, vehicle, product, cooking, and home-decor profiles alike.
 
+#### Workspace Material Continuity Rule
+
+The visible workspace must evolve from the same prepared material set:
+
+- Each scene should continue from the prior scene's surface, staging layout, and already exposed materials unless the profile explicitly calls for a surface transition.
+- New materials should enter only when they are the next logical materials for the current construction step.
+- Do not jump from one unrelated workspace state to another, such as wood floor to sand, or an empty tray to a fully staged brick bed, unless the scene boundary explicitly defines that transition.
+- If a scene introduces a new substrate, base layer, or tray fill, that change must be motivated by the current stage and must preserve any prior installed elements that should remain visible.
+
+This rule is especially important for architecture, vehicle, and other assembly workflows where raw materials sit adjacent to the work area and are assembled or painted in place.
+
+#### Audio Silence Rule
+
+All non-home-decor profiles must remain ASMR-only:
+
+- no spoken dialogue
+- no narration
+- no voiceover
+- no human speech
+- no accidental vocal sounds
+
+Only tactile construction sounds, tool contact, material handling, brush sweeps, clicks, taps, and other physical ASMR cues are allowed.
+
+The home-decor profile is the only profile that may include its explicitly requested Korean female narration, and only in the form defined by that profile.
+
 #### Vehicle Audio
 
 Default audio:
