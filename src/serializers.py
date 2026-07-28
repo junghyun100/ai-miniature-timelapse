@@ -124,24 +124,59 @@ def _serialize_project_header(project: Project, provenance: Optional[ProvenanceS
     return lines
 
 
+import re
+
+
+def split_prompt_negative(prompt: str, fallback_negative: str = IMMUTABLE_NEGATIVE) -> tuple[str, str]:
+    """Split prompt into main prompt body and negative prompt if embedded, else use fallback."""
+    raw_prompt = str(prompt or "").strip()
+    match = re.search(r"\s*Negative Prompt:\s*[\"“]?([\s\S]*?)[\"”]?\s*$", raw_prompt, re.IGNORECASE)
+    if match:
+        body = raw_prompt[:match.start()].strip()
+        extracted = match.group(1).strip()
+    else:
+        body = raw_prompt
+        extracted = str(fallback_negative or IMMUTABLE_NEGATIVE).strip()
+
+    negative = re.sub(r'^["“]+|["”]+$', '', extracted)
+    negative = re.sub(r'\.+$', '', negative).strip()
+    return body, negative
+
+
+def _get_scene_input_label(scene_index: int, input_mode: Optional[Any] = None) -> str:
+    """Get human readable scene input label matching JS getSceneInputLabel."""
+    mode_val = input_mode.value if hasattr(input_mode, "value") else str(input_mode or "")
+    if scene_index <= 1 or mode_val == "MASTER_IMAGE":
+        return "Master Image"
+    return f"Scene {scene_index - 1} Final Frame"
+
+
 def _serialize_master_image(scene: Scene) -> list[str]:
     """Serialize MASTER IMAGE section (Scene 1 only) per Section 11.6."""
+    fallback = getattr(scene, "negative_prompt_base", None) or getattr(scene, "negative_prompt", None) or IMMUTABLE_NEGATIVE
+    body, negative = split_prompt_negative(scene.first_frame_prompt, fallback)
     return [
         "MASTER IMAGE",
-        f"First Frame Prompt: {scene.first_frame_prompt}",
+        f"First Frame Prompt: {body}",
         f"Template Exclusions: {scene.template_exclusions}",
-        f"Negative Prompt: {IMMUTABLE_NEGATIVE}",
+        f"Negative Prompt: {negative}.",
     ]
 
 
 def _serialize_scene(scene: Scene, scene_index: int) -> list[str]:
     """Serialize a single SCENE N block per Section 11.6."""
-    lines = [f"SCENE {scene_index} — {scene.name}"]
-    lines.append(f"Input: {_serialize_asset_ref(scene.asset_ref)}")
-    lines.append(f"Video Prompt: {scene.video_prompt}")
-    lines.append(f"Template Exclusions: {scene.template_exclusions}")
-    lines.append(f"Negative Prompt: {IMMUTABLE_NEGATIVE}")
-    return lines
+    fallback = getattr(scene, "negative_prompt_base", None) or getattr(scene, "negative_prompt", None) or IMMUTABLE_NEGATIVE
+    body, negative = split_prompt_negative(scene.video_prompt, fallback)
+    input_label = _get_scene_input_label(scene_index, scene.input_mode)
+    output_ref = _serialize_asset_ref(scene.asset_ref)
+    return [
+        f"SCENE {scene_index} — {scene.name}",
+        f"Input: {input_label}",
+        f"Output: {output_ref}",
+        f"Video Prompt: {body}",
+        f"Template Exclusions: {scene.template_exclusions}",
+        f"Negative Prompt: {negative}.",
+    ]
 
 
 # ============================================================================
@@ -151,68 +186,9 @@ def _serialize_scene(scene: Scene, scene_index: int) -> list[str]:
 def compute_source_revision(project: Project) -> str:
     """
     Compute SHA-256 source revision from canonical JSON of prompt-affecting fields.
-
-    Per Section 14.1, includes:
-    - profile_id, profile_version, workflow_mode
-    - topic, genre, subtype, topic_label
-    - model_name, dish_name, craft_name
-    - duration_seconds, clip_duration_seconds, aspect_ratio
-    - style_bible
-    - derived_fields (profile-specific)
-    - scene_plans (start_state, ordered_actions, end_state, forbidden_changes per scene)
-    - narration, idea_seed
-    - flow_execution_profile_id
-    - nim_enabled, nim_model_id, nim_refinement_policy
-
-    Excludes transient values: API keys, UI state, timestamps, loading status,
-    selected scene tab, copied/not-copied state.
-
-    Args:
-        project: Project to compute revision for
-
-    Returns:
-        SHA-256 hex digest prefixed with "sha256:"
+    Delegates to project.compute_source_revision() for single source of truth.
     """
-    # Build the included object per Section 14.1
-    included: dict[str, Any] = {
-        "profile_id": project.profile_id,
-        "profile_version": project.profile_version,
-        "workflow_mode": project.workflow_mode.value,
-        "topic": project.topic,
-        "genre": project.genre,
-        "subtype": project.subtype,
-        "topic_label": project.topic_label,
-        "model_name": project.model_name,
-        "dish_name": project.dish_name,
-        "craft_name": project.craft_name,
-        "duration_seconds": project.duration_seconds,
-        "clip_duration_seconds": project.clip_duration_seconds,
-        "aspect_ratio": project.aspect_ratio.value,
-        "style_bible": _style_bible_to_dict(project.style_bible),
-        "derived_fields": project.derived_fields,
-        "scene_plans": [
-            {
-                "scene_id": sp.scene_id,
-                "name": sp.name,
-                "start_state": sp.start_state,
-                "ordered_actions": sp.ordered_actions,
-                "end_state": sp.end_state,
-                "forbidden_changes": sp.forbidden_changes.value,
-                "input_mode": sp.input_mode.value,
-            }
-            for sp in project.scene_plans
-        ],
-        "narration": project.narration,
-        "idea_seed": project.idea_seed,
-        "flow_execution_profile_id": project.flow_execution_profile_id,
-        "nim_enabled": project.nim_enabled,
-        "nim_model_id": project.nim_model_id,
-        "nim_refinement_policy": project.nim_refinement_policy,
-    }
-
-    canonical = _canonical_json(included)
-    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-    return f"sha256:{digest}"
+    return project.compute_source_revision()
 
 
 def serialize_full_plan(project: Project) -> str:
@@ -269,6 +245,24 @@ def serialize_master_image_prompt(project: Project) -> str:
     return "\n".join(lines)
 
 
+def is_plan_stale(project: Optional[Project], current_draft: Optional[dict[str, Any]] = None) -> bool:
+    """Return True if plan is missing, marked stale, or current draft revision mismatches project.source_revision."""
+    if not project or not getattr(project, "source_revision", None):
+        return True
+    if getattr(project, "is_stale", False):
+        return True
+    if current_draft:
+        try:
+            draft_rev = project.compute_source_revision() if hasattr(project, "compute_source_revision") else ""
+            if current_draft and draft_rev:
+                from .domain import compute_source_revision
+                if compute_source_revision(current_draft) != project.source_revision:
+                    return True
+        except Exception:
+            return True
+    return False
+
+
 def serialize_scene_video_prompt(project: Project, scene_id: int) -> str:
     """
     Serialize SCENE N block for Copy Scene Video Prompt action.
@@ -280,12 +274,7 @@ def serialize_scene_video_prompt(project: Project, scene_id: int) -> str:
     if not scene:
         return ""
 
-    lines = [
-        f"SCENE {scene_id} — {scene.name}",
-        f"Video Prompt: {scene.video_prompt}",
-        f"Template Exclusions: {scene.template_exclusions}",
-        f"Negative Prompt: {IMMUTABLE_NEGATIVE}",
-    ]
+    lines = _serialize_scene(scene, scene_id)
     return "\n".join(lines)
 
 
@@ -300,21 +289,12 @@ def serialize_full_scene(project: Project, scene_id: int) -> str:
         return ""
 
     if scene_id == 1:
-        lines = [
-            "MASTER IMAGE",
-            f"First Frame Prompt: {scene.first_frame_prompt}",
-            f"Template Exclusions: {scene.template_exclusions}",
-            f"Negative Prompt: {IMMUTABLE_NEGATIVE}",
-            "",
-            f"SCENE 1 — {scene.name}",
-        ]
+        lines = []
+        lines.extend(_serialize_master_image(scene))
+        lines.append("")
+        lines.extend(_serialize_scene(scene, 1))
     else:
-        lines = [f"SCENE {scene_id} — {scene.name}"]
-
-    lines.append(f"Input: {_serialize_asset_ref(scene.asset_ref)}")
-    lines.append(f"Video Prompt: {scene.video_prompt}")
-    lines.append(f"Template Exclusions: {scene.template_exclusions}")
-    lines.append(f"Negative Prompt: {IMMUTABLE_NEGATIVE}")
+        lines = _serialize_scene(scene, scene_id)
 
     return "\n".join(lines)
 
@@ -342,10 +322,24 @@ class CopyActionResult:
         }
 
 
+import re
+
+
+def redact_secrets(text: str) -> str:
+    """Redact API keys, tokens, and secrets from copy/export text."""
+    if not isinstance(text, str):
+        return text
+    redacted = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "[REDACTED]", text)
+    redacted = re.sub(r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]", "[REDACTED]", redacted, flags=re.IGNORECASE)
+    return redacted
+
+
 def perform_copy_action(
     project: Project,
     action: str,
     scene_id: Optional[int] = None,
+    current_draft: Optional[dict[str, Any]] = None,
 ) -> CopyActionResult:
     """
     Perform a specialized copy action per Section 11.6.
@@ -356,17 +350,24 @@ def perform_copy_action(
     - "full_scene": Copy Full Scene (exact visible scene block)
     - "all": Copy All (full canonical plan)
 
+    Stale Plan Block:
+    - If plan is stale or draft revision mismatches, copy action is blocked.
+
     Args:
         project: Current project
         action: Copy action type
         scene_id: Required for scene_video and full_scene actions (1-based)
+        current_draft: Optional current setup draft to check for stale plan
 
     Returns:
         CopyActionResult with serialized text and metadata
 
     Raises:
-        ValueError: If action is unknown or scene_id required but not provided
+        ValueError: If plan is stale, action is unknown, or scene_id required but not provided
     """
+    if is_plan_stale(project, current_draft):
+        raise ValueError("Copy blocked: Plan is stale. Please rebuild plan before copying.")
+
     timestamp = datetime.utcnow().isoformat() + "Z"
     source_revision = project.source_revision
 
@@ -375,7 +376,7 @@ def perform_copy_action(
             raise ValueError("No scenes in project")
         scene1 = project.scenes[0]
         lines = _serialize_master_image(scene1)
-        text = "\n".join(lines)
+        text = redact_secrets("\n".join(lines))
         return CopyActionResult(
             action="master_image",
             scene_id=1,
@@ -390,13 +391,8 @@ def perform_copy_action(
         if scene_id < 1 or scene_id > len(project.scenes):
             raise ValueError(f"Invalid scene_id: {scene_id}. Project has {len(project.scenes)} scenes.")
         scene = project.scenes[scene_id - 1]
-        lines = [
-            f"SCENE {scene_id} — {scene.name}",
-            f"Video Prompt: {scene.video_prompt}",
-            f"Template Exclusions: {scene.template_exclusions}",
-            f"Negative Prompt: {IMMUTABLE_NEGATIVE}",
-        ]
-        text = "\n".join(lines)
+        lines = _serialize_scene(scene, scene_id)
+        text = redact_secrets("\n".join(lines))
         return CopyActionResult(
             action="scene_video",
             scene_id=scene_id,
@@ -422,7 +418,7 @@ def perform_copy_action(
             # Scenes 2+ only the SCENE block (no MASTER IMAGE, no First Frame Prompt)
             lines = _serialize_scene(scene, scene_id)
 
-        text = "\n".join(lines)
+        text = redact_secrets("\n".join(lines))
         return CopyActionResult(
             action="full_scene",
             scene_id=scene_id,
@@ -432,7 +428,7 @@ def perform_copy_action(
         )
 
     elif action == "all":
-        text = serialize_full_plan(project)
+        text = redact_secrets(serialize_full_plan(project))
         return CopyActionResult(
             action="all",
             scene_id=None,
@@ -457,7 +453,10 @@ __all__ = [
     "serialize_scene_video_prompt",
     "serialize_full_scene",
     "perform_copy_action",
+    "is_plan_stale",
+    "split_prompt_negative",
     "CopyActionResult",
+    "redact_secrets",
     "_canonical_json",
     "_serialize_asset_ref",
 ]

@@ -76,6 +76,7 @@ class ProvenanceSource(str, Enum):
     LOCAL_PLANNER = "local_planner"
     NIM = "nim"
     FALLBACK = "fallback"
+    NIM_PARTIAL_FALLBACK = "nim_partial_fallback"
 
 
 class AssetKind(str, Enum):
@@ -99,7 +100,9 @@ def _normalize_unicode(s: str) -> str:
 
 def _sort_keys_recursive(obj: Any) -> Any:
     """Recursively sort dictionary keys for canonical serialization."""
-    if isinstance(obj, dict):
+    if isinstance(obj, Enum):
+        return obj.value
+    elif isinstance(obj, dict):
         return {k: _sort_keys_recursive(v) for k, v in sorted(obj.items())}
     elif isinstance(obj, list):
         return [_sort_keys_recursive(item) for item in obj]
@@ -136,7 +139,9 @@ def compute_source_revision(source_draft: dict[str, Any]) -> str:
     included_keys = {
         "profile_id", "profile_version", "workflow_mode",
         "topic", "genre", "subtype", "topic_label",
-        "model_name", "dish_name", "craft_name",
+        "selection", "subject", "category",
+        "model_name", "dish_name", "dish_key", "craft_name",
+        "idea_name", "materials", "final_object", "korean_narration",
         "duration_seconds", "clip_duration_seconds", "aspect_ratio",
         "style_bible",
         "derived_fields",
@@ -418,8 +423,10 @@ class SourceRevision:
 # Profile Registry (loaded from profile implementations)
 # ============================================================================
 
-# Import Profile from profile_types to avoid duplication
-from .profile_types import Profile, register_profile, get_profile, PROFILE_REGISTRY
+try:
+    from profile_types import Profile, register_profile, get_profile, PROFILE_REGISTRY
+except ImportError:
+    from .profile_types import Profile, register_profile, get_profile, PROFILE_REGISTRY
 
 
 # ============================================================================

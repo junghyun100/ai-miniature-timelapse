@@ -323,19 +323,22 @@ class TestSerializeFullPlan:
 
         # SCENE 1
         assert "SCENE 1 — Foundation and Walls" in text
-        assert "Input: scene_01_master | kind=image | scope=scene | label=Scene 1 master image | local=scenes/scene_01_master.png | source_scene=1" in text
+        assert "Input: Master Image" in text
+        assert "Output: scene_01_master | kind=image | scope=scene | label=Scene 1 master image | local=scenes/scene_01_master.png | source_scene=1" in text
         assert "Video Prompt: Video prompt for scene 1 with identity lock" in text
 
         # SCENE 2
         assert "SCENE 2 — Roofing and Exterior" in text
-        assert "Input: scene_01_last_frame | kind=image | scope=scene | label=Scene 1 final frame | local=scenes/scene_01_last_frame.png | source_scene=1" in text
+        assert "Input: Scene 1 Final Frame" in text
+        assert "Output: scene_01_last_frame | kind=image | scope=scene | label=Scene 1 final frame | local=scenes/scene_01_last_frame.png | source_scene=1" in text
         assert "Video Prompt: Video prompt for scene 2 with identity lock" in text
         # Scene 2 should NOT have First Frame Prompt
         assert "First Frame Prompt:" not in text.split("SCENE 2")[1].split("SCENE 3")[0]
 
         # SCENE 3
         assert "SCENE 3 — Painting and Reveal" in text
-        assert "Input: scene_02_last_frame" in text
+        assert "Input: Scene 2 Final Frame" in text
+        assert "Output: scene_02_last_frame" in text
         assert "Video Prompt: Video prompt for scene 3 with identity lock" in text
 
     def test_single_clip_mode(self, single_clip_project):

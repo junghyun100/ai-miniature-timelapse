@@ -181,10 +181,13 @@ class NimClient:
         elif isinstance(data, list):
             return [self._sanitize_for_log(item) for item in data]
         elif isinstance(data, str):
-            # Check if string contains API key pattern (only redact if we have a key)
-            if self.api_key and self.api_key in data:
-                return data.replace(self.api_key, "***REDACTED***")
-            return data
+            res = data
+            if self.api_key and self.api_key in res:
+                res = res.replace(self.api_key, "***REDACTED***")
+            import re
+            res = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "***REDACTED***", res)
+            res = re.sub(r"Bearer\s+[A-Za-z0-9._-]+", "Bearer ***REDACTED***", res, flags=re.IGNORECASE)
+            return res
         else:
             return data
 

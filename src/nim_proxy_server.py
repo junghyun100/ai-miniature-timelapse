@@ -23,9 +23,7 @@ import json
 import os
 import secrets
 import time
-import uuid
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Optional
 
 import httpx
@@ -43,6 +41,8 @@ except ImportError:
 # ============================================================================
 # Configuration
 # ============================================================================
+
+PROXY_VERSION = "1.0"
 
 @dataclass
 class ProxyConfig:
@@ -82,6 +82,29 @@ class ProxyConfig:
 # Global config (set at startup)
 _config: Optional[ProxyConfig] = None
 _session_token: Optional[str] = None
+
+
+def _parse_allowed_origins_env(raw_value: Optional[str]) -> Optional[list[str]]:
+    """Parse ALLOWED_ORIGIN env into a normalized list."""
+    if raw_value is None:
+        return None
+    origins = [origin.strip() for origin in raw_value.split(",") if origin.strip()]
+    return origins or None
+
+
+def _resolve_allowed_origins(cli_allowed_origins: Optional[list[str]]) -> list[str]:
+    """Resolve effective allowed origins from CLI first, then env, then defaults."""
+    if cli_allowed_origins:
+        return cli_allowed_origins
+    env_origins = _parse_allowed_origins_env(os.environ.get("ALLOWED_ORIGIN"))
+    if env_origins:
+        return env_origins
+    return ProxyConfig().allowed_origins
+
+
+def _resolve_session_token() -> str:
+    """Resolve session token from env override or generate a per-launch token."""
+    return os.environ.get("NIM_PROXY_SESSION_TOKEN") or secrets.token_urlsafe(32)
 
 
 # ============================================================================
@@ -131,7 +154,9 @@ NIM_REQUEST_SCHEMA = {
             "items": {"type": "string", "enum": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"]},
             "default": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"]
         },
-        "immutable_rules": {"type": "array", "items": {"type": "string"}}
+        "immutable_rules": {"type": "array", "items": {"type": "string"}},
+        "model_id": {"type": "string"},
+        "model": {"type": "string"}
     },
     "additionalProperties": False
 }
@@ -141,12 +166,25 @@ NIM_REQUEST_SCHEMA = {
 # Error Responses (Sanitized - No Secrets)
 # ============================================================================
 
+import re
+
+
+def redact_text(text: str) -> str:
+    """Redact raw API key patterns, Bearer tokens, and secrets from string."""
+    if not isinstance(text, str):
+        return text
+    redacted = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "[REDACTED]", text)
+    redacted = re.sub(r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]", "[REDACTED]", redacted, flags=re.IGNORECASE)
+    return redacted
+
+
 def error_response(status: int, code: str, message: str, details: Optional[dict] = None) -> dict:
-    """Create sanitized error response."""
+    """Create sanitized error response - ensures no raw secrets are leaked."""
     response = {
         "error": {
-            "code": code,
-            "message": message,
+            "code": redact_text(code),
+            "message": redact_text(message),
             "timestamp": time.time(),
         }
     }
@@ -154,8 +192,16 @@ def error_response(status: int, code: str, message: str, details: Optional[dict]
         # Sanitize details
         safe_details = {}
         for k, v in details.items():
-            if k.lower() in ("authorization", "api_key", "apikey", "token", "secret"):
+            k_lower = k.lower()
+            if k_lower in ("authorization", "api_key", "apikey", "nim_api_key", "token", "secret", "x-nim-api-key", "x-api-key"):
                 safe_details[k] = "[REDACTED]"
+            elif isinstance(v, str):
+                safe_details[k] = redact_text(v)
+            elif isinstance(v, dict):
+                safe_details[k] = {
+                    dk: ("[REDACTED]" if dk.lower() in ("authorization", "api_key", "apikey", "nim_api_key", "token", "secret", "x-nim-api-key", "x-api-key") else redact_text(dv) if isinstance(dv, str) else dv)
+                    for dk, dv in v.items()
+                }
             else:
                 safe_details[k] = v
         response["error"]["details"] = safe_details
@@ -178,7 +224,7 @@ async def _send_json(send, status: int, payload: dict):
             # CORS - strict allowlist only
             (b"access-control-allow-origin", _config.allowed_origins[0].encode()),
             (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
-            (b"access-control-allow-methods", b"POST, OPTIONS"),
+            (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
             (b"access-control-allow-credentials", b"true"),
         ],
     })
@@ -211,7 +257,7 @@ def _sanitize_headers(headers: list[tuple[bytes, bytes]]) -> dict:
     sanitized = {}
     for k, v in headers:
         key = k.decode()
-        if key.lower() in ("authorization", "x-session-token", "cookie"):
+        if key.lower() in ("authorization", "x-session-token", "cookie", "x-nim-api-key", "x-api-key"):
             sanitized[key] = "[REDACTED]"
         else:
             sanitized[key] = v.decode()
@@ -268,6 +314,16 @@ async def app(scope, receive, send):
             await send({"type": "http.response.body", "body": b""})
         return
 
+    # Route: GET /health
+    if method == "GET" and path == "/health":
+        await _send_json(send, 200, {
+            "status": "ok",
+            "version": PROXY_VERSION,
+            "upstream": _config.upstream_hosts,
+            "default_model": _config.default_model,
+        })
+        return
+
     # Validate origin
     if not _validate_origin(origin):
         print(f"  -> REJECTED: Origin not in allowlist: {origin.decode() if origin else 'missing'}")
@@ -283,11 +339,6 @@ async def app(scope, receive, send):
     # Route: POST /api/nim/rewrite
     if method == "POST" and path == "/api/nim/rewrite":
         await handle_nim_rewrite(scope, receive, send)
-        return
-
-    # Route: GET /health
-    if method == "GET" and path == "/health":
-        await _send_json(send, 200, {"status": "ok", "session_token": _session_token[:8] + "..."})
         return
 
     # 404
@@ -341,9 +392,19 @@ async def handle_nim_rewrite(scope, receive, send):
 
     print(f"  -> NIM rewrite: request_id={request_id[:8]}, scenes={len(payload['scenes'])}")
 
+    # Extract optional session API key from headers (session-scoped transmission & rotation support)
+    session_api_key = None
+    for k, v in scope["headers"]:
+        if k.lower() in (b"x-nim-api-key", b"x-api-key"):
+            session_api_key = v.decode("latin-1").strip()
+            break
+        elif k.lower() == b"authorization" and v.lower().startswith(b"bearer "):
+            session_api_key = v.decode("latin-1")[7:].strip()
+            break
+
     # Forward to NIM upstream
     try:
-        result = await forward_to_nim(payload)
+        result = await forward_to_nim(payload, session_api_key=session_api_key)
     except httpx.TimeoutException:
         await _send_json(send, 504, error_response(504, "UPSTREAM_TIMEOUT", "NIM upstream timed out"))
         return
@@ -365,7 +426,7 @@ async def handle_nim_rewrite(scope, receive, send):
     await _send_json(send, 200, result)
 
 
-async def forward_to_nim(request_payload: dict) -> dict:
+async def forward_to_nim(request_payload: dict, session_api_key: Optional[str] = None) -> dict:
     """Forward validated request to NVIDIA NIM upstream."""
     # Determine upstream URL
     upstream_url = os.environ.get("NIM_UPSTREAM_URL", "https://integrate.api.nvidia.com/v1/chat/completions")
@@ -376,14 +437,24 @@ async def forward_to_nim(request_payload: dict) -> dict:
     if parsed.netloc not in _config.upstream_hosts:
         raise ValueError(f"Upstream host {parsed.netloc} not in allowlist")
 
-    # Get API key (from env, never from request)
-    api_key = _config.env_api_key or os.environ.get("NIM_API_KEY") or os.environ.get("NGC_API_KEY")
+    # Get API key (session header first, then config/env)
+    api_key = session_api_key or _config.env_api_key or os.environ.get("NIM_API_KEY") or os.environ.get("NGC_API_KEY")
     if not api_key:
         raise ValueError("No API key configured (set NIM_API_KEY env var)")
 
+    # Model selection: SEPARATE model_id and profile_id
+    # profile.id is domain workflow ID (e.g. "architecture.korean")
+    # model is NIM LLM model ID (e.g. "meta/llama-3.1-8b-instruct")
+    profile_id = request_payload.get("profile", {}).get("id")
+    raw_model = request_payload.get("model_id") or request_payload.get("model")
+    if not raw_model or raw_model == profile_id:
+        model_id = _config.default_model
+    else:
+        model_id = raw_model
+
     # Build upstream request (NIM uses OpenAI-compatible format)
     upstream_payload = {
-        "model": request_payload.get("profile", {}).get("id", _config.default_model),
+        "model": model_id,
         "messages": [
             {
                 "role": "system",
@@ -459,7 +530,7 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4174)
     parser.add_argument("--allowed-origins", nargs="+",
-                        default=["http://127.0.0.1:4173", "http://localhost:4173"])
+                        default=None)
     parser.add_argument("--max-body-size", type=int, default=1_048_576)
     parser.add_argument("--upstream-hosts", nargs="+",
                         default=["integrate.api.nvidia.com", "api.nvidia.com"])
@@ -474,7 +545,7 @@ def main():
     _config = ProxyConfig(
         host=args.host,
         port=args.port,
-        allowed_origins=args.allowed_origins,
+        allowed_origins=_resolve_allowed_origins(args.allowed_origins),
         max_body_size=args.max_body_size,
         upstream_hosts=args.upstream_hosts,
         default_model=args.default_model,
@@ -482,8 +553,8 @@ def main():
         env_api_key=args.env_api_key,
     )
 
-    # Generate per-launch session token
-    _session_token = secrets.token_urlsafe(32)
+    # Generate per-launch session token unless env override is provided.
+    _session_token = _resolve_session_token()
 
     print(f"🔒 NIM Proxy Server Starting")
     print(f"   Bind: {_config.host}:{_config.port}")

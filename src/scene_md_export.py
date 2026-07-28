@@ -14,15 +14,22 @@ def load_json(path: str | Path) -> Dict[str, Any]:
 
 
 def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
+    if project.get("is_stale"):
+        raise ValueError("Export failed: plan is stale")
+
     template = get_building_template(project.get("building_type", "hanok"))
     topic_context = project.get("topic_label") or project["topic"]
-    start_second = (scene["id"] - 1) * scene["seconds"]
-    end_second = scene["id"] * scene["seconds"]
-    first_frame_prompt = (
-        build_first_frame_prompt(topic_context, scene["name"], project.get("building_type", "hanok"))
-        if scene["id"] == 1
-        else ""
-    )
+    seconds = scene.get("seconds") or scene.get("clip_duration_seconds", 10)
+    start_second = (scene["id"] - 1) * seconds
+    end_second = scene["id"] * seconds
+
+    first_frame_prompt = scene.get("first_frame_prompt") or ""
+    if not first_frame_prompt and scene["id"] == 1:
+        first_frame_prompt = build_first_frame_prompt(topic_context, scene["name"], project.get("building_type", "hanok"))
+
+    video_prompt = scene.get("video_prompt") or scene.get("prompt", "")
+    negative_prompt = scene.get("negative_prompt_base") or scene.get("negative_prompt", "")
+
     input_mode = scene.get("input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME")
     input_asset = scene.get(
         "input_asset",
@@ -41,7 +48,7 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
         f"- Topic: {project['topic']}\n"
         f"- Topic Label: {project.get('topic_label', '')}\n"
         f"- Building Type: {project.get('building_type', 'hanok')}\n"
-        f"- Duration: {scene['seconds']} seconds\n"
+        f"- Duration: {seconds} seconds\n"
         f"- Timing: {start_second} to {end_second}\n"
         f"- Materials: {template['materials']}\n"
         f"- Camera: {template['camera']}\n"
@@ -52,12 +59,14 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
         f"- Video output: `renders/scene_{scene['id']:02d}.mp4`\n\n"
         f"- Save final frame as: `{handoff_asset}`\n\n"
         f"{first_frame_section}"
-        f"## Video Prompt\n\n{scene['prompt']}\n\n"
-        f"## Negative Prompt\n\n{scene['negative_prompt']}\n"
+        f"## Video Prompt\n\n{video_prompt}\n\n"
+        f"## Negative Prompt\n\n{negative_prompt}\n"
     )
 
 
 def export_scene_md(project: Dict[str, Any], output_dir: Path) -> None:
+    if project.get("is_stale"):
+        raise ValueError("Export failed: plan is stale")
     output_dir.mkdir(parents=True, exist_ok=True)
     for scene in project["scenes"]:
         md = build_scene_md(project, scene)

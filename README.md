@@ -1,53 +1,138 @@
 # ai-miniature-timelapse
 
-Miniature construction timelapse pipeline with Reference-Frame Relay v2.0 implementation.
+Miniature construction timelapse pipeline implementing **Reference-Frame Relay v2.0**.
 
-## Overview
+---
 
-AI-assisted miniature timelapse generator implementing the [Reference-Frame Relay v2.0 specification](docs/reference-frame-relay-spec.md). Supports four workflow profiles with deterministic relay state machines, NIM proxy integration, and a browser-based Relay Runner UI.
+## 1. Immutable Security Contract
 
-### Supported Profiles
+> [!IMPORTANT]
+> **STRICT SECURITY RULE**: Real API keys or secrets MUST NEVER be hardcoded or committed anywhere.
+> Always use placeholder tokens syntax: `<NVIDIA_API_KEY>`, `<SESSION_TOKEN>`, or `<ALLOWED_ORIGIN>`.
+
+---
+
+## 2. Documentation Directory
+
+For complete operational and deployment details, consult the canonical guides:
+
+- 📖 **[Execution Guide](docs/run-guide.md)**: Local setup, NIM proxy boot, port allocations, and QA test suite execution.
+- 🛠️ **[Operations & Recovery Guide](docs/ops-guide.md)**: Architecture, log redaction, process monitoring, 5 error failure recovery runbooks, and rollback triggers.
+- 🚀 **[Deploy & Release Checklist](docs/deploy-checklist.md)**: Pre-release verification checklist, 7-step release sequence, post-release smoke test, and reverse rollback order.
+- 📐 **[Reference Specification](docs/reference-frame-relay-spec.md)**: Canonical Reference-Frame Relay v2.0 specification.
+
+---
+
+## 3. Overview & Supported Profiles
+
+AI-assisted miniature timelapse generator implementing [Reference-Frame Relay v2.0](docs/reference-frame-relay-spec.md). Supports 5 workflow profiles with deterministic relay state machines, NIM proxy integration, and a browser-based Relay Runner UI.
 
 | Profile | Workflow Mode | Duration | Scenes | Use Case |
 |---------|---------------|----------|--------|----------|
 | `architecture.korean` | REFERENCE_FRAME_RELAY | 30s / 60s | 3 / 6 | Korean Hanok construction (foundation → roof → walls/interior/garden/hero) |
-| `vehicle.assembly` | REFERENCE_FRAME_RELAY | 30s / 60s | 3 / 6 | Vehicle assembly (10 categories, 6-stage assembly: Chassis → Engine → Drivetrain → Interior → Body → Final) |
-| `home_decor.diy` | SINGLE_CLIP_FROM_MASTER | 10s | 1 | Home decor DIY (6-step craft: Hook → Materials → Build → Mid-build → Detail → Reveal) |
+| `vehicle.assembly` | REFERENCE_FRAME_RELAY | 30s / 60s | 3 / 6 | Vehicle assembly (10 categories: Chassis → Engine → Drivetrain → Interior → Body → Final) |
+| `product.assembly` | REFERENCE_FRAME_RELAY | 10s / 30s / 60s | 1 / 3 / 6 | Product assembly (Disassembled → Component → Final) |
+| `home_decor.diy` | SINGLE_CLIP_FROM_MASTER | 10s | 1 | Home decor DIY (Hook → Materials → Build → Mid-build → Detail → Reveal) |
 | `cooking.miniature` | REFERENCE_FRAME_RELAY | 30s | 3 | Miniature cooking (Prep → Cook → Plate, ASMR audio only) |
 
-**Key**: All videos are 10s × N clips. No single-clip 10s videos except home_decor.diy.
+---
 
-## Quick Start
+## 4. Strict Execution Order
 
-### 1. Start Relay Runner UI (Browser)
+Follow this exact sequence to run the system and verify quality:
 
+### Step 1: Environment Setup & Dependencies
 ```bash
-# Terminal 1: Start HTTP server for ES modules
-cd ui && python3 -m http.server 8765
-
-# Open http://localhost:8765/index.html in browser
+uv sync --all-extras
+uv run playwright install chromium
 ```
 
-### 2. Run Tests
-
+### Step 2: Set Environment Variables (Placeholder syntax)
 ```bash
-# Python unit tests (208 tests)
-python3 -m pytest tests/ --ignore=tests/browser -v
-
-# Playwright E2E browser tests (18 tests)
-python3 -m pytest tests/browser/ -v
-
-# All tests
-python3 -m pytest tests/ --ignore=tests/browser -v && python3 -m pytest tests/browser -v
+export NIM_API_KEY="<NVIDIA_API_KEY>"
+export ALLOWED_ORIGIN="http://127.0.0.1:4173"
+export NIM_PROXY_SESSION_TOKEN="<SESSION_TOKEN>"
 ```
 
-### 3. CLI Pipeline (Legacy)
-
+### Step 3: Boot NIM Proxy Server (Terminal 1)
 ```bash
-python3 src/watch_and_finalize.py "Korean hanok" --duration 60 --base-dir output
+uv run python3 src/nim_proxy_server.py --host 127.0.0.1 --port 4174
 ```
 
-## Project Structure
+### Step 4: Verify Proxy Health
+```bash
+curl -s http://127.0.0.1:4174/health
+```
+`GET /health` does not require an `Origin` header or `X-Session-Token`.
+
+### Step 5: Start Relay Runner UI HTTP Server (Terminal 2)
+```bash
+cd ui && python3 -m http.server 4173 --bind 127.0.0.1
+```
+Access UI at `http://127.0.0.1:4173/index.html`.
+
+### Step 6: Rewrite Smoke Check
+```bash
+curl -s -X POST http://127.0.0.1:4174/api/nim/rewrite \
+  -H "Content-Type: application/json" \
+  -H "Origin: http://127.0.0.1:4173" \
+  -H "X-Session-Token: <SESSION_TOKEN>" \
+  -d '{
+    "schema_version": "2.0",
+    "request_id": "11111111-1111-4111-8111-111111111111",
+    "source_revision": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "profile": {
+      "id": "architecture.korean",
+      "version": "1.0",
+      "workflow_mode": "REFERENCE_FRAME_RELAY"
+    },
+    "subject": {
+      "topic_label": "Architecture-Hanok"
+    },
+    "style_bible": {
+      "visual_style": "cinematic miniature timelapse"
+    },
+    "scenes": [
+      {
+        "id": 1,
+        "name": "Foundation and Walls",
+        "start_state": "Empty soil surface with no materials placed yet.",
+        "ordered_actions": [
+          "Measure the foundation footprint.",
+          "Place the first stone course."
+        ],
+        "end_state": "Foundation footprint is laid and the first wall course is complete.",
+        "local_first_frame_prompt": "Ultra realistic macro photography of an empty hanok build site with only giant human hands beginning the first placement.",
+        "local_video_prompt": "Hands-only miniature construction timelapse that completes foundation setup and the first wall course, then stops before roofing begins."
+      }
+    ],
+    "mutable_fields": [
+      "scenes.*.first_frame_prompt",
+      "scenes.*.video_prompt"
+    ],
+    "immutable_rules": [
+      "Never expose miniature people.",
+      "Preserve scene order and identity."
+    ]
+  }'
+```
+Browser clients must not send the NVIDIA API key directly. The browser talks only to the local proxy; the upstream key is injected into the proxy through `NIM_API_KEY`.
+
+### Step 7: Execute QA & Test Suites
+```bash
+# Python Unit & Integration Tests (325 tests)
+uv run pytest tests/ --ignore=tests/browser -v
+
+# Playwright E2E & Responsive QA Tests (34 tests)
+uv run pytest tests/browser/ -v
+
+# Full Suite Execution (359 tests)
+uv run pytest tests/ -v
+```
+
+---
+
+## 5. Project Structure
 
 ```
 ai-miniature-timelapse/
@@ -55,119 +140,47 @@ ai-miniature-timelapse/
 │   ├── domain.py               # Canonical domain models (Project, Scene, AssetRef, RelayBranch)
 │   ├── relay_state.py          # Relay state machine (Section 10)
 │   ├── profile_types.py        # Profile registry & interface (Section 13)
-│   ├── profiles/               # 4 profile implementations
-│   │   ├── architecture.py     # Korean Hanok (Section 13.5)
-│   │   ├── vehicle.py          # Vehicle assembly (Section 13.6)
-│   │   ├── home_decor.py       # Home decor DIY (Section 13.8)
-│   │   └── cooking.py          # Miniature cooking (Section 13.9)
-│   ├── serializers.py          # Canonical serialization (Section 11.6)
-│   ├── nim_proxy_server.py     # NIM proxy (FastAPI, Section 14)
+│   ├── profiles/               # 5 profile implementations
+│   │   ├── architecture.py     # Korean Hanok
+│   │   ├── vehicle.py          # Vehicle assembly
+│   │   ├── product.py          # Product assembly
+│   │   ├── home_decor.py       # Home decor DIY
+│   │   └── cooking.py          # Miniature cooking
+│   ├── serializers.py          # Canonical prompt serialization (Section 11.6)
+│   ├── nim_proxy_server.py     # FastAPI NIM proxy (Section 14)
 │   ├── nim_client.py           # NIM async client with retry/fallback
 │   ├── schema_validator.py     # JSON Schema validation
-│   ├── persistence.py          # Project persistence (Section 16)
-│   └── watch_and_finalize.py   # Legacy CLI pipeline
+│   └── persistence.py          # Project persistence (Section 16)
 ├── tests/
 │   ├── domain/                 # Domain model & source revision tests
-│   ├── profiles/               # Profile traceability tests (Section 21.2)
-│   ├── nim/                    # NIM contract & proxy tests
+│   ├── profiles/               # Profile traceability & scene boundary tests
+│   ├── nim/                    # NIM contract, proxy & secret redaction tests
 │   ├── relay/                  # Relay state machine tests
 │   ├── serializers/            # Serialization & copy action tests
 │   ├── persistence/            # Persistence round-trip tests
-│   └── browser/                # Playwright E2E tests for Relay Runner UI
+│   └── browser/                # Playwright E2E & responsive QA browser tests
 ├── ui/
 │   ├── index.html              # Relay Runner UI (Section 15)
-│   ├── app.js                  # ES module:1-440          # Core logic (state machine, serialization, persistence)
-│   └── styles.css              # UI styling
-├── schema/                     # JSON Schemas (10 files, Section 14)
-└── docs/
-    └── reference-frame-relay-spec.md  # Full v2.0 specification
+│   ├── app.js                  # ES module core logic
+│   ├── error_handling.js       # Sanitized error display adapter
+│   └── styles.css              # UI styling & responsive layouts
+├── docs/
+│   ├── run-guide.md            # Local Run & QA Guide
+│   ├── ops-guide.md            # Operations & Failure Recovery Guide
+│   ├── deploy-checklist.md     # Deploy Checklist & Rollback Order
+│   └── reference-frame-relay-spec.md # Canonical v2.0 specification
+└── schema/                     # JSON Schemas for validation
 ```
 
-## Key Features
+---
 
-### Relay Runner UI (Section 15)
-- **Profile selection** with dynamic config grid
-- **Scene grid** with visual state badges (LOCKED → AWAITING_MASTER_IMAGE → VIDEO_READY → CONFIRMED → COMPLETE)
-- **Stepper navigation** between scenes
-- **Canonical prompt copy** (Master Image / Scene Video / Full Scene / All)
-- **State transitions** via Confirm Step button
-- **Persistence**: Save/Resume via localStorage
-- **JSON export** for handoff
+## 6. Reverse Rollback Execution Order
 
-### Source Revision Hashing (Section 14.1)
-- SHA-256 of canonicalized Source Draft
-- Identical algorithm in Python (`src/domain.py`) and browser (`ui/app.js`)
-- Cross-platform consistency verified in tests
+If a local or deployed environment encounters critical failure, follow this exact reverse sequence:
 
-### NIM Proxy (Section 14)
-- FastAPI server with schema validation
-- Origin/session token auth
-- Error sanitization (no secrets in logs)
-- Upstream retry with exponential backoff
-- Response normalization per Section 14.5
-
-### Profile Registry (Section 13)
-- Four profiles with distinct workflow modes
-- Scene plans with start_state, ordered_actions, end_state, forbidden_changes
-- Style bible factories (materials, camera, lighting, palette, workspace, hands_rule, motion_rule)
-- First frame & scene prompt factories
-
-## Test Coverage
-
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| Domain / Source Revision | 26 | Canonical JSON, hash determinism, NFC normalization |
-| Profiles | 24 | Section 21.2 traceability, all 4 profiles |
-| NIM Contract | 32 | Request/response schema, normalization, fallback, provenance |
-| NIM Proxy | 24 | Auth, CORS, schema validation, forwarding, security |
-| Relay State Machine | 30 | Transitions, cascading, branching, validation |
-| Serializers | 20 | Full plan, copy actions, asset refs |
-| Persistence | 10 | Save/load round-trip, schema version |
-| **Python Total** | **208** | |
-| **Playwright E2E** | **18** | UI load, profiles, state transitions, copy, persistence |
-
-## Configuration
-
-### NIM Proxy (Optional)
-```bash
-# Terminal 2: Start NIM proxy
-cd src && python3 -m uvicorn nim_proxy_server:app --host 127.0.0.1 --port 8000
-```
-
-Enable in UI: Check "NIM Enabled" → enter model, base URL, API key, refinement policy.
-
-## Specification Compliance
-
-This implementation follows **Reference-Frame Relay v2.0** (see `docs/reference-frame-relay-spec.md`):
-
-- ✅ Section 7: Domain invariants & validation
-- ✅ Section 10: Relay state machine with transitions
-- ✅ Section 11.6: Canonical prompt serialization
-- ✅ Section 13: Profile registry (4 profiles)
-- ✅ Section 14: NIM contract, source revision, normalization
-- ✅ Section 15: Relay Runner UI
-- ✅ Section 16: Persistence
-- ✅ Section 21: Test fixtures & traceability
-
-## Implementation Highlights
-
-### Reference Prompt Alignment (All 4 Profiles)
-All profile prompt factories now match the reference prompts in `docs/reference_prompts/` exactly:
-
-- **Negative prompts hardened** — Each profile uses its reference-spec negative prompt verbatim (no template fallbacks)
-- **Scene plans extended** — 30s = 3 scenes, 60s = 6 scenes (all 10s clips) per profile
-- **Subject-specific prompts** — Each subtype/category/dish generates specialized prompts using reference skeleton wording
-- **Identity locks enforced** — Style bibles carry the exact identity_lock strings from reference specs
-
-### NIM Integration
-- **Models**: `nvidia/nemotron-3-super-120b-a12b` (default) / `nvidia/nemotron-3-ultra-550b-a55b` (premium)
-- **Strict contract** — Request/response validated against JSON schemas; no fallback/template prompts when NIM unavailable (fails fast with validation error per user requirement)
-- **Source revision** — SHA-256 of canonical Source Draft computed identically in Python and browser
-
-### Removed Legacy Code
-- All template/fallback prompt generators removed from `nim_client.py`, `prompt_templates.py`, `pipeline.py`
-- Legacy `prompt_templates.py` marked for deletion (replaced by profile factories)
-
-## License
-
-Internal project — not for distribution.
+1. **Stop UI**: `kill -9 $(lsof -t -i:4173)`
+2. **Stop Proxy**: `kill -9 $(lsof -t -i:4174)`
+3. **Purge Secrets**: `unset NIM_API_KEY ALLOWED_ORIGIN NIM_PROXY_SESSION_TOKEN`
+4. **Git Rollback**: `git checkout <STABLE_TAG>`
+5. **Clear Cache**: `rm -rf .pytest_cache ui/.cache src/__pycache__ output/*`
+6. **Verify Idle**: `lsof -i :4173 -i :4174`

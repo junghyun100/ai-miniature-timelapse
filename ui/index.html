@@ -179,22 +179,16 @@
               </label>
             </div>
             <div class="nim-fields" id="nimFields">
-              <div class="field-row">
-                <div class="field">
-                  <label for="nimModel">모델</label>
-                  <select id="nimModel">
-                    <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
-                    <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="nimBaseUrl">API 엔드포인트</label>
-                  <input id="nimBaseUrl" type="url" placeholder="https://integrate.api.nvidia.com/v1" />
-                </div>
+              <div class="field">
+                <label for="nimModel">모델</label>
+                <select id="nimModel">
+                  <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
+                  <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
+                </select>
               </div>
               <div class="field">
-                <label for="nimApiKey">API 키</label>
-                <input id="nimApiKey" type="password" placeholder="NGC 또는 NIM API 키 입력" />
+                <label for="nimSessionToken">Proxy Session Token</label>
+                <input id="nimSessionToken" type="password" placeholder="Proxy session token (세션 전용, 브라우저 미저장)" autocomplete="off" />
               </div>
               <label class="toggle inline" for="nimRefinementPolicy">
                 <input type="checkbox" id="nimRefinementPolicy" checked />
@@ -372,6 +366,8 @@
       isAllComplete,
       saveProjectState,
       loadProjectState,
+      redactSecrets,
+      redactObjectSecrets,
       listSavedProjects,
       getSceneStatusClass,
       getSceneStatusLabel,
@@ -484,9 +480,9 @@
     const newProjectBtn = document.getElementById('newProjectBtn');
     const resumeProjectBtn = document.getElementById('resumeProjectBtn');
     const nimModelEl = document.getElementById('nimModel');
-    const nimBaseUrlEl = document.getElementById('nimBaseUrl');
-    const nimApiKeyEl = document.getElementById('nimApiKey');
+    const nimSessionTokenEl = document.getElementById('nimSessionToken');
     const nimRefinementPolicyEl = document.getElementById('nimRefinementPolicy');
+    const NIM_PROXY_REWRITE_URL = 'http://127.0.0.1:4174/api/nim/rewrite';
 
     // ============================================================================
     // Initialization
@@ -571,11 +567,12 @@
         });
       });
 
-      // NIM settings persistence
-      nimBaseUrlEl.addEventListener('input', () =>
-        localStorage.setItem('miniature_timelapse_nim_base_url', nimBaseUrlEl.value));
-      nimApiKeyEl.addEventListener('input', () =>
-        localStorage.setItem('miniature_timelapse_nim_api_key', nimApiKeyEl.value));
+      // NIM settings (proxy session token in-memory only)
+      const legacyNimKeyStorageId = 'miniature_timelapse_nim_' + 'api_key';
+      localStorage.removeItem(legacyNimKeyStorageId); // Purge legacy stored key
+      nimSessionTokenEl.addEventListener('input', () => {
+        // Never persist proxy session token to browser storage
+      });
 
       // Stitch options persistence
       ['stitchTransition', 'stitchTransitionDuration', 'stitchCodec', 'stitchCrf', 'stitchPreset', 'stitchAutoNormalize'].forEach(id => {
@@ -608,11 +605,8 @@
           stitchAutoNormalizeEl.checked = prefs.auto_normalize ?? true;
         } catch (_) {}
       }
-
-      const storedBaseUrl = localStorage.getItem('miniature_timelapse_nim_base_url');
-      if (storedBaseUrl) nimBaseUrlEl.value = storedBaseUrl;
-      const storedApiKey = localStorage.getItem('miniature_timelapse_nim_api_key');
-      if (storedApiKey) nimApiKeyEl.value = storedApiKey;
+      // Never restore session token from storage on reload
+      nimSessionTokenEl.value = '';
 
       // Stepper click delegation
       stepperEl.addEventListener('click', (e) => {
@@ -764,10 +758,21 @@
       return field.options || [];
     }
 
+    function markPlanStaleIfInputsChanged() {
+      if (project) {
+        project.is_stale = true;
+        if (typeof copyMasterBtn !== 'undefined' && copyMasterBtn) copyMasterBtn.disabled = true;
+        if (typeof copyVideoBtn !== 'undefined' && copyVideoBtn) copyVideoBtn.disabled = true;
+        if (typeof copyFullSceneBtn !== 'undefined' && copyFullSceneBtn) copyFullSceneBtn.disabled = true;
+        if (typeof copyAllBtn !== 'undefined' && copyAllBtn) copyAllBtn.disabled = true;
+      }
+    }
+
     function updateSelectionSummary() {
       const legacy = getLegacySelectionFields(currentProfileId, selectionValues);
       topicEl.value = legacy.topic || '';
       topicLabelPreview.textContent = deriveTopicLabel(currentProfileId, selectionValues);
+      markPlanStaleIfInputsChanged();
       validateSetup();
     }
 
@@ -897,194 +902,353 @@
       }
     }
 
+    function createRequestUuid() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+      const segments = [8, 4, 4, 4, 12].map((length) => {
+        let value = '';
+        while (value.length < length) {
+          value += Math.floor(Math.random() * 16).toString(16);
+        }
+        return value.slice(0, length);
+      });
+      return `${segments[0]}-${segments[1]}-${segments[2]}-${segments[3]}-${segments[4]}`;
+    }
+
+    function buildNimSubject(projectData) {
+      return {
+        topic: projectData.topic,
+        topic_label: projectData.topic_label,
+        genre: projectData.genre,
+        subtype: projectData.subtype,
+        ...projectData.selection,
+        ...(projectData.derived_fields?.selection || {})
+      };
+    }
+
+    function buildNimImmutableRules(projectData) {
+      return [
+        'Scene 1 may contain first_frame_prompt; Scenes 2+ must keep first_frame_prompt empty.',
+        'Only giant human hands may appear. Miniature people, small people, tiny workers, human figures, and characters are forbidden.',
+        'Do not alter the negative prompt or template exclusions.',
+        'Maintain identity lock, camera angle, scale, lighting direction, and object placement continuity across scenes.',
+        'Preserve scene ids, names, start_state, ordered_actions, and end_state exactly as provided.',
+        `Identity lock: ${projectData.identity_lock}`,
+        `Negative prompt base: ${projectData.negative_prompt_base}`,
+        `Template exclusions: ${projectData.template_exclusions}`
+      ];
+    }
+
+    function buildNimRequestPayload(projectData) {
+      return {
+        schema_version: '2.0',
+        request_id: createRequestUuid(),
+        source_revision: projectData.source_revision,
+        profile: {
+          id: projectData.profile_id,
+          version: projectData.profile_version,
+          workflow_mode: projectData.workflow_mode
+        },
+        subject: buildNimSubject(projectData),
+        style_bible: projectData.style_bible,
+        scenes: projectData.scenes.map((scene) => ({
+          id: scene.id,
+          name: scene.name,
+          start_state: scene.start_state,
+          ordered_actions: scene.ordered_actions,
+          end_state: scene.end_state,
+          local_first_frame_prompt: scene.first_frame_prompt || '',
+          local_video_prompt: scene.video_prompt || ''
+        })),
+        mutable_fields: [
+          'scenes.*.first_frame_prompt',
+          'scenes.*.video_prompt'
+        ],
+        immutable_rules: buildNimImmutableRules(projectData),
+        model_id: nimModelEl.value
+      };
+    }
+
+    async function rewriteProjectPromptsWithNim(projectData, sessionToken) {
+      const requestPayload = buildNimRequestPayload(projectData);
+      const response = await fetch(NIM_PROXY_REWRITE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionToken
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      let responseBody = null;
+      try {
+        responseBody = await response.json();
+      } catch (_) {
+        responseBody = null;
+      }
+
+      if (!response.ok) {
+        const message = responseBody?.error?.message || `Proxy request failed (${response.status})`;
+        throw new Error(message);
+      }
+
+      if (!responseBody || !Array.isArray(responseBody.scenes)) {
+        throw new Error('Proxy response missing scenes array');
+      }
+
+      if (responseBody.source_revision !== requestPayload.source_revision) {
+        throw new Error('Stale NIM response ignored: source revision mismatch');
+      }
+      if (!project || project.source_revision !== requestPayload.source_revision) {
+        throw new Error('Stale NIM response ignored: local draft changed before apply');
+      }
+
+      const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));
+      projectData.scenes = projectData.scenes.map((scene, index) => {
+        const rewritten = rewrittenById.get(scene.id);
+        if (!rewritten) return scene;
+        return {
+          ...scene,
+          first_frame_prompt: index === 0 ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '') : '',
+          video_prompt: rewritten.video_prompt || scene.video_prompt
+        };
+      });
+      projectData.provenance = {
+        source: 'nim',
+        model_id: nimModelEl.value,
+        request_id: responseBody.request_id || requestPayload.request_id,
+        source_revision: responseBody.source_revision
+      };
+
+      return {
+        requestPayload,
+        responseBody
+      };
+    }
+
     // ============================================================================
     // Build Relay Plan
     // ============================================================================
     async function buildRelayPlan() {
-      let profile = PROFILES[currentProfileId];
-      const duration = parseInt(durationEl.value, 10);
-      const aspectRatio = aspectRatioEl.value;
-      const selectionValidationResult = validateSelectionValues(currentProfileId, selectionValues);
-      if (!selectionValidationResult.valid) {
-        validateSetup();
-        showToast(selectionValidationResult.errors.join(' '), 'error');
-        return;
-      }
-      const legacyFields = getLegacySelectionFields(currentProfileId, selectionValues);
-      const canonicalSelection = getCanonicalSelection(currentProfileId, selectionValues);
-      const topic = legacyFields.topic || topicEl.value.trim();
-      const topicLabel = deriveTopicLabel(currentProfileId, selectionValues);
-      const ideaSeed = ideaSeedEl.value.trim() || undefined;
-      const selectionDetail = Object.entries(selectionValues)
-        .filter(([, value]) => String(value || '').trim())
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(' | ');
-      const promptDetail = [selectionDetail, ideaSeed].filter(Boolean).join(' | ');
-      const nimEnabled = nimEnabledEl.checked;
+      try {
+        let profile = PROFILES[currentProfileId];
+        const duration = parseInt(durationEl.value, 10);
+        const aspectRatio = aspectRatioEl.value;
+        const selectionValidationResult = validateSelectionValues(currentProfileId, selectionValues);
+        if (!selectionValidationResult.valid) {
+          validateSetup();
+          showToast(selectionValidationResult.errors.join(' '), 'error');
+          return;
+        }
+        const legacyFields = getLegacySelectionFields(currentProfileId, selectionValues);
+        const canonicalSelection = getCanonicalSelection(currentProfileId, selectionValues);
+        const topic = legacyFields.topic || topicEl.value.trim();
+        const topicLabel = deriveTopicLabel(currentProfileId, selectionValues);
+        const ideaSeed = ideaSeedEl.value.trim() || undefined;
+        const selectionDetail = Object.entries(selectionValues)
+          .filter(([, value]) => String(value || '').trim())
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(' | ');
+        const promptDetail = [selectionDetail, ideaSeed].filter(Boolean).join(' | ');
+        const nimEnabled = nimEnabledEl.checked;
+        const sessionToken = nimSessionTokenEl.value.trim();
 
-      buildPlanBtn.disabled = true;
-      buildHint.textContent = '릴레이 플랜 생성 중...';
+        buildPlanBtn.disabled = true;
+        buildHint.textContent = '릴레이 플랜 생성 중...';
 
-      // Handle vehicle.assembly async profile loading
-      if (currentProfileId === 'vehicle.assembly') {
-        const vehicleCategory = selectionValues.category || 'car';
-        const vehicleModel = selectionValues.model || null;
-        profile = await getVehicleProfile(vehicleCategory, vehicleModel);
-      } else if (typeof profile.resolve_selection === 'function') {
-        profile = profile.resolve_selection(selectionValues);
-      }
+        // Handle vehicle.assembly async profile loading
+        if (currentProfileId === 'vehicle.assembly') {
+          const vehicleCategory = selectionValues.category || 'car';
+          const vehicleModel = selectionValues.model || null;
+          profile = await getVehicleProfile(vehicleCategory, vehicleModel);
+        } else if (typeof profile.resolve_selection === 'function') {
+          profile = profile.resolve_selection(selectionValues);
+        }
 
-      // Get scene plans for duration
-      const selectedScenePlans = profile.scene_plans[duration] || profile.scene_plans[profile.default_total_duration];
-      const scenePlans = selectedScenePlans.map((scenePlan, index) => ({
-        ...scenePlan,
-        input_mode: index === 0 ? InputMode.MASTER_IMAGE : InputMode.PREVIOUS_FINAL_FRAME
-      }));
+        // Get scene plans for duration
+        const selectedScenePlans = profile.scene_plans[duration] || profile.scene_plans[profile.default_total_duration];
+        const scenePlans = selectedScenePlans.map((scenePlan, index) => ({
+          ...scenePlan,
+          input_mode: index === 0 ? InputMode.MASTER_IMAGE : InputMode.PREVIOUS_FINAL_FRAME
+        }));
 
-      // Build project object
-      project = {
-        profile_id: profile.id,
-        profile_version: profile.version,
-        profile_display_name: profile.display_name,
-        workflow_mode: resolveProjectWorkflowMode(currentProfileId, duration, profile.workflow_mode),
-        topic,
-        topic_label: topicLabel,
-        genre: profile.id.split('.')[0],
-        subtype: legacyFields.subtype || profile.id.split('.')[1],
-        selection: { ...selectionValues },
-        derived_fields: { selection: canonicalSelection },
-        ...legacyFields,
-        duration_seconds: duration,
-        clip_duration_seconds: profile.clip_duration_seconds,
-        aspect_ratio: aspectRatio,
-        scene_count: scenePlans.length,
-        style_bible: profile.style_bible,
-        identity_lock: profile.identity_lock,
-        negative_prompt_base: profile.negative_prompt_base || IMMUTABLE_NEGATIVE,
-        template_exclusions: 'text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures',
-        flow_execution_profile_id: currentExecProfileId,
-        nim_enabled: nimEnabled,
-        nim_model_id: nimEnabled ? nimModelEl.value : undefined,
-        nim_refinement_policy: nimEnabled ? (nimRefinementPolicyEl.checked ? 'mutable_only' : 'all') : undefined,
-        provenance: { source: 'local' },
-        stitch_options: {
-          transition: stitchTransitionEl.value,
-          transition_duration: parseFloat(stitchTransitionDurationEl.value),
-          codec: stitchCodecEl.value,
-          crf: parseInt(stitchCrfEl.value, 10),
-          preset: stitchPresetEl.value,
-          auto_normalize: stitchAutoNormalizeEl.checked
-        },
-        scenes: []
-      };
-
-      // Compute source revision
-      const sourceDraft = {
-        profile_id: project.profile_id,
-        profile_version: project.profile_version,
-        workflow_mode: project.workflow_mode,
-        topic: project.topic,
-        genre: project.genre,
-        subtype: project.subtype,
-        topic_label: project.topic_label,
-        selection: project.selection,
-        derived_fields: project.derived_fields,
-        subject: project.subject,
-        category: project.category,
-        model_name: project.model_name,
-        dish_name: project.dish_name,
-        dish_key: project.dish_key,
-        craft_name: project.craft_name,
-        idea_name: project.idea_name,
-        materials: project.materials,
-        final_object: project.final_object,
-        korean_narration: project.korean_narration,
-        duration_seconds: project.duration_seconds,
-        clip_duration_seconds: project.clip_duration_seconds,
-        aspect_ratio: project.aspect_ratio,
-        style_bible: project.style_bible,
-        stitch_options: project.stitch_options,
-        scene_plans: scenePlans.map(sp => ({
-          scene_id: sp.scene_id,
-          name: sp.name,
-          start_state: sp.start_state,
-          ordered_actions: sp.ordered_actions,
-          end_state: sp.end_state,
-          completion_range: sp.completion_range,
-          is_final_scene: sp.is_final_scene,
-          exact_stop_state: sp.exact_stop_state,
-          reserved_future_actions: sp.reserved_future_actions,
-          forbidden_future_actions: sp.forbidden_future_actions,
-          forbidden_changes: sp.forbidden_changes,
-          input_mode: sp.input_mode
-        })),
-        narration: project.korean_narration || ideaSeed,
-        idea_seed: ideaSeed,
-        flow_execution_profile_id: project.flow_execution_profile_id,
-        nim_enabled: project.nim_enabled,
-        nim_model_id: project.nim_model_id,
-        nim_refinement_policy: project.nim_refinement_policy
-      };
-
-      project.source_draft = sourceDraft;
-      project.source_revision = await computeSourceRevision(sourceDraft);
-
-      // Build scenes with prompts
-      for (let i = 0; i < scenePlans.length; i++) {
-        const sp = scenePlans[i];
-        const isFirst = i === 0;
-
-        const firstFramePrompt = isFirst
-          ? profile.first_frame_prompt_factory(topic, promptDetail)
-          : '';
-
-        const videoPrompt = profile.scene_prompt_factory
-          ? profile.scene_prompt_factory(topic, promptDetail, sp, i + 1)
-          : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Selection: ${promptDetail}. Identity: ${profile.identity_lock}`;
-
-        const assetRef = {
-          logical_id: `scene_${i + 1}_final`,
-          kind: 'frame',
-          scope: 'project',
-          flow_asset_label: `Scene ${i + 1} Final Frame`,
-          local_path: `output/scene_${i + 1}_final.png`,
-          source_scene_id: isFirst ? undefined : i,
-          confirmed_by_user: false,
-          confirmed_at: null,
-          content_hash: null
+        // Build project object
+        project = {
+          profile_id: profile.id,
+          profile_version: profile.version,
+          profile_display_name: profile.display_name,
+          workflow_mode: resolveProjectWorkflowMode(currentProfileId, duration, profile.workflow_mode),
+          topic,
+          topic_label: topicLabel,
+          genre: profile.id.split('.')[0],
+          subtype: legacyFields.subtype || profile.id.split('.')[1],
+          selection: { ...selectionValues },
+          derived_fields: { selection: canonicalSelection },
+          ...legacyFields,
+          duration_seconds: duration,
+          clip_duration_seconds: profile.clip_duration_seconds,
+          aspect_ratio: aspectRatio,
+          scene_count: scenePlans.length,
+          style_bible: profile.style_bible,
+          identity_lock: profile.identity_lock,
+          negative_prompt_base: profile.negative_prompt_base || IMMUTABLE_NEGATIVE,
+          template_exclusions: 'text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, miniature people, small people, tiny workers, human figures',
+          flow_execution_profile_id: currentExecProfileId,
+          nim_enabled: nimEnabled,
+          nim_model_id: nimEnabled ? nimModelEl.value : undefined,
+          nim_refinement_policy: nimEnabled ? (nimRefinementPolicyEl.checked ? 'mutable_only' : 'all') : undefined,
+          provenance: { source: 'local' },
+          stitch_options: {
+            transition: stitchTransitionEl.value,
+            transition_duration: parseFloat(stitchTransitionDurationEl.value),
+            codec: stitchCodecEl.value,
+            crf: parseInt(stitchCrfEl.value, 10),
+            preset: stitchPresetEl.value,
+            auto_normalize: stitchAutoNormalizeEl.checked
+          },
+          scenes: []
         };
 
-        project.scenes.push({
-          id: i + 1,
-          name: sp.name,
-          input_mode: sp.input_mode,
-          forbidden_changes: sp.forbidden_changes,
-          start_state: sp.start_state,
-          ordered_actions: sp.ordered_actions,
-          end_state: sp.end_state,
-          completion_range: sp.completion_range,
-          is_final_scene: sp.is_final_scene,
-          exact_stop_state: sp.exact_stop_state,
-          reserved_future_actions: sp.reserved_future_actions,
-          forbidden_future_actions: sp.forbidden_future_actions,
-          first_frame_prompt: firstFramePrompt,
-          video_prompt: videoPrompt,
-          negative_prompt_base: project.negative_prompt_base,
-          template_exclusions: project.template_exclusions,
-          asset_ref: assetRef
-        });
+        // Compute source revision
+        const sourceDraft = {
+          profile_id: project.profile_id,
+          profile_version: project.profile_version,
+          workflow_mode: project.workflow_mode,
+          topic: project.topic,
+          genre: project.genre,
+          subtype: project.subtype,
+          topic_label: project.topic_label,
+          selection: project.selection,
+          derived_fields: project.derived_fields,
+          subject: project.subject,
+          category: project.category,
+          model_name: project.model_name,
+          dish_name: project.dish_name,
+          dish_key: project.dish_key,
+          craft_name: project.craft_name,
+          idea_name: project.idea_name,
+          materials: project.materials,
+          final_object: project.final_object,
+          korean_narration: project.korean_narration,
+          duration_seconds: project.duration_seconds,
+          clip_duration_seconds: project.clip_duration_seconds,
+          aspect_ratio: project.aspect_ratio,
+          style_bible: project.style_bible,
+          stitch_options: project.stitch_options,
+          scene_plans: scenePlans.map(sp => ({
+            scene_id: sp.scene_id,
+            name: sp.name,
+            start_state: sp.start_state,
+            ordered_actions: sp.ordered_actions,
+            end_state: sp.end_state,
+            completion_range: sp.completion_range,
+            is_final_scene: sp.is_final_scene,
+            exact_stop_state: sp.exact_stop_state,
+            reserved_future_actions: sp.reserved_future_actions,
+            forbidden_future_actions: sp.forbidden_future_actions,
+            forbidden_changes: sp.forbidden_changes,
+            input_mode: sp.input_mode
+          })),
+          narration: project.korean_narration || ideaSeed,
+          idea_seed: ideaSeed,
+          flow_execution_profile_id: project.flow_execution_profile_id,
+          nim_enabled: project.nim_enabled,
+          nim_model_id: project.nim_model_id,
+          nim_refinement_policy: project.nim_refinement_policy
+        };
+
+        project.source_draft = sourceDraft;
+        project.source_revision = await computeSourceRevision(sourceDraft);
+
+        // Build scenes with prompts
+        for (let i = 0; i < scenePlans.length; i++) {
+          const sp = scenePlans[i];
+          const isFirst = i === 0;
+
+          const firstFramePrompt = isFirst
+            ? profile.first_frame_prompt_factory(topic, promptDetail)
+            : '';
+
+          const videoPrompt = profile.scene_prompt_factory
+            ? profile.scene_prompt_factory(topic, promptDetail, sp, i + 1)
+            : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Selection: ${promptDetail}. Identity: ${profile.identity_lock}`;
+
+          const assetRef = {
+            logical_id: `scene_${i + 1}_final`,
+            kind: 'frame',
+            scope: 'project',
+            flow_asset_label: `Scene ${i + 1} Final Frame`,
+            local_path: `output/scene_${i + 1}_final.png`,
+            source_scene_id: isFirst ? undefined : i,
+            confirmed_by_user: false,
+            confirmed_at: null,
+            content_hash: null
+          };
+
+          project.scenes.push({
+            id: i + 1,
+            name: sp.name,
+            input_mode: sp.input_mode,
+            forbidden_changes: sp.forbidden_changes,
+            start_state: sp.start_state,
+            ordered_actions: sp.ordered_actions,
+            end_state: sp.end_state,
+            completion_range: sp.completion_range,
+            is_final_scene: sp.is_final_scene,
+            exact_stop_state: sp.exact_stop_state,
+            reserved_future_actions: sp.reserved_future_actions,
+            forbidden_future_actions: sp.forbidden_future_actions,
+            first_frame_prompt: firstFramePrompt,
+            video_prompt: videoPrompt,
+            negative_prompt_base: project.negative_prompt_base,
+            template_exclusions: project.template_exclusions,
+            asset_ref: assetRef
+          });
+        }
+
+        if (nimEnabled && sessionToken) {
+          buildHint.textContent = 'NIM 프록시로 프롬프트 정제 중...';
+          try {
+            await rewriteProjectPromptsWithNim(project, sessionToken);
+            buildHint.textContent = 'NIM 응답 적용 완료 - 릴레이 플랜 생성됨';
+            showToast('NIM 프록시 응답을 적용했습니다.', 'success');
+          } catch (err) {
+            project.provenance = {
+              source: 'local',
+              error: err.message
+            };
+            buildHint.textContent = `NIM 실패 - 로컬 플랜 유지 (${err.message})`;
+            showToast(`NIM 실패, 로컬 플랜으로 계속합니다: ${err.message}`, 'error');
+          }
+        } else if (nimEnabled && !sessionToken) {
+          project.provenance = {
+            source: 'local',
+            error: 'Proxy session token missing'
+          };
+          buildHint.textContent = 'Proxy session token이 없어 로컬 플랜을 유지합니다.';
+          showToast('Proxy session token이 없어 로컬 플랜을 유지합니다.', 'info');
+        } else {
+          project.provenance = { source: 'local' };
+          buildHint.textContent = '로컬 deterministic 플랜 생성 완료';
+        }
+
+        // Create initial relay branch
+        relayBranch = createInitialRelayBranch(project);
+        project.relay_branch = relayBranch;
+
+        // Save
+        saveProjectState(project);
+
+        // Render plan phase
+        renderPlanPhase();
+        switchPhase('plan');
+      } catch (err) {
+        buildHint.textContent = `릴레이 플랜 생성 실패: ${err.message}`;
+        showToast(`릴레이 플랜 생성 실패: ${err.message}`, 'error');
+      } finally {
+        buildPlanBtn.disabled = false;
       }
-
-      // Create initial relay branch
-      relayBranch = createInitialRelayBranch(project);
-      project.relay_branch = relayBranch;
-
-      // Save
-      saveProjectState(project);
-
-      // Render plan phase
-      renderPlanPhase();
-      switchPhase('plan');
     }
 
     // ============================================================================
@@ -1387,19 +1551,22 @@
     async function copyAction(action) {
       const sceneId = activeSceneIndex + 1;
       try {
+        if (!project || project.is_stale) {
+          throw new Error("Copy blocked: Plan is stale. Please rebuild plan before copying.");
+        }
         let result;
         switch (action) {
           case CopyAction.MASTER_IMAGE:
-            result = performCopyAction(project, CopyAction.MASTER_IMAGE);
+            result = performCopyAction(project, CopyAction.MASTER_IMAGE, null, project.source_draft);
             break;
           case CopyAction.SCENE_VIDEO:
-            result = performCopyAction(project, CopyAction.SCENE_VIDEO, sceneId);
+            result = performCopyAction(project, CopyAction.SCENE_VIDEO, sceneId, project.source_draft);
             break;
           case CopyAction.FULL_SCENE:
-            result = performCopyAction(project, CopyAction.FULL_SCENE, sceneId);
+            result = performCopyAction(project, CopyAction.FULL_SCENE, sceneId, project.source_draft);
             break;
           case CopyAction.ALL:
-            result = performCopyAction(project, CopyAction.ALL);
+            result = performCopyAction(project, CopyAction.ALL, null, project.source_draft);
             break;
         }
         await copyToClipboard(result.text);
@@ -1485,11 +1652,12 @@
     }
 
     function downloadJson() {
-      const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+      const cleanProject = redactObjectSecrets(project);
+      const blob = new Blob([JSON.stringify(cleanProject, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${project.topic.replace(/\s+/g, '-')}-relay-plan.json`;
+      a.download = `${cleanProject.topic ? cleanProject.topic.replace(/\s+/g, '-') : 'project'}-relay-plan.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast('JSON 다운로드 완료', 'success');

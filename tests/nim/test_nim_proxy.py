@@ -18,16 +18,25 @@ from src.nim_proxy_server import (
     ProxyConfig,
     error_response,
     NIM_REQUEST_SCHEMA,
-    _config,
-    _session_token,
     _validate_origin,
     _check_session_token,
+    _parse_allowed_origins_env,
+    _resolve_allowed_origins,
+    _resolve_session_token,
     app,
     forward_to_nim,
-    _send_json,
 )
 
+import functools
 import src.nim_proxy_server as proxy_module
+
+
+def run_async(func):
+    """Run an async test function synchronously using asyncio.run()."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(func(*args, **kwargs))
+    return wrapper
 
 
 # ============================================================================
@@ -144,6 +153,34 @@ class TestProxyConfig:
         assert proxy_config.max_body_size == 1024
         assert proxy_config.require_session_token is True
 
+    def test_parse_allowed_origin_env_single(self):
+        """Single ALLOWED_ORIGIN value is preserved."""
+        assert _parse_allowed_origins_env("http://127.0.0.1:8765") == [
+            "http://127.0.0.1:8765"
+        ]
+
+    def test_parse_allowed_origin_env_comma_separated(self):
+        """Comma-separated ALLOWED_ORIGIN values are split and stripped."""
+        assert _parse_allowed_origins_env(
+            "http://127.0.0.1:8765, http://localhost:8765"
+        ) == [
+            "http://127.0.0.1:8765",
+            "http://localhost:8765",
+        ]
+
+    def test_resolve_allowed_origins_uses_env_when_cli_missing(self):
+        """Env ALLOWED_ORIGIN becomes the default allowlist when CLI is unset."""
+        with patch.dict(os.environ, {"ALLOWED_ORIGIN": "http://127.0.0.1:8765,http://localhost:8765"}, clear=False):
+            assert _resolve_allowed_origins(None) == [
+                "http://127.0.0.1:8765",
+                "http://localhost:8765",
+            ]
+
+    def test_resolve_session_token_prefers_env(self):
+        """Explicit env session token overrides generated token."""
+        with patch.dict(os.environ, {"NIM_PROXY_SESSION_TOKEN": "session-from-env"}, clear=False):
+            assert _resolve_session_token() == "session-from-env"
+
 
 class TestErrorResponse:
     """Test error response generation and sanitization."""
@@ -241,7 +278,7 @@ class TestSessionToken:
 class TestASGIApp:
     """Integration tests for the ASGI application."""
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_preflight_options_allowed_origin(self, proxy_config):
         """OPTIONS preflight returns CORS headers for allowed origin."""
         proxy_module._config = proxy_config
@@ -265,7 +302,7 @@ class TestASGIApp:
         assert headers[b"access-control-allow-origin"] == b"http://127.0.0.1:4173"
         assert headers[b"access-control-allow-credentials"] == b"true"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_preflight_rejected_origin(self, proxy_config):
         """OPTIONS preflight rejects disallowed origin."""
         proxy_module._config = proxy_config
@@ -284,7 +321,7 @@ class TestASGIApp:
 
         assert send.messages[0]["status"] == 403
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_post_rejected_invalid_origin(self, proxy_config):
         """POST request from invalid origin rejected."""
         proxy_module._config = proxy_config
@@ -309,7 +346,7 @@ class TestASGIApp:
         body = json.loads(send.messages[1]["body"])
         assert body["error"]["code"] == "FORBIDDEN"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_post_rejected_missing_session_token(self, proxy_config):
         """POST request without session token rejected."""
         proxy_module._config = proxy_config
@@ -333,7 +370,7 @@ class TestASGIApp:
         body = json.loads(send.messages[1]["body"])
         assert body["error"]["code"] == "UNAUTHORIZED"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_post_rejected_invalid_session_token(self, proxy_config):
         """POST request with wrong session token rejected."""
         proxy_module._config = proxy_config
@@ -358,7 +395,7 @@ class TestASGIApp:
         body = json.loads(send.messages[1]["body"])
         assert body["error"]["code"] == "UNAUTHORIZED"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_post_body_too_large(self, proxy_config):
         """Body exceeding max size rejected with 413."""
         proxy_module._config = proxy_config
@@ -385,7 +422,7 @@ class TestASGIApp:
         body = json.loads(send.messages[1]["body"])
         assert body["error"]["code"] == "PAYLOAD_TOO_LARGE"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_post_invalid_content_type(self, proxy_config):
         """Non-JSON content type rejected."""
         proxy_module._config = proxy_config
@@ -413,7 +450,7 @@ class TestASGIApp:
         body_json = json.loads(send.messages[1]["body"])
         assert body_json["error"]["code"] == "BAD_REQUEST"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_post_invalid_json(self, proxy_config):
         """Invalid JSON rejected."""
         proxy_module._config = proxy_config
@@ -438,9 +475,9 @@ class TestASGIApp:
         body_json = json.loads(send.messages[1]["body"])
         assert body_json["error"]["code"] == "INVALID_JSON"
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_health_endpoint(self, proxy_config):
-        """GET /health returns status and partial session token."""
+        """GET /health returns status without requiring origin or session token."""
         proxy_module._config = proxy_config
         proxy_module._session_token = "test-session-token-12345"
 
@@ -448,10 +485,7 @@ class TestASGIApp:
             "type": "http",
             "method": "GET",
             "path": "/health",
-            "headers": [
-                (b"origin", b"http://127.0.0.1:4173"),
-                (b"x-session-token", b"test-session-token-12345"),
-            ],
+            "headers": [],
         }
         receive = MockReceive()
         send = MockSend()
@@ -461,10 +495,34 @@ class TestASGIApp:
         assert send.messages[0]["status"] == 200
         body_json = json.loads(send.messages[1]["body"])
         assert body_json["status"] == "ok"
-        # Session token is truncated to 8 chars + "..."
-        assert body_json["session_token"] == "test-ses..."
+        assert body_json["version"] == "1.0"
+        assert body_json["default_model"] == proxy_config.default_model
+        assert body_json["upstream"] == proxy_config.upstream_hosts
+        assert "session_token" not in body_json
+        assert "test-session-token-12345" not in send.messages[1]["body"].decode("utf-8")
 
-    @pytest.mark.asyncio
+    @run_async
+    async def test_health_rejects_no_auth_never(self, proxy_config):
+        """GET /health remains accessible even when session token is required."""
+        proxy_module._config = proxy_config
+        proxy_module._session_token = "locked-down-token"
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/health",
+            "headers": [(b"origin", b"http://evil.com")],
+        }
+        receive = MockReceive()
+        send = MockSend()
+
+        await app(scope, receive, send)
+
+        assert send.messages[0]["status"] == 200
+        body_json = json.loads(send.messages[1]["body"])
+        assert body_json["status"] == "ok"
+
+    @run_async
     async def test_404_for_unknown_path(self, proxy_config):
         """Unknown path returns 404."""
         proxy_module._config = proxy_config
@@ -547,7 +605,7 @@ class TestSchemaValidation:
 class TestForwardToNIM:
     """Test upstream NIM communication with mocked HTTP client."""
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_upstream_http_error_returns_status(self, proxy_config, valid_nim_request):
         """Upstream HTTP error returns status code."""
         proxy_module._config = proxy_config
@@ -565,7 +623,7 @@ class TestForwardToNIM:
                 await forward_to_nim(valid_nim_request)
             assert exc.value.response.status_code == 500
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_invalid_upstream_host_rejected(self, proxy_config, valid_nim_request):
         """Upstream host not in allowlist is rejected."""
         proxy_module._config = proxy_config
@@ -575,7 +633,7 @@ class TestForwardToNIM:
                 await forward_to_nim(valid_nim_request)
             assert "not in allowlist" in str(exc.value)
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_missing_api_key_rejected(self, valid_nim_request):
         """Missing API key is rejected."""
         proxy_module._config = ProxyConfig(
@@ -590,7 +648,7 @@ class TestForwardToNIM:
                 await forward_to_nim(valid_nim_request)
             assert "No API key configured" in str(exc.value)
 
-    @pytest.mark.asyncio
+    @run_async
     async def test_upstream_timeout_raises(self, proxy_config, valid_nim_request):
         """Upstream timeout raises httpx.TimeoutException."""
         proxy_module._config = proxy_config
@@ -601,6 +659,70 @@ class TestForwardToNIM:
 
             with pytest.raises(httpx.TimeoutException):
                 await forward_to_nim(valid_nim_request)
+
+    @run_async
+    async def test_model_id_separated_from_profile_id(self, proxy_config, valid_nim_request):
+        """Verify profile.id ('architecture.korean') is NOT sent as model parameter."""
+        proxy_module._config = proxy_config
+
+        # Ensure valid_nim_request has profile.id = 'architecture.korean'
+        assert valid_nim_request["profile"]["id"] == "architecture.korean"
+
+        mock_nim_resp = {
+            "schema_version": "2.0",
+            "request_id": valid_nim_request["request_id"],
+            "source_revision": valid_nim_request["source_revision"],
+            "scenes": [
+                {"id": 1, "video_prompt": "rewritten 1"},
+                {"id": 2, "video_prompt": "rewritten 2"}
+            ]
+        }
+
+        with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
+            mock_instance = mock_client.return_value.__aenter__.return_value
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "choices": [{"message": {"content": json.dumps(mock_nim_resp)}}]
+            }
+            mock_response.raise_for_status.return_value = None
+            mock_instance.post.return_value = mock_response
+
+            await forward_to_nim(valid_nim_request)
+
+            # Check what model parameter was passed in payload to upstream NIM
+            call_kwargs = mock_instance.post.call_args[1]
+            sent_model = call_kwargs["json"]["model"]
+
+            # FAILURE RULE: profile.id must NEVER be sent as model parameter!
+            assert sent_model != "architecture.korean"
+            assert sent_model == "meta/llama-3.1-8b-instruct"
+
+    @run_async
+    async def test_custom_model_id_forwarded(self, proxy_config, valid_nim_request):
+        """Verify valid custom model_id is used when provided."""
+        proxy_module._config = proxy_config
+        valid_nim_request["model_id"] = "meta/llama-3.1-70b-instruct"
+
+        mock_nim_resp = {
+            "schema_version": "2.0",
+            "request_id": valid_nim_request["request_id"],
+            "source_revision": valid_nim_request["source_revision"],
+            "scenes": []
+        }
+
+        with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
+            mock_instance = mock_client.return_value.__aenter__.return_value
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "choices": [{"message": {"content": json.dumps(mock_nim_resp)}}]
+            }
+            mock_response.raise_for_status.return_value = None
+            mock_instance.post.return_value = mock_response
+
+            await forward_to_nim(valid_nim_request)
+
+            call_kwargs = mock_instance.post.call_args[1]
+            assert call_kwargs["json"]["model"] == "meta/llama-3.1-70b-instruct"
 
 
 # ============================================================================
@@ -634,13 +756,11 @@ class TestSecurityRegression:
 
     def test_error_responses_never_contain_secrets(self):
         """All error response types are secret-free."""
-        # Note: error_response sanitizes the `details` dict, not the message string
         errors = [
             error_response(400, "VALIDATION_ERROR", "test"),
             error_response(401, "AUTH_ERROR", "test"),
             error_response(403, "FORBIDDEN", "test"),
             error_response(413, "REQUEST_TOO_LARGE", "test"),
-            # Secret goes in details, not message - message is human-readable text
             error_response(500, "INTERNAL_ERROR", "internal error", {"api_key": "SECRET_KEY_123"}),
             error_response(504, "UPSTREAM_TIMEOUT", "test"),
         ]
@@ -649,9 +769,7 @@ class TestSecurityRegression:
             assert "SECRET" not in resp_str
             assert "SECRET_KEY_123" not in resp_str
             assert "Authorization" not in resp_str
-            # Error responses don't have a "sanitized" field - they are inherently sanitized
             assert "error" in resp
-            # Details should be sanitized
             if "details" in resp["error"]:
                 for key, val in resp["error"]["details"].items():
                     if key.lower() in ("api_key", "authorization", "token", "secret"):
