@@ -3,17 +3,20 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_commands(project: Dict[str, Any], base_dir: str = "output") -> Dict[str, Any]:
-    scene_videos = [f"{base_dir}/renders/scene_{scene['id']:02d}.mp4" for scene in project["scenes"]]
+def build_commands(project: dict[str, Any], base_dir: str = "output") -> dict[str, Any]:
+    scene_videos = [
+        f"{base_dir}/renders/scene_{scene['id']:02d}.mp4" for scene in project["scenes"]
+    ]
     return {
-        "ffmpeg_concat": f"src/stitch_ffmpeg.sh {base_dir}/exports/final_timeline.mp4 " + " ".join(scene_videos),
+        "ffmpeg_concat": f"src/stitch_ffmpeg.sh {base_dir}/exports/final_timeline.mp4 "
+        + " ".join(scene_videos),
         "input_dir": f"{base_dir}/input",
         "prompt_dir": f"{base_dir}/prompts",
         "render_dir": f"{base_dir}/renders",

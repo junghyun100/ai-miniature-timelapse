@@ -24,7 +24,6 @@ import os
 import secrets
 import time
 from dataclasses import dataclass
-from typing import Any, Optional
 
 import httpx
 import jsonschema
@@ -33,6 +32,7 @@ from jsonschema import validate
 # Try to import uvloop for better performance
 try:
     import uvloop
+
     uvloop.install()
 except ImportError:
     pass
@@ -44,9 +44,11 @@ except ImportError:
 
 PROXY_VERSION = "1.0"
 
+
 @dataclass
 class ProxyConfig:
     """Proxy configuration loaded from environment and CLI."""
+
     # Server binding
     host: str = "127.0.0.1"
     port: int = 4174
@@ -80,11 +82,11 @@ class ProxyConfig:
 
 
 # Global config (set at startup)
-_config: Optional[ProxyConfig] = None
-_session_token: Optional[str] = None
+_config: ProxyConfig | None = None
+_session_token: str | None = None
 
 
-def _parse_allowed_origins_env(raw_value: Optional[str]) -> Optional[list[str]]:
+def _parse_allowed_origins_env(raw_value: str | None) -> list[str] | None:
     """Parse ALLOWED_ORIGIN env into a normalized list."""
     if raw_value is None:
         return None
@@ -92,7 +94,7 @@ def _parse_allowed_origins_env(raw_value: Optional[str]) -> Optional[list[str]]:
     return origins or None
 
 
-def _resolve_allowed_origins(cli_allowed_origins: Optional[list[str]]) -> list[str]:
+def _resolve_allowed_origins(cli_allowed_origins: list[str] | None) -> list[str]:
     """Resolve effective allowed origins from CLI first, then env, then defaults."""
     if cli_allowed_origins:
         return cli_allowed_origins
@@ -114,7 +116,17 @@ def _resolve_session_token() -> str:
 NIM_REQUEST_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["schema_version", "request_id", "source_revision", "profile", "subject", "style_bible", "scenes", "mutable_fields", "immutable_rules"],
+    "required": [
+        "schema_version",
+        "request_id",
+        "source_revision",
+        "profile",
+        "subject",
+        "style_bible",
+        "scenes",
+        "mutable_fields",
+        "immutable_rules",
+    ],
     "properties": {
         "schema_version": {"const": "2.0"},
         "request_id": {"type": "string", "format": "uuid"},
@@ -125,9 +137,12 @@ NIM_REQUEST_SCHEMA = {
             "properties": {
                 "id": {"type": "string"},
                 "version": {"type": "string"},
-                "workflow_mode": {"type": "string", "enum": ["REFERENCE_FRAME_RELAY", "SINGLE_CLIP_FROM_MASTER"]}
+                "workflow_mode": {
+                    "type": "string",
+                    "enum": ["REFERENCE_FRAME_RELAY", "SINGLE_CLIP_FROM_MASTER"],
+                },
             },
-            "additionalProperties": False
+            "additionalProperties": False,
         },
         "subject": {"type": "object", "additionalProperties": True},
         "style_bible": {"type": "object", "additionalProperties": True},
@@ -136,7 +151,15 @@ NIM_REQUEST_SCHEMA = {
             "minItems": 1,
             "items": {
                 "type": "object",
-                "required": ["id", "name", "start_state", "ordered_actions", "end_state", "local_first_frame_prompt", "local_video_prompt"],
+                "required": [
+                    "id",
+                    "name",
+                    "start_state",
+                    "ordered_actions",
+                    "end_state",
+                    "local_first_frame_prompt",
+                    "local_video_prompt",
+                ],
                 "properties": {
                     "id": {"type": "integer", "minimum": 1},
                     "name": {"type": "string"},
@@ -146,19 +169,22 @@ NIM_REQUEST_SCHEMA = {
                     "local_first_frame_prompt": {"type": "string"},
                     "local_video_prompt": {"type": "string"},
                 },
-                "additionalProperties": False
-            }
+                "additionalProperties": False,
+            },
         },
         "mutable_fields": {
             "type": "array",
-            "items": {"type": "string", "enum": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"]},
-            "default": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"]
+            "items": {
+                "type": "string",
+                "enum": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"],
+            },
+            "default": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"],
         },
         "immutable_rules": {"type": "array", "items": {"type": "string"}},
         "model_id": {"type": "string"},
-        "model": {"type": "string"}
+        "model": {"type": "string"},
     },
-    "additionalProperties": False
+    "additionalProperties": False,
 }
 
 
@@ -174,12 +200,19 @@ def redact_text(text: str) -> str:
     if not isinstance(text, str):
         return text
     redacted = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "[REDACTED]", text)
-    redacted = re.sub(r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE)
-    redacted = re.sub(r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]", "[REDACTED]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(
+        r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE
+    )
+    redacted = re.sub(
+        r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]",
+        "[REDACTED]",
+        redacted,
+        flags=re.IGNORECASE,
+    )
     return redacted
 
 
-def error_response(status: int, code: str, message: str, details: Optional[dict] = None) -> dict:
+def error_response(status: int, code: str, message: str, details: dict | None = None) -> dict:
     """Create sanitized error response - ensures no raw secrets are leaked."""
     response = {
         "error": {
@@ -193,13 +226,36 @@ def error_response(status: int, code: str, message: str, details: Optional[dict]
         safe_details = {}
         for k, v in details.items():
             k_lower = k.lower()
-            if k_lower in ("authorization", "api_key", "apikey", "nim_api_key", "token", "secret", "x-nim-api-key", "x-api-key"):
+            if k_lower in (
+                "authorization",
+                "api_key",
+                "apikey",
+                "nim_api_key",
+                "token",
+                "secret",
+                "x-nim-api-key",
+                "x-api-key",
+            ):
                 safe_details[k] = "[REDACTED]"
             elif isinstance(v, str):
                 safe_details[k] = redact_text(v)
             elif isinstance(v, dict):
                 safe_details[k] = {
-                    dk: ("[REDACTED]" if dk.lower() in ("authorization", "api_key", "apikey", "nim_api_key", "token", "secret", "x-nim-api-key", "x-api-key") else redact_text(dv) if isinstance(dv, str) else dv)
+                    dk: (
+                        "[REDACTED]"
+                        if dk.lower()
+                        in (
+                            "authorization",
+                            "api_key",
+                            "apikey",
+                            "nim_api_key",
+                            "token",
+                            "secret",
+                            "x-nim-api-key",
+                            "x-api-key",
+                        )
+                        else redact_text(dv) if isinstance(dv, str) else dv
+                    )
                     for dk, dv in v.items()
                 }
             else:
@@ -212,29 +268,34 @@ def error_response(status: int, code: str, message: str, details: Optional[dict]
 # Request/Response Helpers
 # ============================================================================
 
+
 async def _send_json(send, status: int, payload: dict):
     """Send JSON response via ASGI send."""
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    await send({
-        "type": "http.response.start",
-        "status": status,
-        "headers": [
-            (b"content-type", b"application/json; charset=utf-8"),
-            (b"content-length", str(len(body)).encode()),
-            # CORS - strict allowlist only
-            (b"access-control-allow-origin", _config.allowed_origins[0].encode()),
-            (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
-            (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
-            (b"access-control-allow-credentials", b"true"),
-        ],
-    })
-    await send({
-        "type": "http.response.body",
-        "body": body,
-    })
+    await send(
+        {
+            "type": "http.response.start",
+            "status": status,
+            "headers": [
+                (b"content-type", b"application/json; charset=utf-8"),
+                (b"content-length", str(len(body)).encode()),
+                # CORS - strict allowlist only
+                (b"access-control-allow-origin", _config.allowed_origins[0].encode()),
+                (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
+                (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
+                (b"access-control-allow-credentials", b"true"),
+            ],
+        }
+    )
+    await send(
+        {
+            "type": "http.response.body",
+            "body": body,
+        }
+    )
 
 
-def _validate_origin(origin: Optional[bytes]) -> bool:
+def _validate_origin(origin: bytes | None) -> bool:
     """Validate Origin header against allowlist."""
     if not origin:
         return False
@@ -257,7 +318,13 @@ def _sanitize_headers(headers: list[tuple[bytes, bytes]]) -> dict:
     sanitized = {}
     for k, v in headers:
         key = k.decode()
-        if key.lower() in ("authorization", "x-session-token", "cookie", "x-nim-api-key", "x-api-key"):
+        if key.lower() in (
+            "authorization",
+            "x-session-token",
+            "cookie",
+            "x-nim-api-key",
+            "x-api-key",
+        ):
             sanitized[key] = "[REDACTED]"
         else:
             sanitized[key] = v.decode()
@@ -268,20 +335,25 @@ def _sanitize_headers(headers: list[tuple[bytes, bytes]]) -> dict:
 # ASGI Application
 # ============================================================================
 
+
 async def app(scope, receive, send):
     """ASGI application entry point."""
     global _config, _session_token
 
     if scope["type"] != "http":
-        await send({
-            "type": "http.response.start",
-            "status": 500,
-            "headers": [(b"content-type", b"text/plain")],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": b"Only HTTP supported",
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 500,
+                "headers": [(b"content-type", b"text/plain")],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": b"Only HTTP supported",
+            }
+        )
         return
 
     path = scope["path"]
@@ -292,22 +364,26 @@ async def app(scope, receive, send):
     origin = next((v for k, v in headers if k == b"origin"), None)
 
     # Log request (sanitized)
-    print(f"[{time.strftime('%H:%M:%S')}] {method} {path} from {origin.decode() if origin else 'unknown'}")
+    print(
+        f"[{time.strftime('%H:%M:%S')}] {method} {path} from {origin.decode() if origin else 'unknown'}"
+    )
 
     # Handle preflight
     if method == "OPTIONS":
         if _validate_origin(origin):
-            await send({
-                "type": "http.response.start",
-                "status": 204,
-                "headers": [
-                    (b"access-control-allow-origin", origin),
-                    (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
-                    (b"access-control-allow-methods", b"POST, OPTIONS"),
-                    (b"access-control-allow-credentials", b"true"),
-                    (b"access-control-max-age", b"86400"),
-                ],
-            })
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 204,
+                    "headers": [
+                        (b"access-control-allow-origin", origin),
+                        (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
+                        (b"access-control-allow-methods", b"POST, OPTIONS"),
+                        (b"access-control-allow-credentials", b"true"),
+                        (b"access-control-max-age", b"86400"),
+                    ],
+                }
+            )
             await send({"type": "http.response.body", "body": b""})
         else:
             await send({"type": "http.response.start", "status": 403, "headers": []})
@@ -316,12 +392,16 @@ async def app(scope, receive, send):
 
     # Route: GET /health
     if method == "GET" and path == "/health":
-        await _send_json(send, 200, {
-            "status": "ok",
-            "version": PROXY_VERSION,
-            "upstream": _config.upstream_hosts,
-            "default_model": _config.default_model,
-        })
+        await _send_json(
+            send,
+            200,
+            {
+                "status": "ok",
+                "version": PROXY_VERSION,
+                "upstream": _config.upstream_hosts,
+                "default_model": _config.default_model,
+            },
+        )
         return
 
     # Validate origin
@@ -332,7 +412,7 @@ async def app(scope, receive, send):
 
     # Validate session token
     if not _check_session_token(headers):
-        print(f"  -> REJECTED: Invalid or missing session token")
+        print("  -> REJECTED: Invalid or missing session token")
         await _send_json(send, 401, error_response(401, "UNAUTHORIZED", "Invalid session token"))
         return
 
@@ -354,7 +434,13 @@ async def handle_nim_rewrite(scope, receive, send):
         if message["type"] == "http.request":
             body += message.get("body", b"")
             if len(body) > _config.max_body_size:
-                await _send_json(send, 413, error_response(413, "PAYLOAD_TOO_LARGE", f"Body exceeds {_config.max_body_size} bytes"))
+                await _send_json(
+                    send,
+                    413,
+                    error_response(
+                        413, "PAYLOAD_TOO_LARGE", f"Body exceeds {_config.max_body_size} bytes"
+                    ),
+                )
                 return
             if not message.get("more_body", False):
                 break
@@ -369,7 +455,9 @@ async def handle_nim_rewrite(scope, receive, send):
             break
 
     if not content_type or not content_type.startswith("application/json"):
-        await _send_json(send, 400, error_response(400, "BAD_REQUEST", "Content-Type must be application/json"))
+        await _send_json(
+            send, 400, error_response(400, "BAD_REQUEST", "Content-Type must be application/json")
+        )
         return
 
     # Parse JSON
@@ -398,7 +486,7 @@ async def handle_nim_rewrite(scope, receive, send):
         if k.lower() in (b"x-nim-api-key", b"x-api-key"):
             session_api_key = v.decode("latin-1").strip()
             break
-        elif k.lower() == b"authorization" and v.lower().startswith(b"bearer "):
+        if k.lower() == b"authorization" and v.lower().startswith(b"bearer "):
             session_api_key = v.decode("latin-1")[7:].strip()
             break
 
@@ -406,16 +494,22 @@ async def handle_nim_rewrite(scope, receive, send):
     try:
         result = await forward_to_nim(payload, session_api_key=session_api_key)
     except httpx.TimeoutException:
-        await _send_json(send, 504, error_response(504, "UPSTREAM_TIMEOUT", "NIM upstream timed out"))
+        await _send_json(
+            send, 504, error_response(504, "UPSTREAM_TIMEOUT", "NIM upstream timed out")
+        )
         return
     except httpx.HTTPStatusError as e:
         # Sanitize upstream error
-        await _send_json(send, e.response.status_code, error_response(
+        await _send_json(
+            send,
             e.response.status_code,
-            "UPSTREAM_ERROR",
-            f"Upstream returned {e.response.status_code}",
-            {"status": e.response.status_code}
-        ))
+            error_response(
+                e.response.status_code,
+                "UPSTREAM_ERROR",
+                f"Upstream returned {e.response.status_code}",
+                {"status": e.response.status_code},
+            ),
+        )
         return
     except Exception as e:
         print(f"  -> ERROR: {e}")
@@ -426,19 +520,27 @@ async def handle_nim_rewrite(scope, receive, send):
     await _send_json(send, 200, result)
 
 
-async def forward_to_nim(request_payload: dict, session_api_key: Optional[str] = None) -> dict:
+async def forward_to_nim(request_payload: dict, session_api_key: str | None = None) -> dict:
     """Forward validated request to NVIDIA NIM upstream."""
     # Determine upstream URL
-    upstream_url = os.environ.get("NIM_UPSTREAM_URL", "https://integrate.api.nvidia.com/v1/chat/completions")
+    upstream_url = os.environ.get(
+        "NIM_UPSTREAM_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
+    )
 
     # Validate upstream host
     from urllib.parse import urlparse
+
     parsed = urlparse(upstream_url)
     if parsed.netloc not in _config.upstream_hosts:
         raise ValueError(f"Upstream host {parsed.netloc} not in allowlist")
 
     # Get API key (session header first, then config/env)
-    api_key = session_api_key or _config.env_api_key or os.environ.get("NIM_API_KEY") or os.environ.get("NGC_API_KEY")
+    api_key = (
+        session_api_key
+        or _config.env_api_key
+        or os.environ.get("NIM_API_KEY")
+        or os.environ.get("NGC_API_KEY")
+    )
     if not api_key:
         raise ValueError("No API key configured (set NIM_API_KEY env var)")
 
@@ -465,12 +567,12 @@ async def forward_to_nim(request_payload: dict, session_api_key: Optional[str] =
                     "first_frame_prompt (Scene 1 only) and video_prompt. "
                     "Do not create new first-frame prompts. Do not change duration, subject identity, "
                     "camera, audio, exclusions, or assets. Do not omit physical action order."
-                )
+                ),
             },
             {
                 "role": "user",
-                "content": json.dumps(request_payload, separators=(",", ":"), ensure_ascii=False)
-            }
+                "content": json.dumps(request_payload, separators=(",", ":"), ensure_ascii=False),
+            },
         ],
         "temperature": 0.3,
         "max_tokens": 4096,
@@ -484,7 +586,7 @@ async def forward_to_nim(request_payload: dict, session_api_key: Optional[str] =
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
-            }
+            },
         )
         response.raise_for_status()
         upstream_data = response.json()
@@ -498,6 +600,7 @@ async def forward_to_nim(request_payload: dict, session_api_key: Optional[str] =
     except json.JSONDecodeError:
         # Try to extract JSON from text
         import re
+
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
             nim_response = json.loads(match.group(0))
@@ -524,18 +627,23 @@ async def forward_to_nim(request_payload: dict, session_api_key: Optional[str] =
 # Main Entry Point
 # ============================================================================
 
+
 def main():
     """Run proxy server with uvicorn."""
     parser = argparse.ArgumentParser(description="NIM Proxy Server (Section 16.4)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=4174)
-    parser.add_argument("--allowed-origins", nargs="+",
-                        default=None)
+    parser.add_argument("--allowed-origins", nargs="+", default=None)
     parser.add_argument("--max-body-size", type=int, default=1_048_576)
-    parser.add_argument("--upstream-hosts", nargs="+",
-                        default=["integrate.api.nvidia.com", "api.nvidia.com"])
+    parser.add_argument(
+        "--upstream-hosts", nargs="+", default=["integrate.api.nvidia.com", "api.nvidia.com"]
+    )
     parser.add_argument("--default-model", default="meta/llama-3.1-8b-instruct")
-    parser.add_argument("--no-session-token", action="store_true", help="Disable session token requirement (dev only)")
+    parser.add_argument(
+        "--no-session-token",
+        action="store_true",
+        help="Disable session token requirement (dev only)",
+    )
     parser.add_argument("--env-api-key", default="", help="API key from env var name (advanced)")
 
     args = parser.parse_args()
@@ -556,17 +664,20 @@ def main():
     # Generate per-launch session token unless env override is provided.
     _session_token = _resolve_session_token()
 
-    print(f"🔒 NIM Proxy Server Starting")
+    print("🔒 NIM Proxy Server Starting")
     print(f"   Bind: {_config.host}:{_config.port}")
     print(f"   Allowed Origins: {_config.allowed_origins}")
     print(f"   Max Body: {_config.max_body_size} bytes")
     print(f"   Upstream Hosts: {_config.upstream_hosts}")
     print(f"   Default Model: {_config.default_model}")
     print(f"   Session Token: {_session_token[:8]}... (required: {_config.require_session_token})")
-    print(f"   API Key: {'[from env]' if _config.env_api_key or os.environ.get('NIM_API_KEY') else '[NOT SET]'}")
+    print(
+        f"   API Key: {'[from env]' if _config.env_api_key or os.environ.get('NIM_API_KEY') else '[NOT SET]'}"
+    )
 
     # Run with uvicorn
     import uvicorn
+
     uvicorn.run(
         "nim_proxy_server:app",
         host=_config.host,

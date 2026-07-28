@@ -3,12 +3,14 @@ Profile Types - Profile Registry and Interface Definitions
 
 Per Section 13.1 of the Reference-Frame Relay Specification v2.0.
 """
+
 from __future__ import annotations
+
+import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Optional
-import json
 
 
 class WorkflowMode(str, Enum):
@@ -63,6 +65,7 @@ class AssetScope(str, Enum):
 # Domain Models
 # ============================================================================
 
+
 @dataclass
 class StyleBible:
     identity_lock: str
@@ -98,14 +101,14 @@ class AssetRef:
     logical_id: str
     kind: AssetKind
     scope: AssetScope
-    flow_asset_id: Optional[str] = None
-    flow_asset_label: Optional[str] = None
-    local_path: Optional[str] = None
-    source_scene_id: Optional[int] = None
+    flow_asset_id: str | None = None
+    flow_asset_label: str | None = None
+    local_path: str | None = None
+    source_scene_id: int | None = None
     confirmed_by_user: bool = False
-    confirmed_at: Optional[datetime] = None
-    content_hash: Optional[str] = None
-    lineage_revision: Optional[str] = None
+    confirmed_at: datetime | None = None
+    content_hash: str | None = None
+    lineage_revision: str | None = None
 
     def to_dict(self) -> dict:
         d = {}
@@ -174,11 +177,11 @@ class Profile:
     genre: str = ""
     subtype: str = ""
     scene_plans: list[ScenePlan] = field(default_factory=list)
-    scene_plans_factory: Optional[Callable] = None
+    scene_plans_factory: Callable | None = None
     selection_schema: dict = field(default_factory=dict)
-    style_bible_factory: Optional[Callable] = None
-    first_frame_factory: Optional[Callable] = None
-    scene_prompt_factory: Optional[Callable] = None
+    style_bible_factory: Callable | None = None
+    first_frame_factory: Callable | None = None
+    scene_prompt_factory: Callable | None = None
     audio_contract: dict = field(default_factory=dict)
     negative_prompt_base: str = ""
     template_exclusions: list[str] = field(default_factory=list)
@@ -210,7 +213,7 @@ def register_profile(profile: Profile) -> None:
     PROFILE_REGISTRY[profile.profile_id] = profile
 
 
-def get_profile(profile_id: str) -> Optional[Profile]:
+def get_profile(profile_id: str) -> Profile | None:
     return PROFILE_REGISTRY.get(profile_id)
 
 
@@ -220,7 +223,6 @@ def list_profiles() -> list[Profile]:
 
 def load_all_profiles() -> None:
     """Import all profile modules to register them."""
-    from .profiles import architecture, vehicle, product, home_decor, cooking
     # Modules register themselves on import
 
 

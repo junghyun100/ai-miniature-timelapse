@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Optional
 
 try:
     from .domain import Project, compute_source_revision
@@ -14,7 +14,9 @@ def _is_project_obj(obj: Any) -> bool:
     return isinstance(obj, Project) or hasattr(obj, "to_dict")
 
 
-def ensure_source_revision(project: Union[Project, Dict[str, Any]], require_existing: bool = False) -> str:
+def ensure_source_revision(
+    project: Project | dict[str, Any], require_existing: bool = False
+) -> str:
     """
     Ensure project has a valid source_revision.
     Computes and attaches revision if missing.
@@ -23,19 +25,25 @@ def ensure_source_revision(project: Union[Project, Dict[str, Any]], require_exis
     if _is_project_obj(project):
         if not project.source_revision:
             if not project.profile_id or not project.topic:
-                raise ValueError("Export failed: project missing required fields (profile_id, topic)")
+                raise ValueError(
+                    "Export failed: project missing required fields (profile_id, topic)"
+                )
             project.source_revision = project.compute_source_revision()
         rev = project.source_revision
     else:
         rev = project.get("source_revision")
         if not rev:
             if require_existing or not project.get("profile_id") or not project.get("topic"):
-                raise ValueError("Export failed: missing source_revision and required project fields (profile_id, topic)")
+                raise ValueError(
+                    "Export failed: missing source_revision and required project fields (profile_id, topic)"
+                )
             try:
                 rev = compute_source_revision(project)
                 project["source_revision"] = rev
             except Exception as e:
-                raise ValueError(f"Export failed: missing source_revision and unable to compute revision: {e}")
+                raise ValueError(
+                    f"Export failed: missing source_revision and unable to compute revision: {e}"
+                )
 
     if not rev or not isinstance(rev, str) or not rev.startswith("sha256:"):
         raise ValueError(f"Export failed: invalid or missing source_revision '{rev}'")
@@ -43,14 +51,16 @@ def ensure_source_revision(project: Union[Project, Dict[str, Any]], require_exis
     return rev
 
 
-def load_project(path: str | Path) -> Dict[str, Any]:
+def load_project(path: str | Path) -> dict[str, Any]:
     """Load project dict from file."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     ensure_source_revision(data)
     return data
 
 
-def export_project_json(project: Union[Project, Dict[str, Any]], current_draft: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def export_project_json(
+    project: Project | dict[str, Any], current_draft: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
     """
     Export project as dictionary with attached source_revision.
     Per WP-4 and WP-5: export without valid revision or with stale plan MUST fail.
@@ -79,7 +89,9 @@ def export_project_json(project: Union[Project, Dict[str, Any]], current_draft: 
     return data
 
 
-def export_text_bundle(project: Union[Project, Dict[str, Any]], current_draft: Optional[Dict[str, Any]] = None) -> str:
+def export_text_bundle(
+    project: Project | dict[str, Any], current_draft: Optional[dict[str, Any]] = None
+) -> str:
     """
     Export human-readable text bundle with source_revision in header.
     Per Section 11.6 and WP-5 Export Parity.
@@ -117,13 +129,15 @@ def export_text_bundle(project: Union[Project, Dict[str, Any]], current_draft: O
     raw_scenes = project.get("scenes", [])
     scenes = []
     for s in raw_scenes:
-        scenes.append({
-            "id": s.get("id", 1),
-            "name": s.get("name", ""),
-            "video_prompt": s.get("video_prompt") or s.get("prompt", ""),
-            "first_frame_prompt": s.get("first_frame_prompt", ""),
-            "negative_prompt": s.get("negative_prompt", "")
-        })
+        scenes.append(
+            {
+                "id": s.get("id", 1),
+                "name": s.get("name", ""),
+                "video_prompt": s.get("video_prompt") or s.get("prompt", ""),
+                "first_frame_prompt": s.get("first_frame_prompt", ""),
+                "negative_prompt": s.get("negative_prompt", ""),
+            }
+        )
 
     lines = [
         f"Topic: {topic}",
@@ -148,7 +162,9 @@ def export_text_bundle(project: Union[Project, Dict[str, Any]], current_draft: O
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Export prompt bundle or project JSON with source revision.")
+    parser = argparse.ArgumentParser(
+        description="Export prompt bundle or project JSON with source revision."
+    )
     parser.add_argument("project_json")
     parser.add_argument("--output", default="-")
     parser.add_argument("--format", choices=["text", "json"], default="text")

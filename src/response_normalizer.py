@@ -20,19 +20,19 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import UTC, datetime
+from typing import Any
 
-from .domain import Project, Provenance, ProvenanceSource
+from .domain import Project, Provenance
 from .fallback_builder import reconcile_scenes_with_fallback
-from .serializers import IMMUTABLE_NEGATIVE, serialize_full_plan
+from .serializers import serialize_full_plan
 
 
 def parse_raw_nim_response(
-    raw_response: Union[str, Dict[str, Any]],
-    expected_request_id: Optional[str] = None,
-    expected_source_revision: Optional[str] = None,
-) -> Dict[str, Any]:
+    raw_response: str | dict[str, Any],
+    expected_request_id: str | None = None,
+    expected_source_revision: str | None = None,
+) -> dict[str, Any]:
     """
     Parses a raw NIM response (string or dict), stripping markdown fences if present.
     Restores missing header fields if stripped by NIM.
@@ -58,14 +58,18 @@ def parse_raw_nim_response(
         if not req_id:
             data["request_id"] = expected_request_id
         elif str(req_id) != str(expected_request_id):
-            raise ValueError(f"Stale NIM response: request_id mismatch (got {req_id}, expected {expected_request_id})")
+            raise ValueError(
+                f"Stale NIM response: request_id mismatch (got {req_id}, expected {expected_request_id})"
+            )
 
     if expected_source_revision:
         src_rev = data.get("source_revision")
         if not src_rev:
             data["source_revision"] = expected_source_revision
         elif src_rev != expected_source_revision:
-            raise ValueError(f"Stale NIM response: source_revision mismatch (got {src_rev}, expected {expected_source_revision})")
+            raise ValueError(
+                f"Stale NIM response: source_revision mismatch (got {src_rev}, expected {expected_source_revision})"
+            )
 
     if "schema_version" not in data:
         data["schema_version"] = "2.0"
@@ -74,11 +78,11 @@ def parse_raw_nim_response(
 
 
 def normalize_nim_response(
-    raw_response: Union[str, Dict[str, Any]],
+    raw_response: str | dict[str, Any],
     project: Project,
     model_id: str = "meta/llama-3.1-8b-instruct",
-    expected_request_id: Optional[str] = None,
-) -> Tuple[Project, Provenance]:
+    expected_request_id: str | None = None,
+) -> tuple[Project, Provenance]:
     """
     Complete post-normalization pipeline for NIM responses:
     1. Response parse & header restoration
@@ -90,9 +94,11 @@ def normalize_nim_response(
     Returns (updated_project, provenance)
     """
     source_revision = project.source_revision or project.compute_source_revision()
-    req_id = expected_request_id or (project.provenance.request_id if project.provenance else "req_local")
+    req_id = expected_request_id or (
+        project.provenance.request_id if project.provenance else "req_local"
+    )
 
-    validation_warnings: List[str] = []
+    validation_warnings: list[str] = []
 
     # 1. Response Parse
     try:
@@ -107,7 +113,9 @@ def normalize_nim_response(
             validation_warnings.append("NIM response scenes field was not a list; using fallbacks")
     except Exception as err:
         nim_scenes = []
-        validation_warnings.append(f"Failed to parse NIM response payload ({err}); falling back to local plans")
+        validation_warnings.append(
+            f"Failed to parse NIM response payload ({err}); falling back to local plans"
+        )
 
     # 2 & 3 & 4. Scene Fallback, Canonicalization, and Lineage Resolution
     canonical_scenes, fallback_scene_ids, prov_source = reconcile_scenes_with_fallback(
@@ -128,7 +136,7 @@ def normalize_nim_response(
         provider="nvidia_nim",
         model_id=model_id,
         base_url_label="NVIDIA Integrate API",
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
         request_id=req_id,
         source_revision=source_revision,
         fallback_scene_ids=fallback_scene_ids,

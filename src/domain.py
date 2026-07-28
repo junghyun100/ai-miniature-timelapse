@@ -17,12 +17,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import unicodedata
 import uuid
-from dataclasses import dataclass, field, asdict, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Union, get_type_hints
-import unicodedata
+from typing import Any
 
 
 class WorkflowMode(str, Enum):
@@ -93,6 +93,7 @@ class AssetScope(str, Enum):
 # Helper Functions
 # ============================================================================
 
+
 def _normalize_unicode(s: str) -> str:
     """Normalize Unicode to NFC form."""
     return unicodedata.normalize("NFC", s)
@@ -102,11 +103,11 @@ def _sort_keys_recursive(obj: Any) -> Any:
     """Recursively sort dictionary keys for canonical serialization."""
     if isinstance(obj, Enum):
         return obj.value
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return {k: _sort_keys_recursive(v) for k, v in sorted(obj.items())}
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [_sort_keys_recursive(item) for item in obj]
-    elif isinstance(obj, str):
+    if isinstance(obj, str):
         return _normalize_unicode(obj)
     return obj
 
@@ -137,18 +138,36 @@ def compute_source_revision(source_draft: dict[str, Any]) -> str:
     - provenance, relay_branch, source_revision, schema_version
     """
     included_keys = {
-        "profile_id", "profile_version", "workflow_mode",
-        "topic", "genre", "subtype", "topic_label",
-        "selection", "subject", "category",
-        "model_name", "dish_name", "dish_key", "craft_name",
-        "idea_name", "materials", "final_object", "korean_narration",
-        "duration_seconds", "clip_duration_seconds", "aspect_ratio",
+        "profile_id",
+        "profile_version",
+        "workflow_mode",
+        "topic",
+        "genre",
+        "subtype",
+        "topic_label",
+        "selection",
+        "subject",
+        "category",
+        "model_name",
+        "dish_name",
+        "dish_key",
+        "craft_name",
+        "idea_name",
+        "materials",
+        "final_object",
+        "korean_narration",
+        "duration_seconds",
+        "clip_duration_seconds",
+        "aspect_ratio",
         "style_bible",
         "derived_fields",
         "scene_plans",
-        "narration", "idea_seed",
+        "narration",
+        "idea_seed",
         "flow_execution_profile_id",
-        "nim_enabled", "nim_model_id", "nim_refinement_policy"
+        "nim_enabled",
+        "nim_model_id",
+        "nim_refinement_policy",
     }
 
     # Extract only included fields
@@ -190,10 +209,12 @@ def validate_invariants(project: Project) -> list[str]:
         for i, scene in enumerate(project.scenes):
             if i == 0:
                 if scene.input_mode != InputMode.MASTER_IMAGE:
-                    errors.append(f"Scene 1 must have MASTER_IMAGE input_mode in relay mode")
+                    errors.append("Scene 1 must have MASTER_IMAGE input_mode in relay mode")
             else:
                 if scene.input_mode != InputMode.PREVIOUS_FINAL_FRAME:
-                    errors.append(f"Scene {i+1} must have PREVIOUS_FINAL_FRAME input_mode in relay mode")
+                    errors.append(
+                        f"Scene {i+1} must have PREVIOUS_FINAL_FRAME input_mode in relay mode"
+                    )
 
     # Invariant: StyleBible.identity_lock must appear in every prompt
     identity_lock = project.style_bible.identity_lock
@@ -208,7 +229,9 @@ def validate_invariants(project: Project) -> list[str]:
     if profile:
         for scene in project.scenes:
             if scene.clip_duration_seconds != profile.clip_duration_seconds:
-                errors.append(f"Scene {scene.id}: clip_duration_seconds {scene.clip_duration_seconds} != profile {profile.clip_duration_seconds}")
+                errors.append(
+                    f"Scene {scene.id}: clip_duration_seconds {scene.clip_duration_seconds} != profile {profile.clip_duration_seconds}"
+                )
 
     # Invariant: source_revision format
     if not project.source_revision.startswith("sha256:") or len(project.source_revision) != 71:
@@ -220,6 +243,7 @@ def validate_invariants(project: Project) -> list[str]:
 # ============================================================================
 # Domain Models
 # ============================================================================
+
 
 @dataclass
 class StyleBible:
@@ -245,14 +269,14 @@ class AssetRef:
     logical_id: str
     kind: AssetKind
     scope: AssetScope
-    flow_asset_id: Optional[str] = None
-    flow_asset_label: Optional[str] = None
-    local_path: Optional[str] = None
-    source_scene_id: Optional[int] = None
+    flow_asset_id: str | None = None
+    flow_asset_label: str | None = None
+    local_path: str | None = None
+    source_scene_id: int | None = None
     confirmed_by_user: bool = False
-    confirmed_at: Optional[datetime] = None
-    content_hash: Optional[str] = None
-    lineage_revision: Optional[str] = None
+    confirmed_at: datetime | None = None
+    content_hash: str | None = None
+    lineage_revision: str | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -326,14 +350,14 @@ class Scene:
     name: str
     input_mode: InputMode
     asset_ref: AssetRef
-    first_frame_prompt: Optional[str]  # Scene 1 only; None for Scenes 2+
+    first_frame_prompt: str | None  # Scene 1 only; None for Scenes 2+
     video_prompt: str
     template_exclusions: str
     negative_prompt: str
     clip_duration_seconds: int
     lineage_revision: str
     status: SceneStatus = SceneStatus.LOCKED
-    confirmed_at: Optional[datetime] = None
+    confirmed_at: datetime | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -358,7 +382,7 @@ class Scene:
 @dataclass
 class RelayBranch:
     branch_id: str
-    parent_branch_id: Optional[str]
+    parent_branch_id: str | None
     scene_statuses: dict[str, SceneStatus]  # scene_id (str) -> status
     asset_refs: list[AssetRef]
     created_at: datetime
@@ -424,32 +448,33 @@ class SourceRevision:
 # ============================================================================
 
 try:
-    from profile_types import Profile, register_profile, get_profile, PROFILE_REGISTRY
+    from profile_types import PROFILE_REGISTRY, Profile, get_profile, register_profile
 except ImportError:
-    from .profile_types import Profile, register_profile, get_profile, PROFILE_REGISTRY
+    from .profile_types import PROFILE_REGISTRY
 
 
 # ============================================================================
 # Main Project Model
 # ============================================================================
 
+
 @dataclass
 class Project:
     schema_version: str = "2.0"
     topic: str = ""
     topic_label: str = ""
-    genre: Optional[str] = None
-    subtype: Optional[str] = None
-    model_name: Optional[str] = None
-    dish_name: Optional[str] = None
-    craft_name: Optional[str] = None
+    genre: str | None = None
+    subtype: str | None = None
+    model_name: str | None = None
+    dish_name: str | None = None
+    craft_name: str | None = None
     profile_id: str = ""
     profile_version: str = ""
     workflow_mode: WorkflowMode = WorkflowMode.SINGLE_CLIP_FROM_MASTER
     duration_seconds: int = 30
     clip_duration_seconds: int = 10
     aspect_ratio: AspectRatio = AspectRatio.RATIO_9_16
-    style_bible: Optional[StyleBible] = None
+    style_bible: StyleBible | None = None
     derived_fields: dict = field(default_factory=dict)
     scene_plans: list[ScenePlan] = field(default_factory=list)
     scene_count: int = 0
@@ -458,10 +483,10 @@ class Project:
     nim_enabled: bool = False
     nim_model_id: str = ""
     nim_refinement_policy: NimRefinementPolicy = NimRefinementPolicy.MUTABLE_ONLY
-    narration: Optional[str] = None
-    idea_seed: Optional[str] = None
-    provenance: Optional[Provenance] = None
-    relay_branch: Optional[RelayBranch] = None
+    narration: str | None = None
+    idea_seed: str | None = None
+    provenance: Provenance | None = None
+    relay_branch: RelayBranch | None = None
     scenes: list[Scene] = field(default_factory=list)
 
     def __post_init__(self):
@@ -474,7 +499,11 @@ class Project:
         """Serialize to dict for JSON storage."""
         d = asdict(self)
         d["workflow_mode"] = self.workflow_mode.value
-        d["aspect_ratio"] = self.aspect_ratio.value if isinstance(self.aspect_ratio, AspectRatio) else self.aspect_ratio
+        d["aspect_ratio"] = (
+            self.aspect_ratio.value
+            if isinstance(self.aspect_ratio, AspectRatio)
+            else self.aspect_ratio
+        )
         d["provenance"] = self.provenance.to_dict() if self.provenance else None
         d["relay_branch"] = self.relay_branch.to_dict() if self.relay_branch else None
         d["style_bible"] = self.style_bible.to_dict() if self.style_bible else None
@@ -519,7 +548,11 @@ class Project:
             "craft_name": self.craft_name,
             "duration_seconds": self.duration_seconds,
             "clip_duration_seconds": self.clip_duration_seconds,
-            "aspect_ratio": self.aspect_ratio.value if isinstance(self.aspect_ratio, AspectRatio) else self.aspect_ratio,
+            "aspect_ratio": (
+                self.aspect_ratio.value
+                if isinstance(self.aspect_ratio, AspectRatio)
+                else self.aspect_ratio
+            ),
             "style_bible": self.style_bible.to_dict() if self.style_bible else {},
             "derived_fields": self.derived_fields,
             "scene_plans": [sp.to_dict() for sp in self.scene_plans],
@@ -528,7 +561,11 @@ class Project:
             "flow_execution_profile_id": self.flow_execution_profile_id,
             "nim_enabled": self.nim_enabled,
             "nim_model_id": self.nim_model_id,
-            "nim_refinement_policy": self.nim_refinement_policy.value if isinstance(self.nim_refinement_policy, NimRefinementPolicy) else self.nim_refinement_policy,
+            "nim_refinement_policy": (
+                self.nim_refinement_policy.value
+                if isinstance(self.nim_refinement_policy, NimRefinementPolicy)
+                else self.nim_refinement_policy
+            ),
         }
         return compute_source_revision(source_draft)
 
@@ -540,6 +577,7 @@ class Project:
 # ============================================================================
 # NIM Contract Models
 # ============================================================================
+
 
 @dataclass
 class NimSceneRequest:
@@ -574,10 +612,9 @@ class NimRequest:
     subject: dict = field(default_factory=dict)
     style_bible: dict = field(default_factory=dict)
     scenes: list[NimSceneRequest] = field(default_factory=list)
-    mutable_fields: list[str] = field(default_factory=lambda: [
-        "scenes.*.first_frame_prompt",
-        "scenes.*.video_prompt"
-    ])
+    mutable_fields: list[str] = field(
+        default_factory=lambda: ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"]
+    )
     immutable_rules: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -606,9 +643,7 @@ class NimResponse:
 
 
 def normalize_nim_response(
-    response: NimResponse,
-    local_plans: list[NimSceneRequest],
-    source_revision: str
+    response: NimResponse, local_plans: list[NimSceneRequest], source_revision: str
 ) -> tuple[NimResponse, list[str]]:
     """
     Post-NIM normalization per Section 14.5.
@@ -630,25 +665,35 @@ def normalize_nim_response(
 
     # Check staleness
     if response.source_revision != source_revision:
-        raise ValueError(f"Stale NIM response: source_revision mismatch (response={response.source_revision}, expected={source_revision})")
+        raise ValueError(
+            f"Stale NIM response: source_revision mismatch (response={response.source_revision}, expected={source_revision})"
+        )
 
     # Validate scene count - MUST match exactly, no padding with fallbacks
     if len(response.scenes) != len(local_plans):
-        raise ValueError(f"NIM response scene count mismatch: expected {len(local_plans)}, got {len(response.scenes)}. No fallback available - NIM must return correct number of scenes.")
+        raise ValueError(
+            f"NIM response scene count mismatch: expected {len(local_plans)}, got {len(response.scenes)}. No fallback available - NIM must return correct number of scenes."
+        )
 
     # Per-scene validation - NO FALLBACK to local templates
     for i, (nim_scene, local_scene) in enumerate(zip(response.scenes, local_plans)):
         # Scene ID must match
         if nim_scene.id != local_scene.id:
-            raise ValueError(f"Scene {i+1}: ID mismatch (expected {local_scene.id}, got {nim_scene.id}). NIM response is invalid.")
+            raise ValueError(
+                f"Scene {i+1}: ID mismatch (expected {local_scene.id}, got {nim_scene.id}). NIM response is invalid."
+            )
 
         # Scene 2+ first_frame_prompt must be empty in relay mode
         if i >= 1 and nim_scene.first_frame_prompt:
-            warnings.append(f"Scene {i+1}: first frame prompt must be empty in relay mode, clearing")
+            warnings.append(
+                f"Scene {i+1}: first frame prompt must be empty in relay mode, clearing"
+            )
             nim_scene.first_frame_prompt = ""
 
         # Video prompt must not be empty - FAIL if NIM doesn't provide one
         if not nim_scene.video_prompt or not nim_scene.video_prompt.strip():
-            raise ValueError(f"Scene {i+1}: NIM returned empty video_prompt. No fallback to local templates - NIM must generate valid prompts.")
+            raise ValueError(
+                f"Scene {i+1}: NIM returned empty video_prompt. No fallback to local templates - NIM must generate valid prompts."
+            )
 
     return response, warnings

@@ -3,22 +3,24 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from orchestrator import run as run_orchestrator
 from stitch_finalize import finalize as finalize_stitch
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def all_scene_renders_exist(render_status: Dict[str, Any]) -> bool:
+def all_scene_renders_exist(render_status: dict[str, Any]) -> bool:
     return not render_status.get("missing_render_files", [])
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the full vehicle assembly pipeline and stitch if renders already exist.")
+    parser = argparse.ArgumentParser(
+        description="Run the full vehicle assembly pipeline and stitch if renders already exist."
+    )
     parser.add_argument("topic", help="Target subject, e.g. 'Porsche 911'.")
     parser.add_argument("--duration", type=int, choices=[30, 60], default=60)
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
@@ -41,7 +43,7 @@ def main() -> None:
     summary = run_orchestrator(args.topic, args.duration, args.format_, args.variant, base_dir)
     render_status = load_json(base_dir / "exports" / "render-status.json")
 
-    stitch_report: Dict[str, Any] = {
+    stitch_report: dict[str, Any] = {
         "stitched": False,
         "reason": "missing_render_files",
         "final_output": args.final_output,

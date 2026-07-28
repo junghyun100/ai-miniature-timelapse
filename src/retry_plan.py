@@ -3,15 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_retry_plan(project: Dict[str, Any]) -> Dict[str, Any]:
-    retries: List[Dict[str, Any]] = []
+def build_retry_plan(project: dict[str, Any]) -> dict[str, Any]:
+    retries: list[dict[str, Any]] = []
     for scene in project["scenes"]:
         retries.append(
             {
@@ -52,4 +52,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

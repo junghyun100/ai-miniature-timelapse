@@ -10,9 +10,13 @@ Per Section 13.8:
 """
 
 from ..profile_types import (
-    Profile, ScenePlan, WorkflowMode, StyleBible, InputMode, register_profile
+    InputMode,
+    Profile,
+    ScenePlan,
+    StyleBible,
+    WorkflowMode,
+    register_profile,
 )
-
 
 # Korean traditional materials for variation
 KOREAN_MATERIALS = [
@@ -59,7 +63,16 @@ def _make_style_bible(craft_name: str, materials: list[str]) -> StyleBible:
         materials={
             "primary": materials + ["paper", "cardstock", "wire", "glue", "scissors"],
             "secondary": ["paint", "glitter", "beads", "fabric scraps"],
-            "tools": ["scissors", "craft knife", "cutting mat", "ruler", "bone folder", "tweezers", "glue gun", "wire cutters"],
+            "tools": [
+                "scissors",
+                "craft knife",
+                "cutting mat",
+                "ruler",
+                "bone folder",
+                "tweezers",
+                "glue gun",
+                "wire cutters",
+            ],
         },
         camera={
             "lens": "macro",
@@ -91,15 +104,10 @@ def _make_style_bible(craft_name: str, materials: list[str]) -> StyleBible:
 
 
 def _make_scene_video_prompt(
-    craft_name: str,
-    korean_narration: str,
-    materials: list[str],
-    final_object: str
+    craft_name: str, korean_narration: str, materials: list[str], final_object: str
 ) -> str:
     if not validate_korean_narration(korean_narration):
-        raise ValueError(
-            "korean_narration must contain 1 to 60 non-whitespace characters"
-        )
+        raise ValueError("korean_narration must contain 1 to 60 non-whitespace characters")
     materials_str = ", ".join(materials)
     return (
         f"Single 10-second continuous clip, not split into multiple scenes. "
@@ -115,7 +123,7 @@ def _make_scene_video_prompt(
         f"fixed top-down 45-degree angle, steady camera, bright even studio lighting, "
         f"shallow depth of field, clean background, pastel and jewel-tone palette, "
         f"9:16 vertical, photorealistic 8K. Korean female voiceover narrates continuously "
-        f"without pause: \"{korean_narration}\". No background music. "
+        f'without pause: "{korean_narration}". No background music. '
         f"Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, "
         f"bad anatomy, deformed hands, blurry."
     )
@@ -137,8 +145,11 @@ SCENE_PLAN = [
         ],
         end_state="Finished craft revealed on clean desk",
         forbidden_changes=[
-            "Camera angle (top-down 45° fixed)", "Lighting (bright even studio)",
-            "Background (clean)", "Color palette (pastel/jewel)", "Hands only rule"
+            "Camera angle (top-down 45° fixed)",
+            "Lighting (bright even studio)",
+            "Background (clean)",
+            "Color palette (pastel/jewel)",
+            "Hands only rule",
         ],
         input_mode=InputMode.MASTER_IMAGE,
         estimated_clip_duration_seconds=10,
@@ -197,12 +208,22 @@ home_decor_profile = Profile(
     scene_plans=SCENE_PLAN,
     scene_plans_factory=lambda topic, dur, ctx: SCENE_PLAN,
     selection_schema=HOME_DECOR_SELECTION_SCHEMA,
-    style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["idea_name"], ctx["materials"]),
-    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": _make_first_frame_prompt(ctx["idea_name"], ctx["materials"])} if ctx.get("scene_id") == 1 else {},
-    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["idea_name"], ctx["korean_narration"], ctx["materials"], ctx["final_object"])},
+    style_bible_factory=lambda topic, dur, ctx: make_style_bible(
+        ctx["idea_name"], ctx["materials"]
+    ),
+    first_frame_factory=lambda topic, dur, ctx: (
+        {"first_frame_prompt": _make_first_frame_prompt(ctx["idea_name"], ctx["materials"])}
+        if ctx.get("scene_id") == 1
+        else {}
+    ),
+    scene_prompt_factory=lambda topic, dur, ctx: {
+        "video_prompt": make_scene_video_prompt(
+            ctx["idea_name"], ctx["korean_narration"], ctx["materials"], ctx["final_object"]
+        )
+    },
     audio_contract={
         "type": "korean_narration_plus_asmr",
-        "description": "Korean female voiceover (max 60 chars no spaces) + craft ASMR sounds. No background music."
+        "description": "Korean female voiceover (max 60 chars no spaces) + craft ASMR sounds. No background music.",
     },
     negative_prompt_base="text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry, messy background, cluttered desk, harsh shadows, tilted camera, shaky camera, dark lighting, muddy colors",
     template_exclusions=["messy background", "dark lighting", "harsh shadows", "tilted camera"],
@@ -230,9 +251,6 @@ def make_style_bible(craft_name: str, materials: list[str]) -> StyleBible:
 
 
 def make_scene_video_prompt(
-    craft_name: str,
-    korean_narration: str,
-    materials: list[str],
-    final_object: str
+    craft_name: str, korean_narration: str, materials: list[str], final_object: str
 ) -> str:
     return _make_scene_video_prompt(craft_name, korean_narration, materials, final_object)

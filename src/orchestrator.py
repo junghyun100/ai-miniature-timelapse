@@ -4,21 +4,21 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from export_prompts import export_text_bundle
+from nim_prompt_generator import generate_prompt as generate_nim_prompt
 from pipeline import STYLE_BLOCK, build_project
-from qc_report import build_report
 from prompt_pack import build_prompt_pack
+from prompt_refiner import refine_prompt
+from prompt_templates import format_building_type_choices, get_supported_building_types
+from qc_report import build_report
 from render_commands import build_commands
 from render_manifest import build_render_manifest
 from render_plan import build_render_plan
-from retry_selector import build_retry_selection
 from retry_plan import build_retry_plan
-from prompt_refiner import refine_prompt
-from nim_prompt_generator import generate_prompt as generate_nim_prompt
+from retry_selector import build_retry_selection
 from scene_md_export import export_scene_md
-from prompt_templates import format_building_type_choices, get_supported_building_types
 
 
 def ensure_dirs(base_dir: Path) -> None:
@@ -26,11 +26,11 @@ def ensure_dirs(base_dir: Path) -> None:
         (base_dir / rel).mkdir(parents=True, exist_ok=True)
 
 
-def save_json(path: Path, payload: Dict[str, Any]) -> None:
+def save_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def collect_render_status(project: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
+def collect_render_status(project: dict[str, Any], base_dir: Path) -> dict[str, Any]:
     scene_status = []
     missing = []
     for scene in project["scenes"]:
@@ -65,7 +65,7 @@ def run(
     building_type: str = "hanok",
     refine_prompts: bool = False,
     use_nim_generate: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     ensure_dirs(base_dir)
     scene_md_dir = base_dir / "scenes_md"
 
@@ -85,10 +85,14 @@ def run(
             raise RuntimeError(f"NIM generation failed (required): {e}")
     else:
         generated_prompt_bundle = prompt_bundle
-    refined_prompt_bundle = refine_prompt(
-        generated_prompt_bundle,
-        "Preserve the prompt pack structure, scene continuity, negative prompt, and first-frame-vs-followup-scene distinction."
-    ) if refine_prompts else generated_prompt_bundle
+    refined_prompt_bundle = (
+        refine_prompt(
+            generated_prompt_bundle,
+            "Preserve the prompt pack structure, scene continuity, negative prompt, and first-frame-vs-followup-scene distinction.",
+        )
+        if refine_prompts
+        else generated_prompt_bundle
+    )
     render_commands = build_commands(project, str(base_dir))
     render_status = collect_render_status(project, base_dir)
     retry_selection = build_retry_selection(render_status, retry_plan)
@@ -103,7 +107,9 @@ def run(
     save_json(base_dir / "exports" / "render-status.json", render_status)
     save_json(base_dir / "qc" / "qa-report.json", qc_report)
     final_prompt_bundle = refined_prompt_bundle if refine_prompts else generated_prompt_bundle
-    (base_dir / "prompts" / "google-flow-prompts.txt").write_text(final_prompt_bundle, encoding="utf-8")
+    (base_dir / "prompts" / "google-flow-prompts.txt").write_text(
+        final_prompt_bundle, encoding="utf-8"
+    )
     export_scene_md(project, scene_md_dir)
 
     summary = {
@@ -139,18 +145,40 @@ def run(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the full miniature timelapse prompt pipeline.")
+    parser = argparse.ArgumentParser(
+        description="Run the full miniature timelapse prompt pipeline."
+    )
     parser.add_argument("topic", help="Target subject, for example 'Korean hanok'.")
     parser.add_argument("--duration", type=int, choices=[30, 60], default=60)
     parser.add_argument("--building-type", default="hanok", choices=get_supported_building_types())
-    parser.add_argument("--list-building-types", action="store_true", help="Print available building templates and exit.")
+    parser.add_argument(
+        "--list-building-types",
+        action="store_true",
+        help="Print available building templates and exit.",
+    )
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
     parser.add_argument("--variant", default="")
-    parser.add_argument("--base-dir", default="output", help="Root directory for generated artifacts.")
-    parser.add_argument("--use-nim-generate", action="store_true", help="Generate the prompt bundle with NVIDIA NIM when an API key is available.")
-    parser.add_argument("--nim-model", default="nvidia/nemotron-3-super-120b-a12b", help="NIM model ID to use (default: nvidia/nemotron-3-super-120b-a12b)")
-    parser.add_argument("--refine-prompts", action="store_true", help="Refine the prompt bundle through OpenAI if OPENAI_API_KEY is set.")
-    parser.add_argument("--output", default="-", help="Print summary JSON to stdout or write to a file.")
+    parser.add_argument(
+        "--base-dir", default="output", help="Root directory for generated artifacts."
+    )
+    parser.add_argument(
+        "--use-nim-generate",
+        action="store_true",
+        help="Generate the prompt bundle with NVIDIA NIM when an API key is available.",
+    )
+    parser.add_argument(
+        "--nim-model",
+        default="nvidia/nemotron-3-super-120b-a12b",
+        help="NIM model ID to use (default: nvidia/nemotron-3-super-120b-a12b)",
+    )
+    parser.add_argument(
+        "--refine-prompts",
+        action="store_true",
+        help="Refine the prompt bundle through OpenAI if OPENAI_API_KEY is set.",
+    )
+    parser.add_argument(
+        "--output", default="-", help="Print summary JSON to stdout or write to a file."
+    )
     args = parser.parse_args()
 
     if args.list_building_types:

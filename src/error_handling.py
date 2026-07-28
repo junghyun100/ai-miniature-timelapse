@@ -8,12 +8,13 @@ and error classification per Section 14.4.
 from __future__ import annotations
 
 import re
-from typing import Optional, Any
+from typing import Any
 
 
 class RequestAdapterError(Exception):
     """Base exception for all UI request adapter operations."""
-    def __init__(self, message: str, details: Optional[Any] = None):
+
+    def __init__(self, message: str, details: Any | None = None):
         sanitized_msg = sanitize_error_message(message)
         super().__init__(sanitized_msg)
         self.message = sanitized_msg
@@ -22,28 +23,33 @@ class RequestAdapterError(Exception):
 
 class RequestTimeoutError(RequestAdapterError):
     """Raised when a request exceeds client timeout duration."""
-    def __init__(self, message: str, timeout_seconds: float = 60.0, request_id: Optional[int] = None):
-        super().__init__(message, details={"timeout_seconds": timeout_seconds, "request_id": request_id})
+
+    def __init__(self, message: str, timeout_seconds: float = 60.0, request_id: int | None = None):
+        super().__init__(
+            message, details={"timeout_seconds": timeout_seconds, "request_id": request_id}
+        )
         self.timeout_seconds = timeout_seconds
         self.request_id = request_id
 
 
 class RequestAbortedError(RequestAdapterError):
     """Raised when an in-flight request is aborted/cancelled."""
-    def __init__(self, message: str = "Request was cancelled", request_id: Optional[int] = None):
+
+    def __init__(self, message: str = "Request was cancelled", request_id: int | None = None):
         super().__init__(message, details={"request_id": request_id})
         self.request_id = request_id
 
 
 class StaleResponseError(RequestAdapterError):
     """Raised when response request_id or source_revision does not match current active request."""
+
     def __init__(
         self,
         message: str,
-        received_request_id: Optional[int] = None,
-        expected_request_id: Optional[int] = None,
-        received_revision: Optional[str] = None,
-        expected_revision: Optional[str] = None,
+        received_request_id: int | None = None,
+        expected_request_id: int | None = None,
+        received_revision: str | None = None,
+        expected_revision: str | None = None,
     ):
         details = {
             "received_request_id": received_request_id,
@@ -60,7 +66,8 @@ class StaleResponseError(RequestAdapterError):
 
 class HttpError(RequestAdapterError):
     """HTTP error response with status code."""
-    def __init__(self, message: str, status_code: int, response_body: Optional[str] = None):
+
+    def __init__(self, message: str, status_code: int, response_body: str | None = None):
         super().__init__(message, details={"status_code": status_code, "body": response_body})
         self.status_code = status_code
         self.response_body = response_body
@@ -68,6 +75,7 @@ class HttpError(RequestAdapterError):
 
 class RetryExhaustedError(RequestAdapterError):
     """Raised when maximum retries are exhausted."""
+
     def __init__(self, message: str, attempts: int, last_error: Exception):
         super().__init__(message, details={"attempts": attempts, "last_error": str(last_error)})
         self.attempts = attempts
@@ -102,6 +110,11 @@ def sanitize_error_message(msg: str) -> str:
     if not msg:
         return ""
     # Redact key patterns like nvapi-..., Bearer ..., api_key=...
-    msg = re.sub(r'nvapi-[A-Za-z0-9_-]+', '[REDACTED_API_KEY]', msg)
-    msg = re.sub(r'(?:Bearer|key|token|secret)\s*[:=]\s*["\']?[A-Za-z0-9._-]+["\']?', '[REDACTED_SECRET]', msg, flags=re.IGNORECASE)
+    msg = re.sub(r"nvapi-[A-Za-z0-9_-]+", "[REDACTED_API_KEY]", msg)
+    msg = re.sub(
+        r'(?:Bearer|key|token|secret)\s*[:=]\s*["\']?[A-Za-z0-9._-]+["\']?',
+        "[REDACTED_SECRET]",
+        msg,
+        flags=re.IGNORECASE,
+    )
     return msg

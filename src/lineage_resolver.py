@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, List, Optional
+from typing import Any
 
 from .domain import AssetRef, Scene
 
@@ -22,9 +22,9 @@ def compute_scene_lineage_revision(
     scene_id: int,
     source_revision: str,
     video_prompt: str,
-    first_frame_prompt: Optional[str],
+    first_frame_prompt: str | None,
     asset_ref: AssetRef,
-    parent_lineage_revision: Optional[str] = None,
+    parent_lineage_revision: str | None = None,
 ) -> str:
     """
     Computes a deterministic SHA-256 lineage revision for a scene.
@@ -39,7 +39,8 @@ def compute_scene_lineage_revision(
     payload: dict[str, Any] = {
         "scene_id": scene_id,
         "source_revision": source_revision,
-        "parent_lineage_revision": parent_lineage_revision or ("root" if scene_id == 1 else "ancestor_missing"),
+        "parent_lineage_revision": parent_lineage_revision
+        or ("root" if scene_id == 1 else "ancestor_missing"),
         "asset_logical_id": asset_ref.logical_id if asset_ref else "",
         "asset_content_hash": asset_ref.content_hash if asset_ref else None,
         "video_prompt": video_prompt or "",
@@ -51,18 +52,18 @@ def compute_scene_lineage_revision(
     return f"sha256:{digest}"
 
 
-def resolve_project_lineage(scenes: List[Scene], source_revision: str) -> List[Scene]:
+def resolve_project_lineage(scenes: list[Scene], source_revision: str) -> list[Scene]:
     """
     Resolves and updates lineage_revision for all scenes in sequence,
     ensuring each scene's lineage revision incorporates its ancestor's lineage revision.
 
     Returns the updated scenes list with lineage_revision set on both Scene and AssetRef.
     """
-    parent_lineage: Optional[str] = None
+    parent_lineage: str | None = None
 
     for idx, scene in enumerate(scenes):
         scene_id = scene.id or (idx + 1)
-        
+
         # For Scene 2+, ensure parent_lineage is present from previous scene
         if idx > 0 and parent_lineage is None:
             # Fallback ancestor marker if previous scene had no lineage_revision

@@ -10,12 +10,12 @@ Profiles per Section 13:
 """
 
 from .architecture import architecture_profile
-from .home_decor import home_decor_profile
 from .cooking import cooking_profile
+from .home_decor import home_decor_profile
 from .product import product_profile
 
 # Vehicle profile has sub-profiles
-from .vehicle import vehicle_profile, VehicleSubtype
+from .vehicle import VehicleSubtype, vehicle_profile
 
 __all__ = [
     "architecture_profile",

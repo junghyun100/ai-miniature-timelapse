@@ -488,17 +488,26 @@
     // Initialization
     // ============================================================================
     async function init() {
+      console.log('[init] Starting...');
       try {
-        await loadVehicleData(); // Load vehicle JSON first for dropdowns
+        console.log('[init] Loading vehicle data...');
+        await loadVehicleData();
+        console.log('[init] Vehicle data loaded:', !!vehicleDataCache);
+        console.log('[init] Rendering profile grid...');
         renderProfileGrid();
+        console.log('[init] Profile grid rendered');
+        console.log('[init] Rendering selection fields...');
         await renderSelectionFields(currentProfileId);
+        console.log('[init] Selection fields rendered');
         renderExecProfileList();
         setupEventListeners();
         checkResumeAvailability();
+        console.log('[init] Complete!');
       } catch (err) {
         console.error('[init] ERROR:', err);
         showToast(`초기화 실패: ${err.message}`, 'error');
       } finally {
+        console.log('[init] Finally block - hiding loading screen');
         loadingScreen.hidden = true;
         header.hidden = false;
         main.hidden = false;
@@ -506,15 +515,21 @@
     }
 
     async function loadVehicleData() {
+      console.log('[loadVehicleData] Starting...');
       try {
         const { loadVehicleData: loadVehicleDataModule } = await import('./app.js');
+        console.log('[loadVehicleData] Module imported, fetching vehicle.json...');
         vehicleDataCache = await loadVehicleDataModule();
+        console.log('[loadVehicleData] vehicleDataCache loaded:', !!vehicleDataCache);
         const profileFactory = PROFILES['vehicle.assembly'];
         if (typeof profileFactory === 'function') {
+          console.log('[loadVehicleData] Building vehicle profile...');
           vehicleProfileCache = await profileFactory('car', null);
+          console.log('[loadVehicleData] Vehicle profile built:', !!vehicleProfileCache);
         }
       } catch (err) {
-        console.warn('Vehicle data preload failed:', err);
+        console.warn('[loadVehicleData] Vehicle data preload failed:', err);
+        throw err;
       }
     }
 
@@ -1761,6 +1776,16 @@
     // Start
     // ============================================================================
     void init();
+
+    // Force-hide loading screen after 3 seconds as fallback
+    setTimeout(() => {
+      if (!loadingScreen.hidden) {
+        console.warn('[init] Loading screen still visible after 3s - force hiding');
+        loadingScreen.hidden = true;
+        header.hidden = false;
+        main.hidden = false;
+      }
+    }, 3000);
   </script>
 </body>
 </html>

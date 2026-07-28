@@ -3,22 +3,26 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_render_manifest(project: Dict[str, Any]) -> Dict[str, Any]:
-    scenes: List[Dict[str, Any]] = []
+def build_render_manifest(project: dict[str, Any]) -> dict[str, Any]:
+    scenes: list[dict[str, Any]] = []
     for scene in project["scenes"]:
-        input_mode = scene.get("input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME")
+        input_mode = scene.get(
+            "input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME"
+        )
         input_asset = scene.get(
             "input_asset",
-            "scenes/scene_01_master.png"
-            if scene["id"] == 1
-            else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png",
+            (
+                "scenes/scene_01_master.png"
+                if scene["id"] == 1
+                else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png"
+            ),
         )
         scenes.append(
             {
@@ -30,7 +34,9 @@ def build_render_manifest(project: Dict[str, Any]) -> Dict[str, Any]:
                 "input_mode": input_mode,
                 "input_image": input_asset,
                 "output_video": f"renders/scene_{scene['id']:02d}.mp4",
-                "handoff_image": scene.get("handoff_asset", f"scenes/scene_{scene['id']:02d}_last_frame.png"),
+                "handoff_image": scene.get(
+                    "handoff_asset", f"scenes/scene_{scene['id']:02d}_last_frame.png"
+                ),
             }
         )
 
@@ -46,7 +52,9 @@ def build_render_manifest(project: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build a render manifest for external video generation tools.")
+    parser = argparse.ArgumentParser(
+        description="Build a render manifest for external video generation tools."
+    )
     parser.add_argument("project_json")
     parser.add_argument("--output", default="-")
     args = parser.parse_args()

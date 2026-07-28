@@ -3,17 +3,16 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
-from prompt_templates import build_first_frame_prompt
-from prompt_templates import get_building_template
+from prompt_templates import build_first_frame_prompt, get_building_template
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
+def build_scene_md(project: dict[str, Any], scene: dict[str, Any]) -> str:
     if project.get("is_stale"):
         raise ValueError("Export failed: plan is stale")
 
@@ -25,17 +24,23 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
 
     first_frame_prompt = scene.get("first_frame_prompt") or ""
     if not first_frame_prompt and scene["id"] == 1:
-        first_frame_prompt = build_first_frame_prompt(topic_context, scene["name"], project.get("building_type", "hanok"))
+        first_frame_prompt = build_first_frame_prompt(
+            topic_context, scene["name"], project.get("building_type", "hanok")
+        )
 
     video_prompt = scene.get("video_prompt") or scene.get("prompt", "")
     negative_prompt = scene.get("negative_prompt_base") or scene.get("negative_prompt", "")
 
-    input_mode = scene.get("input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME")
+    input_mode = scene.get(
+        "input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME"
+    )
     input_asset = scene.get(
         "input_asset",
-        "scenes/scene_01_master.png"
-        if scene["id"] == 1
-        else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png",
+        (
+            "scenes/scene_01_master.png"
+            if scene["id"] == 1
+            else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png"
+        ),
     )
     handoff_asset = scene.get("handoff_asset", f"scenes/scene_{scene['id']:02d}_last_frame.png")
     first_frame_section = (
@@ -64,7 +69,7 @@ def build_scene_md(project: Dict[str, Any], scene: Dict[str, Any]) -> str:
     )
 
 
-def export_scene_md(project: Dict[str, Any], output_dir: Path) -> None:
+def export_scene_md(project: dict[str, Any], output_dir: Path) -> None:
     if project.get("is_stale"):
         raise ValueError("Export failed: plan is stale")
     output_dir.mkdir(parents=True, exist_ok=True)

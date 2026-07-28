@@ -3,34 +3,46 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
-from prompt_templates import build_first_frame_prompt
-from prompt_templates import CONTINUITY_RULE, build_common_core, build_topic_detail, build_topic_label, get_building_template
+from prompt_templates import (
+    CONTINUITY_RULE,
+    build_common_core,
+    build_first_frame_prompt,
+    build_topic_detail,
+    build_topic_label,
+    get_building_template,
+)
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
+def build_prompt_pack(project: dict[str, Any]) -> dict[str, Any]:
     template = get_building_template(project.get("building_type", "hanok"))
     common_core = build_common_core()
     topic_context = project.get("topic_label") or project["topic"]
-    scenes: List[Dict[str, Any]] = []
+    scenes: list[dict[str, Any]] = []
     for scene in project["scenes"]:
         prev_scene = project["scenes"][scene["id"] - 2]["name"] if scene["id"] > 1 else ""
         first_frame_prompt = (
-            build_first_frame_prompt(topic_context, scene["name"], project.get("building_type", "hanok"))
+            build_first_frame_prompt(
+                topic_context, scene["name"], project.get("building_type", "hanok")
+            )
             if scene["id"] == 1
             else ""
         )
-        input_mode = scene.get("input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME")
+        input_mode = scene.get(
+            "input_mode", "MASTER_IMAGE" if scene["id"] == 1 else "PREVIOUS_FINAL_FRAME"
+        )
         input_asset = scene.get(
             "input_asset",
-            "scenes/scene_01_master.png"
-            if scene["id"] == 1
-            else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png",
+            (
+                "scenes/scene_01_master.png"
+                if scene["id"] == 1
+                else f"scenes/scene_{scene['id'] - 1:02d}_last_frame.png"
+            ),
         )
         handoff_asset = scene.get("handoff_asset", f"scenes/scene_{scene['id']:02d}_last_frame.png")
         transition = (
@@ -39,9 +51,7 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
             else f"save the final frame as {handoff_asset} for QA and thumbnail use"
         )
         first_frame_line = (
-            f"Master First Frame Prompt: {first_frame_prompt}\n"
-            if first_frame_prompt
-            else ""
+            f"Master First Frame Prompt: {first_frame_prompt}\n" if first_frame_prompt else ""
         )
         scenes.append(
             {
@@ -56,7 +66,9 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
                 "input_asset": input_asset,
                 "handoff_asset": handoff_asset,
                 "first_frame_prompt": first_frame_prompt,
-                "first_frame_mode": "scene_1_only" if scene["id"] == 1 else "previous_final_frame_only",
+                "first_frame_mode": (
+                    "scene_1_only" if scene["id"] == 1 else "previous_final_frame_only"
+                ),
                 "scene_style": {
                     "materials": template["materials"],
                     "camera": template["camera"],
@@ -88,8 +100,16 @@ def build_prompt_pack(project: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "topic": project["topic"],
-        "topic_label": project.get("topic_label", build_topic_label(project.get("building_type", "hanok"), build_topic_detail(project.get("building_type", "hanok")))),
-        "topic_detail": project.get("topic_detail", build_topic_detail(project.get("building_type", "hanok"))),
+        "topic_label": project.get(
+            "topic_label",
+            build_topic_label(
+                project.get("building_type", "hanok"),
+                build_topic_detail(project.get("building_type", "hanok")),
+            ),
+        ),
+        "topic_detail": project.get(
+            "topic_detail", build_topic_detail(project.get("building_type", "hanok"))
+        ),
         "building_type": project.get("building_type", "hanok"),
         "duration": project["duration"],
         "format": project["format"],

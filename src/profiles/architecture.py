@@ -11,8 +11,14 @@ Per Section 13.5:
 
 from __future__ import annotations
 
-from ..profile_types import InputMode, Profile, ScenePlan, StyleBible, WorkflowMode, register_profile
-
+from ..profile_types import (
+    InputMode,
+    Profile,
+    ScenePlan,
+    StyleBible,
+    WorkflowMode,
+    register_profile,
+)
 
 ARCHITECTURE_SUBTYPES = {
     "hanok": {
@@ -619,7 +625,13 @@ def make_style_bible(subtype: str) -> StyleBible:
         materials={
             "primary": st["materials"],
             "secondary": ["moss", "lichen", "seasonal foliage"],
-            "tools": ["miniature chisel", "tiny trowel", "brush", "magnifying glass", "wooden mallet"],
+            "tools": [
+                "miniature chisel",
+                "tiny trowel",
+                "brush",
+                "magnifying glass",
+                "wooden mallet",
+            ],
             "subtype_focus": st["key_features"],
         },
         camera={
@@ -733,10 +745,7 @@ def make_scene_video_prompt(
         )
 
     prompt = (
-        f"{global_rules}"
-        f"{_scene_direction(subtype, plan)}"
-        f"{boundary_rules}"
-        f"{body}"
+        f"{global_rules}" f"{_scene_direction(subtype, plan)}" f"{boundary_rules}" f"{body}"
     ).rstrip()
     return f"{prompt} {_negative_prompt_suffix()}"
 
@@ -760,15 +769,20 @@ architecture_profile = Profile(
                 "type": "string",
                 "title": "Architecture subtype",
                 "enum": ARCHITECTURE_SUBTYPE_ORDER,
-                "x-enum-labels": [ARCHITECTURE_SUBTYPES[subtype]["label"] for subtype in ARCHITECTURE_SUBTYPE_ORDER],
+                "x-enum-labels": [
+                    ARCHITECTURE_SUBTYPES[subtype]["label"]
+                    for subtype in ARCHITECTURE_SUBTYPE_ORDER
+                ],
             }
         },
         "x-ui-order": ["subtype"],
     },
     style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["subtype"]),
-    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["subtype"])}
-    if ctx.get("scene_id") == 1
-    else {},
+    first_frame_factory=lambda topic, dur, ctx: (
+        {"first_frame_prompt": make_first_frame_prompt(ctx["subtype"])}
+        if ctx.get("scene_id") == 1
+        else {}
+    ),
     scene_prompt_factory=lambda topic, dur, ctx: {
         "video_prompt": make_scene_video_prompt(
             ctx["scene_id"],

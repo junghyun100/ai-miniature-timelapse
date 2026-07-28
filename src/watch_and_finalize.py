@@ -4,27 +4,33 @@ import argparse
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from orchestrator import run as run_orchestrator
-from stitch_finalize import finalize as finalize_stitch
 from prompt_templates import format_building_type_choices, get_supported_building_types
+from stitch_finalize import finalize as finalize_stitch
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def render_files_exist(render_status: Dict[str, Any]) -> bool:
+def render_files_exist(render_status: dict[str, Any]) -> bool:
     return not render_status.get("missing_render_files", [])
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Watch for scene renders and finalize automatically.")
+    parser = argparse.ArgumentParser(
+        description="Watch for scene renders and finalize automatically."
+    )
     parser.add_argument("topic", help="Target subject, for example 'Korean hanok'.")
     parser.add_argument("--duration", type=int, choices=[30, 60], default=60)
     parser.add_argument("--building-type", default="hanok", choices=get_supported_building_types())
-    parser.add_argument("--list-building-types", action="store_true", help="Print available building templates and exit.")
+    parser.add_argument(
+        "--list-building-types",
+        action="store_true",
+        help="Print available building templates and exit.",
+    )
     parser.add_argument("--format", dest="format_", choices=["9:16", "16:9"], default="9:16")
     parser.add_argument("--variant", default="")
     parser.add_argument("--base-dir", default="output")
@@ -39,7 +45,9 @@ def main() -> None:
         return
 
     base_dir = Path(args.base_dir)
-    summary = run_orchestrator(args.topic, args.duration, args.format_, args.variant, base_dir, args.building_type)
+    summary = run_orchestrator(
+        args.topic, args.duration, args.format_, args.variant, base_dir, args.building_type
+    )
 
     start = time.time()
     while True:

@@ -10,9 +10,13 @@ Per Section 13.7:
 from __future__ import annotations
 
 from ..profile_types import (
-    Profile, ScenePlan, WorkflowMode, StyleBible, InputMode, register_profile
+    InputMode,
+    Profile,
+    ScenePlan,
+    StyleBible,
+    WorkflowMode,
+    register_profile,
 )
-
 
 # Subtype registry per Table 13.7
 PRODUCT_SUBTYPES = {
@@ -29,7 +33,15 @@ PRODUCT_SUBTYPES = {
     "sneaker": {
         "label": "Sneaker",
         "materials": ["mesh upper", "foam midsole", "rubber outsole", "laces", "overlays"],
-        "key_parts": ["upper", "midsole", "outsole", "lacing system", "tongue", "heel counter", "insole"],
+        "key_parts": [
+            "upper",
+            "midsole",
+            "outsole",
+            "lacing system",
+            "tongue",
+            "heel counter",
+            "insole",
+        ],
     },
     "robot": {
         "label": "Robot",
@@ -44,27 +56,72 @@ PRODUCT_SUBTYPES = {
     "wizard_house": {
         "label": "Wizard House",
         "materials": ["wood", "stone", "thatch", "crystal", "potion bottles", "magic effects"],
-        "key_parts": ["base", "walls", "roof", "chimney", "door", "windows", "tower", "magical details"],
+        "key_parts": [
+            "base",
+            "walls",
+            "roof",
+            "chimney",
+            "door",
+            "windows",
+            "tower",
+            "magical details",
+        ],
     },
     "spaceship": {
         "label": "Spaceship",
         "materials": ["metal hull", "engine parts", "thrusters", "cockpit glass", "solar panels"],
-        "key_parts": ["hull", "engines", "cockpit", "wings/fins", "landing gear", "antenna", "thrusters"],
+        "key_parts": [
+            "hull",
+            "engines",
+            "cockpit",
+            "wings/fins",
+            "landing gear",
+            "antenna",
+            "thrusters",
+        ],
     },
     "hoverbike": {
         "label": "Hoverbike",
         "materials": ["metal frame", "anti-grav engines", "seat", "handlebars", "thrusters"],
-        "key_parts": ["frame", "engines", "seat", "handlebars", "thrusters", "stabilizers", "dashboard"],
+        "key_parts": [
+            "frame",
+            "engines",
+            "seat",
+            "handlebars",
+            "thrusters",
+            "stabilizers",
+            "dashboard",
+        ],
     },
     "mech": {
         "label": "Mech",
         "materials": ["armor plates", "hydraulics", "actuators", "cockpit", "weapons", "joints"],
-        "key_parts": ["torso", "legs", "arms", "cockpit", "shoulders", "hips", "feet", "hands", "weapons"],
+        "key_parts": [
+            "torso",
+            "legs",
+            "arms",
+            "cockpit",
+            "shoulders",
+            "hips",
+            "feet",
+            "hands",
+            "weapons",
+        ],
     },
     "dragon": {
         "label": "Dragon",
         "materials": ["scales", "wings", "claws", "horns", "eyes", "tail", "spikes"],
-        "key_parts": ["head", "neck", "body", "wings", "front legs", "hind legs", "tail", "horns", "spikes"],
+        "key_parts": [
+            "head",
+            "neck",
+            "body",
+            "wings",
+            "front legs",
+            "hind legs",
+            "tail",
+            "horns",
+            "spikes",
+        ],
     },
 }
 
@@ -178,7 +235,10 @@ PRODUCT_NEGATIVE_BASE = (
 
 def _sanitize_reserved_future_action(action: str) -> str:
     lowered = action.lower()
-    if any(token in lowered for token in ("final reveal", "final polish", "clean workbench", "final finish")):
+    if any(
+        token in lowered
+        for token in ("final reveal", "final polish", "clean workbench", "final finish")
+    ):
         return "later finishing stage"
     return action
 
@@ -303,7 +363,14 @@ def _make_style_bible(subtype: str) -> StyleBible:
         materials={
             "primary": st["materials"],
             "secondary": ["paint", "decals", "adhesive", "lubricant"],
-            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "magnifying glass", "file"],
+            "tools": [
+                "tweezers",
+                "mini screwdriver",
+                "soft brush",
+                "nippers",
+                "magnifying glass",
+                "file",
+            ],
         },
         camera={
             "lens": "85mm",
@@ -350,14 +417,16 @@ def _make_first_frame_prompt(subtype: str) -> str:
 def _make_scene_video_prompt(subtype: str) -> str:
     st = PRODUCT_SUBTYPES[subtype]
     model_lower = st["label"].lower()
-    steps_str = " ".join([
-        "1. Core structure placed on workbench. "
-        "2. Major sub-assemblies built (engine, movement, frame). "
-        "3. Sub-assemblies joined to core. "
-        "4. External components attached (panels, covers, details). "
-        "5. Fine details added (decals, paint touches, small parts). "
-        "6. Final brush sweep — completed model alone on clean workbench. "
-    ])
+    steps_str = " ".join(
+        [
+            "1. Core structure placed on workbench. "
+            "2. Major sub-assemblies built (engine, movement, frame). "
+            "3. Sub-assemblies joined to core. "
+            "4. External components attached (panels, covers, details). "
+            "5. Fine details added (decals, paint touches, small parts). "
+            "6. Final brush sweep — completed model alone on clean workbench. "
+        ]
+    )
     return (
         f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
         f"no miniature people, no small people, no tiny workers, no human figures, no characters, "
@@ -381,9 +450,7 @@ PRODUCT_SELECTION_SCHEMA = {
             "type": "string",
             "title": "Product subtype",
             "enum": list(PRODUCT_SUBTYPES.keys()),
-            "x-enum-labels": [
-                subtype["label"] for subtype in PRODUCT_SUBTYPES.values()
-            ],
+            "x-enum-labels": [subtype["label"] for subtype in PRODUCT_SUBTYPES.values()],
         },
     },
     "x-ui-order": ["subtype"],
@@ -430,7 +497,8 @@ def _build_prompt_prefix(subtype: str, scene_plan: ScenePlan, duration_seconds: 
     return (
         base
         + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
-        + prohibited_future_work + " "
+        + prohibited_future_work
+        + " "
         + "Leave all future parts separate, visible, and untouched. "
         + "Do not advance to any later-stage operation in this scene. "
     )
@@ -448,14 +516,27 @@ product_profile = Profile(
     scene_plans_factory=lambda topic, dur, ctx: _build_scene_plans(ctx["subtype"], dur),
     selection_schema=PRODUCT_SELECTION_SCHEMA,
     style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["subtype"]),
-    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["subtype"])} if ctx.get("scene_id") == 1 else {},
-    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["subtype"], dur, ctx.get("scene_plan"))},
+    first_frame_factory=lambda topic, dur, ctx: (
+        {"first_frame_prompt": make_first_frame_prompt(ctx["subtype"])}
+        if ctx.get("scene_id") == 1
+        else {}
+    ),
+    scene_prompt_factory=lambda topic, dur, ctx: {
+        "video_prompt": make_scene_video_prompt(
+            ctx["scene_id"], ctx["subtype"], dur, ctx.get("scene_plan")
+        )
+    },
     audio_contract={
         "type": "asmr_only",
-        "description": "Assembly sounds: clicks, snaps, screw turns, brush sweeps. No voices, no music."
+        "description": "Assembly sounds: clicks, snaps, screw turns, brush sweeps. No voices, no music.",
     },
     negative_prompt_base=PRODUCT_NEGATIVE_BASE,
-    template_exclusions=["completed model at start", "floating parts", "teleporting parts", "messy final workbench"],
+    template_exclusions=[
+        "completed model at start",
+        "floating parts",
+        "teleporting parts",
+        "messy final workbench",
+    ],
     workflow_mode_by_duration={
         10: WorkflowMode.SINGLE_CLIP_FROM_MASTER,
         30: WorkflowMode.REFERENCE_FRAME_RELAY,

@@ -8,7 +8,7 @@ and state transitions per Section 14.4.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from .error_handling import (
     RequestAbortedError,
@@ -36,12 +36,12 @@ class StateStore:
 
     def __init__(self):
         self.state: RequestState = RequestState.IDLE
-        self.active_request_id: Optional[int] = None
-        self.source_revision: Optional[str] = None
+        self.active_request_id: int | None = None
+        self.source_revision: str | None = None
         self.retry_count: int = 0
-        self.applied_plan: Optional[Dict[str, Any]] = None
-        self.provenance: Optional[ProvenanceModel] = None
-        self.last_error: Optional[RequestAdapterError] = None
+        self.applied_plan: dict[str, Any] | None = None
+        self.provenance: ProvenanceModel | None = None
+        self.last_error: RequestAdapterError | None = None
         self._is_aborted: bool = False
 
     def is_busy(self) -> bool:
@@ -66,7 +66,9 @@ class StateStore:
         self.retry_count = retry_count
         self.state = RequestState.RETRYING
 
-    def validate_stale_guard(self, request_id: int, source_revision: str) -> Tuple[bool, Optional[str]]:
+    def validate_stale_guard(
+        self, request_id: int, source_revision: str
+    ) -> tuple[bool, str | None]:
         """
         Check if incoming response matches current active request ID and source revision.
         Returns (is_valid, reason).
@@ -75,10 +77,16 @@ class StateStore:
             return False, "Request was aborted"
 
         if request_id != self.active_request_id:
-            return False, f"Request ID mismatch: received {request_id}, expected {self.active_request_id}"
+            return (
+                False,
+                f"Request ID mismatch: received {request_id}, expected {self.active_request_id}",
+            )
 
         if source_revision != self.source_revision:
-            return False, f"Source revision mismatch: received {source_revision}, expected {self.source_revision}"
+            return (
+                False,
+                f"Source revision mismatch: received {source_revision}, expected {self.source_revision}",
+            )
 
         if self.state not in (RequestState.LOADING, RequestState.RETRYING):
             return False, f"State inactive for response: current state is {self.state}"
@@ -89,9 +97,9 @@ class StateStore:
         self,
         request_id: int,
         source_revision: str,
-        plan: Dict[str, Any],
+        plan: dict[str, Any],
         provenance: ProvenanceModel,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Stale guard check and atomic plan application.
         If valid: updates applied_plan, provenance, and transitions to SUCCESS.

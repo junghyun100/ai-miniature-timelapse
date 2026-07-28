@@ -13,27 +13,19 @@ All serializations must be deterministic and match between Python and browser.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from .domain import (
-    Project,
-    Scene,
     AssetRef,
-    AssetKind,
-    AssetScope,
-    WorkflowMode,
-    AspectRatio,
+    Project,
     ProvenanceSource,
-    ProfileId,
-    ScenePlan,
+    Scene,
     StyleBible,
 )
-
 
 # Immutable negative prompt line (shared across all profiles per Section 11.6)
 IMMUTABLE_NEGATIVE = (
@@ -47,15 +39,16 @@ IMMUTABLE_NEGATIVE = (
 # Internal Helpers
 # ============================================================================
 
+
 def _nfc_normalize(obj: Any) -> Any:
     """Recursively normalize all strings to NFC Unicode form."""
     if isinstance(obj, str):
         return unicodedata.normalize("NFC", obj)
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return {_nfc_normalize(k): _nfc_normalize(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [_nfc_normalize(item) for item in obj]
-    elif isinstance(obj, tuple):
+    if isinstance(obj, tuple):
         return tuple(_nfc_normalize(item) for item in obj)
     return obj
 
@@ -86,7 +79,7 @@ def _style_bible_to_dict(sb: StyleBible) -> dict[str, Any]:
     }
 
 
-def _serialize_asset_ref(asset: Optional[AssetRef]) -> str:
+def _serialize_asset_ref(asset: AssetRef | None) -> str:
     """
     Serialize AssetRef to the canonical instruction format.
     Per Section 9.4 and 11.6.
@@ -109,7 +102,9 @@ def _serialize_asset_ref(asset: Optional[AssetRef]) -> str:
     return " | ".join(parts)
 
 
-def _serialize_project_header(project: Project, provenance: Optional[ProvenanceSource] = None) -> list[str]:
+def _serialize_project_header(
+    project: Project, provenance: ProvenanceSource | None = None
+) -> list[str]:
     """Serialize the project header section per Section 11.6."""
     lines = [
         f"Project: {project.topic}",
@@ -127,23 +122,27 @@ def _serialize_project_header(project: Project, provenance: Optional[ProvenanceS
 import re
 
 
-def split_prompt_negative(prompt: str, fallback_negative: str = IMMUTABLE_NEGATIVE) -> tuple[str, str]:
+def split_prompt_negative(
+    prompt: str, fallback_negative: str = IMMUTABLE_NEGATIVE
+) -> tuple[str, str]:
     """Split prompt into main prompt body and negative prompt if embedded, else use fallback."""
     raw_prompt = str(prompt or "").strip()
-    match = re.search(r"\s*Negative Prompt:\s*[\"“]?([\s\S]*?)[\"”]?\s*$", raw_prompt, re.IGNORECASE)
+    match = re.search(
+        r"\s*Negative Prompt:\s*[\"“]?([\s\S]*?)[\"”]?\s*$", raw_prompt, re.IGNORECASE
+    )
     if match:
-        body = raw_prompt[:match.start()].strip()
+        body = raw_prompt[: match.start()].strip()
         extracted = match.group(1).strip()
     else:
         body = raw_prompt
         extracted = str(fallback_negative or IMMUTABLE_NEGATIVE).strip()
 
-    negative = re.sub(r'^["“]+|["”]+$', '', extracted)
-    negative = re.sub(r'\.+$', '', negative).strip()
+    negative = re.sub(r'^["“]+|["”]+$', "", extracted)
+    negative = re.sub(r"\.+$", "", negative).strip()
     return body, negative
 
 
-def _get_scene_input_label(scene_index: int, input_mode: Optional[Any] = None) -> str:
+def _get_scene_input_label(scene_index: int, input_mode: Any | None = None) -> str:
     """Get human readable scene input label matching JS getSceneInputLabel."""
     mode_val = input_mode.value if hasattr(input_mode, "value") else str(input_mode or "")
     if scene_index <= 1 or mode_val == "MASTER_IMAGE":
@@ -153,7 +152,11 @@ def _get_scene_input_label(scene_index: int, input_mode: Optional[Any] = None) -
 
 def _serialize_master_image(scene: Scene) -> list[str]:
     """Serialize MASTER IMAGE section (Scene 1 only) per Section 11.6."""
-    fallback = getattr(scene, "negative_prompt_base", None) or getattr(scene, "negative_prompt", None) or IMMUTABLE_NEGATIVE
+    fallback = (
+        getattr(scene, "negative_prompt_base", None)
+        or getattr(scene, "negative_prompt", None)
+        or IMMUTABLE_NEGATIVE
+    )
     body, negative = split_prompt_negative(scene.first_frame_prompt, fallback)
     return [
         "MASTER IMAGE",
@@ -165,7 +168,11 @@ def _serialize_master_image(scene: Scene) -> list[str]:
 
 def _serialize_scene(scene: Scene, scene_index: int) -> list[str]:
     """Serialize a single SCENE N block per Section 11.6."""
-    fallback = getattr(scene, "negative_prompt_base", None) or getattr(scene, "negative_prompt", None) or IMMUTABLE_NEGATIVE
+    fallback = (
+        getattr(scene, "negative_prompt_base", None)
+        or getattr(scene, "negative_prompt", None)
+        or IMMUTABLE_NEGATIVE
+    )
     body, negative = split_prompt_negative(scene.video_prompt, fallback)
     input_label = _get_scene_input_label(scene_index, scene.input_mode)
     output_ref = _serialize_asset_ref(scene.asset_ref)
@@ -182,6 +189,7 @@ def _serialize_scene(scene: Scene, scene_index: int) -> list[str]:
 # ============================================================================
 # Public API
 # ============================================================================
+
 
 def compute_source_revision(project: Project) -> str:
     """
@@ -212,7 +220,11 @@ def serialize_full_plan(project: Project) -> str:
     lines = []
 
     # Project header
-    lines.extend(_serialize_project_header(project, project.provenance.source if project.provenance else None))
+    lines.extend(
+        _serialize_project_header(
+            project, project.provenance.source if project.provenance else None
+        )
+    )
     lines.append("")  # blank line after header
 
     # MASTER IMAGE (Scene 1 only)
@@ -245,7 +257,7 @@ def serialize_master_image_prompt(project: Project) -> str:
     return "\n".join(lines)
 
 
-def is_plan_stale(project: Optional[Project], current_draft: Optional[dict[str, Any]] = None) -> bool:
+def is_plan_stale(project: Project | None, current_draft: dict[str, Any] | None = None) -> bool:
     """Return True if plan is missing, marked stale, or current draft revision mismatches project.source_revision."""
     if not project or not getattr(project, "source_revision", None):
         return True
@@ -253,9 +265,14 @@ def is_plan_stale(project: Optional[Project], current_draft: Optional[dict[str, 
         return True
     if current_draft:
         try:
-            draft_rev = project.compute_source_revision() if hasattr(project, "compute_source_revision") else ""
+            draft_rev = (
+                project.compute_source_revision()
+                if hasattr(project, "compute_source_revision")
+                else ""
+            )
             if current_draft and draft_rev:
                 from .domain import compute_source_revision
+
                 if compute_source_revision(current_draft) != project.source_revision:
                     return True
         except Exception:
@@ -303,11 +320,13 @@ def serialize_full_scene(project: Project, scene_id: int) -> str:
 # Copy Action Results
 # ============================================================================
 
+
 @dataclass
 class CopyActionResult:
     """Result of a copy action with metadata."""
+
     action: str
-    scene_id: Optional[int]
+    scene_id: int | None
     text: str
     source_revision: str
     timestamp: str
@@ -322,24 +341,28 @@ class CopyActionResult:
         }
 
 
-import re
-
-
 def redact_secrets(text: str) -> str:
     """Redact API keys, tokens, and secrets from copy/export text."""
     if not isinstance(text, str):
         return text
     redacted = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "[REDACTED]", text)
-    redacted = re.sub(r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE)
-    redacted = re.sub(r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]", "[REDACTED]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(
+        r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE
+    )
+    redacted = re.sub(
+        r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]",
+        "[REDACTED]",
+        redacted,
+        flags=re.IGNORECASE,
+    )
     return redacted
 
 
 def perform_copy_action(
     project: Project,
     action: str,
-    scene_id: Optional[int] = None,
-    current_draft: Optional[dict[str, Any]] = None,
+    scene_id: int | None = None,
+    current_draft: dict[str, Any] | None = None,
 ) -> CopyActionResult:
     """
     Perform a specialized copy action per Section 11.6.
@@ -385,11 +408,13 @@ def perform_copy_action(
             timestamp=timestamp,
         )
 
-    elif action == "scene_video":
+    if action == "scene_video":
         if scene_id is None:
             raise ValueError("scene_id required for scene_video action")
         if scene_id < 1 or scene_id > len(project.scenes):
-            raise ValueError(f"Invalid scene_id: {scene_id}. Project has {len(project.scenes)} scenes.")
+            raise ValueError(
+                f"Invalid scene_id: {scene_id}. Project has {len(project.scenes)} scenes."
+            )
         scene = project.scenes[scene_id - 1]
         lines = _serialize_scene(scene, scene_id)
         text = redact_secrets("\n".join(lines))
@@ -401,11 +426,13 @@ def perform_copy_action(
             timestamp=timestamp,
         )
 
-    elif action == "full_scene":
+    if action == "full_scene":
         if scene_id is None:
             raise ValueError("scene_id required for full_scene action")
         if scene_id < 1 or scene_id > len(project.scenes):
-            raise ValueError(f"Invalid scene_id: {scene_id}. Project has {len(project.scenes)} scenes.")
+            raise ValueError(
+                f"Invalid scene_id: {scene_id}. Project has {len(project.scenes)} scenes."
+            )
         scene = project.scenes[scene_id - 1]
 
         if scene_id == 1:
@@ -427,7 +454,7 @@ def perform_copy_action(
             timestamp=timestamp,
         )
 
-    elif action == "all":
+    if action == "all":
         text = redact_secrets(serialize_full_plan(project))
         return CopyActionResult(
             action="all",
@@ -437,8 +464,7 @@ def perform_copy_action(
             timestamp=timestamp,
         )
 
-    else:
-        raise ValueError(f"Unknown copy action: {action}")
+    raise ValueError(f"Unknown copy action: {action}")
 
 
 # ============================================================================

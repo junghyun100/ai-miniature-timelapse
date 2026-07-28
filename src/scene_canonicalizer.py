@@ -12,9 +12,7 @@ Invariants:
 
 from __future__ import annotations
 
-from typing import Optional, Union
-
-from .domain import InputMode, Scene, StyleBible
+from .domain import InputMode, Scene
 from .serializers import IMMUTABLE_NEGATIVE
 
 
@@ -27,13 +25,12 @@ def ensure_identity_lock(prompt: str, identity_lock: str) -> str:
         return identity_lock
     if identity_lock in prompt:
         return prompt.strip()
-    
+
     # Append identity lock cleanly
     trimmed = prompt.strip()
     if trimmed.endswith("."):
         return f"{trimmed} {identity_lock}"
-    else:
-        return f"{trimmed}, {identity_lock}"
+    return f"{trimmed}, {identity_lock}"
 
 
 def canonicalize_scene(

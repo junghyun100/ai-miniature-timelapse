@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 NEGATIVE_PROMPT = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry"
 
 HANDS_ONLY_RULE = (
@@ -337,7 +336,20 @@ def build_first_frame_prompt(topic: str, scene_name: str, building_type: str | N
             "heavy machine assembly, scene: "
             f"{scene_name}."
         )
-    if key in {"car", "train", "airplane", "boat", "robot", "dinosaur", "mecha", "dragon", "wizard_house", "spaceship", "hoverbike", "mech"}:
+    if key in {
+        "car",
+        "train",
+        "airplane",
+        "boat",
+        "robot",
+        "dinosaur",
+        "mecha",
+        "dragon",
+        "wizard_house",
+        "spaceship",
+        "hoverbike",
+        "mech",
+    }:
         return _first_frame_style(
             "Hyper-realistic macro photo",
             "100% disassembled miniature model parts neatly arranged on a wooden workbench",
@@ -890,7 +902,9 @@ def get_supported_building_types() -> list[str]:
 
 
 def format_building_type_choices() -> str:
-    return "\n".join(f"- {name}: {BUILDING_TEMPLATES[name]['label']}" for name in get_supported_building_types())
+    return "\n".join(
+        f"- {name}: {BUILDING_TEMPLATES[name]['label']}" for name in get_supported_building_types()
+    )
 
 
 def _generic_template(
@@ -925,7 +939,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, top-down craft-table shots, gentle push-ins, shallow depth of field",
             "bright even studio lighting, clean soft shadows, pastel highlights, jewel-tone accents",
             "pastel pink, sage green, cream, coral, soft gold",
-            ["Material Prep", "Base Shape", "Layering", "Detailing", "Decor Finish", "Final Reveal"],
+            [
+                "Material Prep",
+                "Base Shape",
+                "Layering",
+                "Detailing",
+                "Decor Finish",
+                "Final Reveal",
+            ],
             ["Material Prep and Base", "Layering and Details", "Decor Finish and Reveal"],
             {
                 "Material Prep": "arrange the raw materials, separate foam, paper, plastic, cloth, twigs, and thread on a clean craft desk",
@@ -947,7 +968,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, low sweeping angles, tight tracking shots, shallow depth of field",
             "studio lighting, glossy reflections, controlled specular highlights",
             "metallic silver, black glass, racing red, chrome highlights",
-            ["Chassis", "Body Frame", "Wheels and Suspension", "Paint and Trim", "Interior Details", "Final Reveal"],
+            [
+                "Chassis",
+                "Body Frame",
+                "Wheels and Suspension",
+                "Paint and Trim",
+                "Interior Details",
+                "Final Reveal",
+            ],
             ["Chassis and Frame", "Wheels and Body", "Paint, Interior, and Reveal"],
             {
                 "Chassis": "survey the work surface, assemble the chassis frame, and align the wheel mounts with rapid hand motion",
@@ -969,7 +997,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, side-on tracking shots, rhythmic pull-backs, shallow depth of field",
             "bright daylight, metallic reflections, soft industrial bounce",
             "steel gray, deep green, signal red, weathered silver",
-            ["Engine Base", "Passenger Cars", "Wheel Assembly", "Roof and Trim", "Cabin Details", "Track Reveal"],
+            [
+                "Engine Base",
+                "Passenger Cars",
+                "Wheel Assembly",
+                "Roof and Trim",
+                "Cabin Details",
+                "Track Reveal",
+            ],
             ["Engine and Cars", "Wheels and Roof", "Details and Reveal"],
             {
                 "Engine Base": "survey the work area, place the engine base, and align the frame on the miniature rails",
@@ -991,7 +1026,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, dramatic nose-to-tail sweeps, gentle orbit shots, shallow depth of field",
             "clean daylight, sky reflections, bright airline showcase highlights",
             "white fuselage, navy trim, airline blue, chrome silver",
-            ["Fuselage", "Wing Structure", "Engines and Gear", "Surface Panels", "Cabin Details", "Runway Reveal"],
+            [
+                "Fuselage",
+                "Wing Structure",
+                "Engines and Gear",
+                "Surface Panels",
+                "Cabin Details",
+                "Runway Reveal",
+            ],
             ["Fuselage and Wings", "Engines and Exterior", "Cabin, Panels, and Reveal"],
             {
                 "Fuselage": "survey the work surface, assemble the fuselage shell, and align the cockpit section with rapid hand motion",
@@ -1035,7 +1077,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, extreme close-ups, slow orbital slides, shallow depth of field",
             "studio product lighting, polished reflections, crisp highlights",
             "silver, black dial, gold accent, polished steel",
-            ["Case Body", "Dial Assembly", "Hands and Crown", "Strap Attachment", "Polishing", "Luxury Reveal"],
+            [
+                "Case Body",
+                "Dial Assembly",
+                "Hands and Crown",
+                "Strap Attachment",
+                "Polishing",
+                "Luxury Reveal",
+            ],
             ["Case and Dial", "Hands and Strap", "Polish and Reveal"],
             {
                 "Case Body": "survey the work surface, build the watch case, and align the bezel with rapid hand motion",
@@ -1057,7 +1106,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, lens-barrel close-ups, precise sliding moves, shallow depth of field",
             "studio lighting, clean specular highlights, controlled contrast",
             "matte black, chrome silver, red accent, glass blue",
-            ["Body Shell", "Lens Assembly", "Controls", "Grip and Mount", "Polishing", "Hero Reveal"],
+            [
+                "Body Shell",
+                "Lens Assembly",
+                "Controls",
+                "Grip and Mount",
+                "Polishing",
+                "Hero Reveal",
+            ],
             ["Body and Lens", "Controls and Grip", "Polish and Reveal"],
             {
                 "Body Shell": "survey the work surface, build the camera body shell, and align the mounting points",
@@ -1079,7 +1135,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, low fashion-product angles, dynamic push-ins, shallow depth of field",
             "studio lighting, soft shadow rolls, glossy outsole highlights",
             "white, gum sole, accent color, soft gray",
-            ["Sole Base", "Upper Panels", "Lace System", "Tongue and Heel", "Finishing", "Product Reveal"],
+            [
+                "Sole Base",
+                "Upper Panels",
+                "Lace System",
+                "Tongue and Heel",
+                "Finishing",
+                "Product Reveal",
+            ],
             ["Sole and Upper", "Laces and Trim", "Finish and Reveal"],
             {
                 "Sole Base": "survey the work surface, shape the sole base, and align the cushioning with rapid hand motion",
@@ -1101,7 +1164,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, low-angle assembly shots, robotic tracking motion, shallow depth of field",
             "cool lab lighting, blue-white glow, sharp metallic highlights",
             "metal gray, neon cyan, soft white, warning orange",
-            ["Core Frame", "Joints and Limbs", "Shell Panels", "Wiring and Lights", "Painting", "Robot Reveal"],
+            [
+                "Core Frame",
+                "Joints and Limbs",
+                "Shell Panels",
+                "Wiring and Lights",
+                "Painting",
+                "Robot Reveal",
+            ],
             ["Frame and Limbs", "Shell and Lights", "Paint and Reveal"],
             {
                 "Core Frame": "survey the work surface, assemble the robot core frame, and align the joint mounts",
@@ -1123,7 +1193,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, prehistoric hero angles, slow reveal sweeps, shallow depth of field",
             "warm natural light, earthy shadows, museum-style highlights",
             "earth green, bone ivory, moss brown, amber highlights",
-            ["Skeleton Base", "Body Form", "Skin and Tail", "Texture Details", "Painting", "Creature Reveal"],
+            [
+                "Skeleton Base",
+                "Body Form",
+                "Skin and Tail",
+                "Texture Details",
+                "Painting",
+                "Creature Reveal",
+            ],
             ["Body and Tail", "Texture and Reveal", "Finish and Reveal"],
             {
                 "Skeleton Base": "survey the work surface, assemble the skeleton base, and align the joints with rapid hand motion",
@@ -1145,7 +1222,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, dramatic mech hero angles, slow crane-like rises, shallow depth of field",
             "industrial studio lighting, electric rim light, hard metallic highlights",
             "gunmetal, electric blue, hazard orange, silver white",
-            ["Core Frame", "Arms and Legs", "Armor Panels", "Weapons and Vents", "Painting", "Mecha Reveal"],
+            [
+                "Core Frame",
+                "Arms and Legs",
+                "Armor Panels",
+                "Weapons and Vents",
+                "Painting",
+                "Mecha Reveal",
+            ],
             ["Frame and Limbs", "Armor and Weapons", "Paint and Reveal"],
             {
                 "Core Frame": "survey the work surface, assemble the core frame, and align the hydraulic joints with rapid hand motion",
@@ -1167,7 +1251,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, fantasy creature hero shots, slow arc reveals, shallow depth of field",
             "embers and moonlight, dramatic edge light, soft smoke haze",
             "ember red, gold, smoky black, bone ivory",
-            ["Body Core", "Wings and Tail", "Horn Details", "Texture and Paint", "Base and Finish", "Dragon Reveal"],
+            [
+                "Body Core",
+                "Wings and Tail",
+                "Horn Details",
+                "Texture and Paint",
+                "Base and Finish",
+                "Dragon Reveal",
+            ],
             ["Body and Wings", "Texture and Finish", "Reveal"],
             {
                 "Body Core": "survey the work surface, sculpt the dragon body core, and align the limb joints with rapid hand motion",
@@ -1211,7 +1302,14 @@ BUILDING_TEMPLATES.update(
             "macro lens, sleek fly-through angles, slow orbital slides, shallow depth of field",
             "cool space-studio lighting, neon blue accents, crisp reflections",
             "white, neon blue, graphite gray, chrome silver",
-            ["Core Hull", "Wing Structure", "Engines", "Surface Panels", "Lighting", "Launch Reveal"],
+            [
+                "Core Hull",
+                "Wing Structure",
+                "Engines",
+                "Surface Panels",
+                "Lighting",
+                "Launch Reveal",
+            ],
             ["Hull and Wings", "Engines and Panels", "Lighting and Reveal"],
             {
                 "Core Hull": "survey the work surface, assemble the core hull, and align the cockpit section with rapid hand motion",

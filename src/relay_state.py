@@ -14,20 +14,18 @@ Also implements RelayBranch for branch preservation (Section 16.2):
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
-from typing import Any, Optional
 
 from .domain import (
-    SceneStatus,
-    AssetRef,
     AssetKind,
+    AssetRef,
     AssetScope,
-    RelayBranch,
-    Project,
-    WorkflowMode,
     InputMode,
+    Project,
+    RelayBranch,
+    SceneStatus,
+    WorkflowMode,
 )
 
 
@@ -68,7 +66,7 @@ VALID_TRANSITIONS: dict[SceneStatus, set[SceneStatus]] = {
     },
     SceneStatus.COMPLETE: {
         SceneStatus.NEEDS_RETRY,  # Global re-render
-        SceneStatus.STALE,        # Upstream changed
+        SceneStatus.STALE,  # Upstream changed
     },
     SceneStatus.NEEDS_RETRY: {
         SceneStatus.AWAITING_MASTER_IMAGE,
@@ -105,22 +103,22 @@ def get_initial_status(
             if has_master_image:
                 return SceneStatus.VIDEO_READY
             return SceneStatus.AWAITING_MASTER_IMAGE
-        else:  # SINGLE_CLIP_FROM_MASTER
-            if has_master_image:
-                return SceneStatus.VIDEO_READY
-            return SceneStatus.AWAITING_MASTER_IMAGE
-    else:  # Scene 2+
-        if workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY:
-            if has_previous_frame:
-                return SceneStatus.VIDEO_READY
-            return SceneStatus.AWAITING_PREVIOUS_FRAME
-        else:
-            return SceneStatus.LOCKED
+        # SINGLE_CLIP_FROM_MASTER
+        if has_master_image:
+            return SceneStatus.VIDEO_READY
+        return SceneStatus.AWAITING_MASTER_IMAGE
+    # Scene 2+
+    if workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY:
+        if has_previous_frame:
+            return SceneStatus.VIDEO_READY
+        return SceneStatus.AWAITING_PREVIOUS_FRAME
+    return SceneStatus.LOCKED
 
 
 @dataclass
 class SceneStateView:
     """Read-only view of a scene's state for UI/Runner."""
+
     scene_id: int
     name: str
     status: SceneStatus
@@ -130,7 +128,7 @@ class SceneStateView:
     can_retry: bool
     can_confirm: bool
     is_stale: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class RelayStateMachine:
@@ -189,10 +187,21 @@ class RelayStateMachine:
             scene_id=scene_id,
             name=scene.name,
             status=status,
-            input_mode_value=input_mode if self.project.workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY else "NONE",
+            input_mode_value=(
+                input_mode
+                if self.project.workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY
+                else "NONE"
+            ),
             asset_label=scene.asset_ref.flow_asset_label,
             video_ready=status == SceneStatus.VIDEO_READY,
-            can_retry=status in (SceneStatus.VIDEO_READY, SceneStatus.CONFIRMED, SceneStatus.COMPLETE, SceneStatus.NEEDS_RETRY, SceneStatus.STALE),
+            can_retry=status
+            in (
+                SceneStatus.VIDEO_READY,
+                SceneStatus.CONFIRMED,
+                SceneStatus.COMPLETE,
+                SceneStatus.NEEDS_RETRY,
+                SceneStatus.STALE,
+            ),
             can_confirm=status == SceneStatus.VIDEO_READY,
         )
 
@@ -235,19 +244,28 @@ class RelayStateMachine:
     ) -> None:
         """Handle cascade effects of state transitions."""
         # Scene confirmed complete → unlock next scene in relay mode
-        if to_status == SceneStatus.CONFIRMED and self.project.workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY:
+        if (
+            to_status == SceneStatus.CONFIRMED
+            and self.project.workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY
+        ):
             next_scene_id = scene_id + 1
             if next_scene_id <= len(self.project.scenes):
-                next_status = self._branch.scene_statuses.get(str(next_scene_id), SceneStatus.LOCKED)
+                next_status = self._branch.scene_statuses.get(
+                    str(next_scene_id), SceneStatus.LOCKED
+                )
                 if next_status == SceneStatus.LOCKED:
                     # Check if we have the previous frame asset
-                    next_scene = next((s for s in self.project.scenes if s.id == next_scene_id), None)
+                    next_scene = next(
+                        (s for s in self.project.scenes if s.id == next_scene_id), None
+                    )
                     if next_scene and next_scene.asset_ref.local_path:
                         # Previous frame is available → jump to VIDEO_READY
                         self.transition(next_scene_id, SceneStatus.VIDEO_READY, force=True)
                     else:
                         # Wait for previous frame
-                        self.transition(next_scene_id, SceneStatus.AWAITING_PREVIOUS_FRAME, force=True)
+                        self.transition(
+                            next_scene_id, SceneStatus.AWAITING_PREVIOUS_FRAME, force=True
+                        )
 
         # Scene marked STALE → mark downstream as STALE
         if to_status == SceneStatus.STALE:
@@ -337,7 +355,7 @@ class RelayStateMachine:
             raise TransitionError(
                 current or SceneStatus.LOCKED,
                 SceneStatus.CONFIRMED if accept else SceneStatus.NEEDS_RETRY,
-                "Can only confirm from VIDEO_READY"
+                "Can only confirm from VIDEO_READY",
             )
 
         if accept:
@@ -366,11 +384,16 @@ class RelayStateMachine:
     def on_retry_requested(self, scene_id: int) -> None:
         """User requests re-render of a scene."""
         current = self._branch.scene_statuses.get(str(scene_id))
-        if current not in (SceneStatus.VIDEO_READY, SceneStatus.CONFIRMED, SceneStatus.COMPLETE, SceneStatus.NEEDS_RETRY):
+        if current not in (
+            SceneStatus.VIDEO_READY,
+            SceneStatus.CONFIRMED,
+            SceneStatus.COMPLETE,
+            SceneStatus.NEEDS_RETRY,
+        ):
             raise TransitionError(
                 current or SceneStatus.LOCKED,
                 SceneStatus.NEEDS_RETRY,
-                f"Retry not allowed from {current}"
+                f"Retry not allowed from {current}",
             )
         self.transition(scene_id, SceneStatus.NEEDS_RETRY)
 
@@ -382,7 +405,7 @@ class RelayStateMachine:
                 return False
         return True
 
-    def get_next_actionable_scene(self) -> Optional[int]:
+    def get_next_actionable_scene(self) -> int | None:
         """Get the next scene that needs user action (in order)."""
         for scene in sorted(self.project.scenes, key=lambda s: s.id):
             status = self._branch.scene_statuses.get(str(scene.id), SceneStatus.LOCKED)
@@ -486,7 +509,9 @@ def validate_project_flow(project: Project) -> list[str]:
             continue  # Scene 1 handled above
         if project.workflow_mode == WorkflowMode.REFERENCE_FRAME_RELAY:
             if scene.input_mode != InputMode.PREVIOUS_FINAL_FRAME:
-                errors.append(f"Scene {scene.id} must have PREVIOUS_FINAL_FRAME input_mode in relay mode")
+                errors.append(
+                    f"Scene {scene.id} must have PREVIOUS_FINAL_FRAME input_mode in relay mode"
+                )
             if not scene.asset_ref or not scene.asset_ref.local_path:
                 errors.append(f"Scene {scene.id} must have confirmed previous frame asset")
 
@@ -494,13 +519,17 @@ def validate_project_flow(project: Project) -> list[str]:
     for scene in project.scenes:
         if scene.status in (SceneStatus.CONFIRMED, SceneStatus.COMPLETE):
             if scene.lineage_revision != project.source_revision:
-                errors.append(f"Scene {scene.id}: lineage_revision {scene.lineage_revision} != project source_revision {project.source_revision}")
+                errors.append(
+                    f"Scene {scene.id}: lineage_revision {scene.lineage_revision} != project source_revision {project.source_revision}"
+                )
 
     # 4. Status consistency with branch
     if project.relay_branch:
         for scene in project.scenes:
             branch_status = project.relay_branch.scene_statuses.get(str(scene.id))
             if branch_status and branch_status != scene.status:
-                errors.append(f"Scene {scene.id}: branch status {branch_status} != scene status {scene.status}")
+                errors.append(
+                    f"Scene {scene.id}: branch status {branch_status} != scene status {scene.status}"
+                )
 
     return errors

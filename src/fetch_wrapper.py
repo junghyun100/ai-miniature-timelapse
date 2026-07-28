@@ -8,7 +8,8 @@ exponential backoff retries (max 2), and status code handling per Section 14.4.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 import httpx
 
@@ -18,7 +19,6 @@ from .error_handling import (
     RequestTimeoutError,
     RetryExhaustedError,
     is_retryable_error,
-    is_retryable_status,
 )
 
 
@@ -34,7 +34,7 @@ class FetchWrapper:
 
     def __init__(
         self,
-        client: Optional[httpx.AsyncClient] = None,
+        client: httpx.AsyncClient | None = None,
         default_timeout: float = DEFAULT_TIMEOUT,
         max_retries: int = MAX_RETRIES,
         backoff_base: float = RETRY_BACKOFF_BASE,
@@ -48,24 +48,27 @@ class FetchWrapper:
         self,
         url: str,
         method: str = "POST",
-        json_data: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
-        request_id: Optional[int] = None,
-        timeout: Optional[float] = None,
-        cancel_event: Optional[asyncio.Event] = None,
-        on_retry: Optional[Callable[[int, Exception], None]] = None,
-    ) -> Dict[str, Any]:
+        json_data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        request_id: int | None = None,
+        timeout: float | None = None,
+        cancel_event: asyncio.Event | None = None,
+        on_retry: Callable[[int, Exception], None] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute an HTTP JSON request with timeout, abort cancellation, and retries.
         """
         req_timeout = timeout if timeout is not None else self.default_timeout
         attempt = 0
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         while attempt <= self.max_retries:
             # Check abort before attempt
             if cancel_event and cancel_event.is_set():
-                raise RequestAbortedError(f"Request {request_id} was aborted before attempt {attempt + 1}", request_id=request_id)
+                raise RequestAbortedError(
+                    f"Request {request_id} was aborted before attempt {attempt + 1}",
+                    request_id=request_id,
+                )
 
             try:
                 # Wrap request in timeout and cancel event listener
@@ -104,10 +107,13 @@ class FetchWrapper:
                         # Wait for delay or abort signal
                         await asyncio.wait_for(cancel_event.wait(), timeout=delay)
                         if cancel_event.is_set():
-                            raise RequestAbortedError(f"Request {request_id} was aborted during retry delay", request_id=request_id)
+                            raise RequestAbortedError(
+                                f"Request {request_id} was aborted during retry delay",
+                                request_id=request_id,
+                            )
                     else:
                         await asyncio.sleep(delay)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Delay completed normally, proceed to next attempt
                     pass
 
@@ -119,11 +125,11 @@ class FetchWrapper:
         self,
         url: str,
         method: str,
-        json_data: Optional[Dict[str, Any]],
-        headers: Optional[Dict[str, str]],
+        json_data: dict[str, Any] | None,
+        headers: dict[str, str] | None,
         timeout: float,
-        cancel_event: Optional[asyncio.Event],
-    ) -> Dict[str, Any]:
+        cancel_event: asyncio.Event | None,
+    ) -> dict[str, Any]:
         """Perform a single HTTP attempt with cancellation and timeout."""
         local_client = self.client or httpx.AsyncClient()
         should_close = self.client is None
@@ -156,14 +162,18 @@ class FetchWrapper:
 
                 if not done:
                     request_task.cancel()
-                    raise RequestTimeoutError(f"Client timeout of {timeout}s exceeded", timeout_seconds=timeout)
+                    raise RequestTimeoutError(
+                        f"Client timeout of {timeout}s exceeded", timeout_seconds=timeout
+                    )
 
                 response = await request_task
             else:
                 try:
                     response = await asyncio.wait_for(request_task, timeout=timeout)
-                except asyncio.TimeoutError:
-                    raise RequestTimeoutError(f"Client timeout of {timeout}s exceeded", timeout_seconds=timeout)
+                except TimeoutError:
+                    raise RequestTimeoutError(
+                        f"Client timeout of {timeout}s exceeded", timeout_seconds=timeout
+                    )
 
             # Check status code
             if response.status_code >= 400:

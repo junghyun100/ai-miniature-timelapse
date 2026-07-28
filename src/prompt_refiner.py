@@ -4,9 +4,8 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 from urllib import error, request
-
 
 DEFAULT_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
@@ -15,21 +14,25 @@ def load_text(path: str | Path) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def _extract_text(data: Dict[str, Any]) -> str:
+def _extract_text(data: dict[str, Any]) -> str:
     choices = data.get("choices", [])
     if not choices:
-      return ""
+        return ""
     message = choices[0].get("message", {})
     content = message.get("content", "")
     if isinstance(content, str):
         return content.strip()
     if isinstance(content, list):
-        parts = [part.get("text", "") for part in content if part.get("type") in {"text", "output_text"}]
+        parts = [
+            part.get("text", "") for part in content if part.get("type") in {"text", "output_text"}
+        ]
         return "\n".join(part for part in parts if part).strip()
     return ""
 
 
-def refine_prompt(prompt: str, instructions: str = "", model: str = "meta/llama-3.1-8b-instruct") -> str:
+def refine_prompt(
+    prompt: str, instructions: str = "", model: str = "meta/llama-3.1-8b-instruct"
+) -> str:
     api_key = os.environ.get("NIM_API_KEY", "").strip() or os.environ.get("NGC_API_KEY", "").strip()
     if not api_key:
         return prompt
@@ -37,7 +40,7 @@ def refine_prompt(prompt: str, instructions: str = "", model: str = "meta/llama-
     base_url = os.environ.get("NIM_BASE_URL", "").strip() or DEFAULT_NIM_BASE_URL
     endpoint = base_url.rstrip("/") + "/chat/completions"
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "model": model,
         "messages": [
             {
@@ -70,7 +73,9 @@ def refine_prompt(prompt: str, instructions: str = "", model: str = "meta/llama-
             data = json.loads(resp.read().decode("utf-8"))
     except error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {exc.code} {exc.reason}: {body or 'empty response body'}") from exc
+        raise RuntimeError(
+            f"HTTP {exc.code} {exc.reason}: {body or 'empty response body'}"
+        ) from exc
     except error.URLError as exc:
         raise RuntimeError(f"URL error: {exc.reason}") from exc
 
@@ -78,7 +83,9 @@ def refine_prompt(prompt: str, instructions: str = "", model: str = "meta/llama-
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Refine a prompt with NVIDIA NIM if an API key is available.")
+    parser = argparse.ArgumentParser(
+        description="Refine a prompt with NVIDIA NIM if an API key is available."
+    )
     parser.add_argument("prompt_file")
     parser.add_argument("--instructions", default="")
     parser.add_argument("--model", default="meta/llama-3.1-8b-instruct")

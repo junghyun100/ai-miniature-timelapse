@@ -3,15 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
-def load_project(path: str | Path) -> Dict[str, Any]:
+def load_project(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_render_plan(project: Dict[str, Any]) -> Dict[str, Any]:
-    scenes: List[Dict[str, Any]] = []
+def build_render_plan(project: dict[str, Any]) -> dict[str, Any]:
+    scenes: list[dict[str, Any]] = []
     for scene in project["scenes"]:
         scenes.append(
             {
@@ -48,4 +48,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -2,16 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List
 
 from prompt_templates import (
     FINAL_FRAME_HANDOFF,
     FINAL_REVEAL,
     NEGATIVE_PROMPT,
     STYLE_BLOCK,
-    build_common_core,
     build_identity_lock,
     build_input_frame_contract,
     build_topic_detail,
@@ -33,7 +31,7 @@ class Scene:
     negative_prompt: str = NEGATIVE_PROMPT
 
 
-def build_scene_names(duration: int, building_type: str) -> List[str]:
+def build_scene_names(duration: int, building_type: str) -> list[str]:
     template = get_building_template(building_type)
     if duration == 30:
         return template["scene_names_30"]
@@ -67,7 +65,9 @@ def build_scene_prompt(
     )
 
 
-def add_continuity(building_type: str, scene_name: str, prompt: str, previous_scene: str | None) -> str:
+def add_continuity(
+    building_type: str, scene_name: str, prompt: str, previous_scene: str | None
+) -> str:
     if not previous_scene:
         return prompt
     continuity = (
@@ -142,7 +142,9 @@ def main() -> None:
     parser.add_argument("--output", default="-", help="Output JSON path, or - for stdout")
     args = parser.parse_args()
 
-    project = build_project(args.topic, args.duration, args.format_, STYLE_BLOCK, args.variant, args.building_type)
+    project = build_project(
+        args.topic, args.duration, args.format_, STYLE_BLOCK, args.variant, args.building_type
+    )
     payload = json.dumps(project, ensure_ascii=False, indent=2)
 
     if args.output == "-":

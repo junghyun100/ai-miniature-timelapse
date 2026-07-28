@@ -9,15 +9,11 @@ and provenance tracking per Section 14.4 and Section 14.6.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any
 
 from .domain import compute_source_revision
 from .error_handling import (
-    HttpError,
-    RequestAbortedError,
     RequestAdapterError,
-    RequestTimeoutError,
-    StaleResponseError,
     sanitize_error_message,
 )
 from .fetch_wrapper import FetchWrapper
@@ -33,14 +29,14 @@ class UIRequestAdapter:
 
     def __init__(
         self,
-        fetch_wrapper: Optional[FetchWrapper] = None,
-        state_store: Optional[StateStore] = None,
+        fetch_wrapper: FetchWrapper | None = None,
+        state_store: StateStore | None = None,
     ):
         self.fetch_wrapper = fetch_wrapper or FetchWrapper()
         self.state_store = state_store or StateStore()
         self._request_id_counter: int = 0
-        self._active_cancel_event: Optional[asyncio.Event] = None
-        self._current_draft: Optional[Dict[str, Any]] = None
+        self._active_cancel_event: asyncio.Event | None = None
+        self._current_draft: dict[str, Any] | None = None
 
     def get_next_request_id(self) -> int:
         """Generates a monotonically increasing request ID."""
@@ -51,11 +47,11 @@ class UIRequestAdapter:
         """Returns the current loading state."""
         return self.state_store.state
 
-    def get_applied_plan(self) -> Optional[Dict[str, Any]]:
+    def get_applied_plan(self) -> dict[str, Any] | None:
         """Returns the currently applied canonical plan."""
         return self.state_store.applied_plan
 
-    def get_provenance(self) -> Optional[ProvenanceModel]:
+    def get_provenance(self) -> ProvenanceModel | None:
         """Returns the provenance object for the currently applied plan."""
         return self.state_store.provenance
 
@@ -65,7 +61,7 @@ class UIRequestAdapter:
             self._active_cancel_event.set()
         self.state_store.abort_request()
 
-    def on_draft_change(self, new_draft: Dict[str, Any]) -> str:
+    def on_draft_change(self, new_draft: dict[str, Any]) -> str:
         """
         Handle Source Draft edit: aborts active in-flight request and returns new source revision.
         """
@@ -77,13 +73,13 @@ class UIRequestAdapter:
     async def execute_request(
         self,
         url: str,
-        payload: Dict[str, Any],
-        draft: Dict[str, Any],
-        headers: Optional[Dict[str, str]] = None,
-        timeout: Optional[float] = None,
-        model_id: Optional[str] = None,
-        base_url_label: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        payload: dict[str, Any],
+        draft: dict[str, Any],
+        headers: dict[str, str] | None = None,
+        timeout: float | None = None,
+        model_id: str | None = None,
+        base_url_label: str | None = None,
+    ) -> dict[str, Any]:
         """
         Executes a UI request through the complete lifecycle:
         1. Monotonic request ID generation
@@ -141,7 +137,11 @@ class UIRequestAdapter:
             res_revision = response_data.get("source_revision", source_revision)
 
             # Build Provenance object
-            prov_source = response_data.get("provenance", {}).get("source") if isinstance(response_data.get("provenance"), dict) else None
+            prov_source = (
+                response_data.get("provenance", {}).get("source")
+                if isinstance(response_data.get("provenance"), dict)
+                else None
+            )
             if not prov_source:
                 prov_source = ProvenanceSource.NIM
             try:
@@ -181,13 +181,17 @@ class UIRequestAdapter:
                 "request_id": request_id,
                 "source_revision": source_revision,
                 "plan": self.state_store.applied_plan,
-                "provenance": self.state_store.provenance.to_dict() if self.state_store.provenance else None,
+                "provenance": (
+                    self.state_store.provenance.to_dict() if self.state_store.provenance else None
+                ),
                 "state": self.state_store.state,
             }
 
         except Exception as err:
             # Enforce Failure Rules
-            wrapped_error = err if isinstance(err, RequestAdapterError) else RequestAdapterError(str(err))
+            wrapped_error = (
+                err if isinstance(err, RequestAdapterError) else RequestAdapterError(str(err))
+            )
             self.state_store.fail_request(request_id, wrapped_error)
 
             return {

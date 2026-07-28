@@ -8,9 +8,16 @@ Each category has specific identity_lock, style_bible, scene_prompts, and assemb
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional, Callable
+from typing import Any
 
-from ..profile_types import Profile, ScenePlan, WorkflowMode, InputMode, StyleBible, register_profile
+from ..profile_types import (
+    InputMode,
+    Profile,
+    ScenePlan,
+    StyleBible,
+    WorkflowMode,
+    register_profile,
+)
 
 
 class VehicleCategory(str, Enum):
@@ -31,16 +38,126 @@ VehicleSubtype = VehicleCategory  # Alias for backward compatibility
 
 # Representative models per category (for UI suggestions)
 VEHICLE_MODELS: dict[VehicleCategory, list[str]] = {
-    VehicleCategory.CAR: ["Porsche 911", "Ford Mustang", "Toyota 2000GT", "Ferrari 250 GTO", "Mini Cooper", "Volkswagen Beetle", "BMW 3.0 CSL", "Nissan Skyline GT-R", "Chevrolet Corvette", "Jaguar E-Type"],
-    VehicleCategory.MOTORCYCLE: ["Honda CB750", "Ducati 916", "Harley-Davidson Knucklehead", "Kawasaki Ninja ZX-10R", "BMW R nineT", "Triumph Bonneville", "Yamaha R1", "Moto Guzzi V7", "Indian Chief", "Royal Enfield Interceptor"],
-    VehicleCategory.AIRPLANE: ["Boeing 707", "Supermarine Spitfire", "P-51 Mustang", "F-16 Fighting Falcon", "Cessna 172", "SR-71 Blackbird", "Concorde", "F-22 Raptor", "Mitsubishi Zero", "B-17 Flying Fortress"],
-    VehicleCategory.BOAT: ["Chris-Craft Runabout", "America's Cup Yacht", "PT Boat", "U-Boat", "Titanic", "Viking Longship", "Sailing Frigate", "Speedboat", "Submarine", "Hovercraft"],
-    VehicleCategory.AGRICULTURAL: ["John Deere 4020", "Ford 8N", "Case IH Magnum", "Fendt 1050", "Massey Ferguson 135", "New Holland T8", "Claas Xerion", "Deutz-Fahr 9340", "Valtra S374", "Kubota M7"],
-    VehicleCategory.HELICOPTER: ["Bell 47", "UH-1 Huey", "AH-64 Apache", "Mi-24 Hind", "CH-47 Chinook", "Sikorsky S-76", "Robinson R44", "Eurocopter EC135", "Kamov Ka-50", "Boeing CH-47"],
-    VehicleCategory.CONSTRUCTION: ["Caterpillar D11", "Komatsu PC8000", "Liebherr R9800", "Hitachi EX8000", "Volvo EC950", "JCB 3CX", "Case 580", "Doosan DX225", "Hyundai R210", "Sumitomo SH350"],
-    VehicleCategory.SPACESHIP: ["Saturn V", "Falcon 9", "Space Shuttle", "Starship", "Soyuz", "Delta IV", "Ariane 5", "Atlas V", "Electron", "New Glenn"],
-    VehicleCategory.TANK: ["M1 Abrams", "T-90", "Leopard 2", "Challenger 2", "Type 99", "K2 Black Panther", "Merkava Mk 4", "T-14 Armata", "Panther", "Tiger I"],
-    VehicleCategory.BICYCLE: ["Pinarello Dogma", "Specialized S-Works", "Colnago C64", "Bianchi Oltre", "Cervélo R5", "Trek Madone", "Cannondale SuperSix", "Wilier Filante", "Factor Ostro", "Look 795"],
+    VehicleCategory.CAR: [
+        "Porsche 911",
+        "Ford Mustang",
+        "Toyota 2000GT",
+        "Ferrari 250 GTO",
+        "Mini Cooper",
+        "Volkswagen Beetle",
+        "BMW 3.0 CSL",
+        "Nissan Skyline GT-R",
+        "Chevrolet Corvette",
+        "Jaguar E-Type",
+    ],
+    VehicleCategory.MOTORCYCLE: [
+        "Honda CB750",
+        "Ducati 916",
+        "Harley-Davidson Knucklehead",
+        "Kawasaki Ninja ZX-10R",
+        "BMW R nineT",
+        "Triumph Bonneville",
+        "Yamaha R1",
+        "Moto Guzzi V7",
+        "Indian Chief",
+        "Royal Enfield Interceptor",
+    ],
+    VehicleCategory.AIRPLANE: [
+        "Boeing 707",
+        "Supermarine Spitfire",
+        "P-51 Mustang",
+        "F-16 Fighting Falcon",
+        "Cessna 172",
+        "SR-71 Blackbird",
+        "Concorde",
+        "F-22 Raptor",
+        "Mitsubishi Zero",
+        "B-17 Flying Fortress",
+    ],
+    VehicleCategory.BOAT: [
+        "Chris-Craft Runabout",
+        "America's Cup Yacht",
+        "PT Boat",
+        "U-Boat",
+        "Titanic",
+        "Viking Longship",
+        "Sailing Frigate",
+        "Speedboat",
+        "Submarine",
+        "Hovercraft",
+    ],
+    VehicleCategory.AGRICULTURAL: [
+        "John Deere 4020",
+        "Ford 8N",
+        "Case IH Magnum",
+        "Fendt 1050",
+        "Massey Ferguson 135",
+        "New Holland T8",
+        "Claas Xerion",
+        "Deutz-Fahr 9340",
+        "Valtra S374",
+        "Kubota M7",
+    ],
+    VehicleCategory.HELICOPTER: [
+        "Bell 47",
+        "UH-1 Huey",
+        "AH-64 Apache",
+        "Mi-24 Hind",
+        "CH-47 Chinook",
+        "Sikorsky S-76",
+        "Robinson R44",
+        "Eurocopter EC135",
+        "Kamov Ka-50",
+        "Boeing CH-47",
+    ],
+    VehicleCategory.CONSTRUCTION: [
+        "Caterpillar D11",
+        "Komatsu PC8000",
+        "Liebherr R9800",
+        "Hitachi EX8000",
+        "Volvo EC950",
+        "JCB 3CX",
+        "Case 580",
+        "Doosan DX225",
+        "Hyundai R210",
+        "Sumitomo SH350",
+    ],
+    VehicleCategory.SPACESHIP: [
+        "Saturn V",
+        "Falcon 9",
+        "Space Shuttle",
+        "Starship",
+        "Soyuz",
+        "Delta IV",
+        "Ariane 5",
+        "Atlas V",
+        "Electron",
+        "New Glenn",
+    ],
+    VehicleCategory.TANK: [
+        "M1 Abrams",
+        "T-90",
+        "Leopard 2",
+        "Challenger 2",
+        "Type 99",
+        "K2 Black Panther",
+        "Merkava Mk 4",
+        "T-14 Armata",
+        "Panther",
+        "Tiger I",
+    ],
+    VehicleCategory.BICYCLE: [
+        "Pinarello Dogma",
+        "Specialized S-Works",
+        "Colnago C64",
+        "Bianchi Oltre",
+        "Cervélo R5",
+        "Trek Madone",
+        "Cannondale SuperSix",
+        "Wilier Filante",
+        "Factor Ostro",
+        "Look 795",
+    ],
 }
 
 # Identity Lock per category
@@ -79,7 +196,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Wheels and suspension mounted",
         "Steering rack installed and connected",
         "Body panels fitted seamlessly",
-        "Final polish revealing complete model on clean workbench"
+        "Final polish revealing complete model on clean workbench",
     ],
     VehicleCategory.MOTORCYCLE: [
         "Engine lowered into frame cradle",
@@ -87,7 +204,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Wheels and suspension fitted",
         "Fork and handlebars assembled",
         "Tank, seat, and bodywork mounted",
-        "Final polish revealing complete bike on clean workbench"
+        "Final polish revealing complete bike on clean workbench",
     ],
     VehicleCategory.AIRPLANE: [
         "Airframe skeleton and fuselage frame assembled",
@@ -95,7 +212,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Wings and tail attached",
         "Landing gear and control linkages installed",
         "Exterior panels, canopy, and propeller fitted",
-        "Final polish revealing complete aircraft on clean workbench"
+        "Final polish revealing complete aircraft on clean workbench",
     ],
     VehicleCategory.BOAT: [
         "Engine installed in hull",
@@ -103,7 +220,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Propeller shaft and rudder connected",
         "Steering and controls linked",
         "Deck, superstructure, and rigging fitted",
-        "Final polish revealing complete vessel on clean workbench"
+        "Final polish revealing complete vessel on clean workbench",
     ],
     VehicleCategory.AGRICULTURAL: [
         "Engine mounted to chassis",
@@ -111,7 +228,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Wheels/tracks and suspension fitted",
         "Hydraulics and cab installed",
         "Drawbar and implement mounts attached",
-        "Final polish revealing complete tractor on clean workbench"
+        "Final polish revealing complete tractor on clean workbench",
     ],
     VehicleCategory.HELICOPTER: [
         "Main transmission and engine installed",
@@ -119,7 +236,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Tail boom and tail rotor fitted",
         "Landing skids and controls connected",
         "Fuselage panels and cockpit glazed",
-        "Final polish revealing complete helicopter on clean workbench"
+        "Final polish revealing complete helicopter on clean workbench",
     ],
     VehicleCategory.CONSTRUCTION: [
         "Engine and hydraulic pump installed",
@@ -127,7 +244,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Boom and arm structure assembled",
         "Bucket and hydraulic cylinders connected",
         "Cab and counterweight mounted",
-        "Final polish revealing complete machine on clean workbench"
+        "Final polish revealing complete machine on clean workbench",
     ],
     VehicleCategory.SPACESHIP: [
         "Engines mounted to first stage",
@@ -135,7 +252,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Fuel tanks and plumbing installed",
         "Guidance and avionics integrated",
         "Payload fairing and grid fins fitted",
-        "Final polish revealing complete rocket on clean workbench"
+        "Final polish revealing complete rocket on clean workbench",
     ],
     VehicleCategory.TANK: [
         "Engine and transmission installed in hull",
@@ -143,7 +260,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Tracks connected and tensioned",
         "Turret ring and turret mounted",
         "Gun, optics, and armor fitted",
-        "Final polish revealing complete tank on clean workbench"
+        "Final polish revealing complete tank on clean workbench",
     ],
     VehicleCategory.BICYCLE: [
         "Bottom bracket and cranks installed",
@@ -151,7 +268,7 @@ VEHICLE_ASSEMBLY_STEPS: dict[VehicleCategory, list[str]] = {
         "Wheels trued and mounted",
         "Handlebars, stem, and controls assembled",
         "Saddle, seatpost, and brakes installed",
-        "Final polish revealing complete bicycle on clean workbench"
+        "Final polish revealing complete bicycle on clean workbench",
     ],
 }
 
@@ -167,20 +284,48 @@ def _category_label(category: VehicleCategory | str) -> str:
 
 
 VEHICLE_SCENE_TITLES_30S: dict[VehicleCategory, list[str]] = {
-    VehicleCategory.CAR: ["Foundation & Chassis", "Running Gear & Cabin", "Body Panels & Final Reveal"],
-    VehicleCategory.MOTORCYCLE: ["Frame & Engine", "Wheels, Fork & Controls", "Tank, Seat & Final Reveal"],
+    VehicleCategory.CAR: [
+        "Foundation & Chassis",
+        "Running Gear & Cabin",
+        "Body Panels & Final Reveal",
+    ],
+    VehicleCategory.MOTORCYCLE: [
+        "Frame & Engine",
+        "Wheels, Fork & Controls",
+        "Tank, Seat & Final Reveal",
+    ],
     VehicleCategory.AIRPLANE: [
         "Airframe Skeleton & Engine Mount",
         "Wings, Tail, Landing Gear & Controls",
         "Exterior Panels, Canopy, Propeller & Final Reveal",
     ],
     VehicleCategory.BOAT: ["Hull & Engine", "Deck, Mast & Rigging", "Trim & Final Reveal"],
-    VehicleCategory.AGRICULTURAL: ["Chassis & Engine", "Cab, Wheels & Hydraulics", "Implements & Final Reveal"],
-    VehicleCategory.HELICOPTER: ["Fuselage & Engine", "Rotor System & Skids", "Canopy & Final Reveal"],
-    VehicleCategory.CONSTRUCTION: ["Chassis & Hydraulics", "Boom, Arm & Tracks", "Cab & Final Reveal"],
-    VehicleCategory.SPACESHIP: ["Booster Core", "Stages, Tanks & Guidance", "Fairings & Final Reveal"],
+    VehicleCategory.AGRICULTURAL: [
+        "Chassis & Engine",
+        "Cab, Wheels & Hydraulics",
+        "Implements & Final Reveal",
+    ],
+    VehicleCategory.HELICOPTER: [
+        "Fuselage & Engine",
+        "Rotor System & Skids",
+        "Canopy & Final Reveal",
+    ],
+    VehicleCategory.CONSTRUCTION: [
+        "Chassis & Hydraulics",
+        "Boom, Arm & Tracks",
+        "Cab & Final Reveal",
+    ],
+    VehicleCategory.SPACESHIP: [
+        "Booster Core",
+        "Stages, Tanks & Guidance",
+        "Fairings & Final Reveal",
+    ],
     VehicleCategory.TANK: ["Hull & Engine", "Suspension, Tracks & Turret", "Armor & Final Reveal"],
-    VehicleCategory.BICYCLE: ["Frame & Drivetrain", "Wheels, Fork & Brakes", "Cockpit & Final Reveal"],
+    VehicleCategory.BICYCLE: [
+        "Frame & Drivetrain",
+        "Wheels, Fork & Brakes",
+        "Cockpit & Final Reveal",
+    ],
 }
 
 
@@ -286,18 +431,23 @@ def _scene_titles(category: VehicleCategory, duration_seconds: int) -> list[str]
 
 
 def _completion_ranges(duration_seconds: int) -> list[str]:
-    return VEHICLE_COMPLETION_RANGES_30S if duration_seconds == 30 else VEHICLE_COMPLETION_RANGES_60S
+    return (
+        VEHICLE_COMPLETION_RANGES_30S if duration_seconds == 30 else VEHICLE_COMPLETION_RANGES_60S
+    )
 
 
 def _reserved_future_actions(action_groups: list[list[str]], scene_index: int) -> list[str]:
     future_actions: list[str] = []
-    for group in action_groups[scene_index + 1:]:
+    for group in action_groups[scene_index + 1 :]:
         future_actions.extend(group)
     return future_actions
 
 
 def _forbidden_future_actions(reserved_actions: list[str]) -> list[str]:
-    return [f"Do not perform this later-stage action in the current scene: {action}" for action in reserved_actions]
+    return [
+        f"Do not perform this later-stage action in the current scene: {action}"
+        for action in reserved_actions
+    ]
 
 
 def _sanitize_reserved_future_action(action: str) -> str:
@@ -333,7 +483,12 @@ def _summarize_reserved_future_actions(reserved_actions: list[str]) -> str:
     return ", ".join(reserved_actions[:3]) if reserved_actions else "no remaining actions"
 
 
-def _scene_start_state(scene_index: int, duration_seconds: int, category: VehicleCategory, previous_stop_state: str | None) -> str:
+def _scene_start_state(
+    scene_index: int,
+    duration_seconds: int,
+    category: VehicleCategory,
+    previous_stop_state: str | None,
+) -> str:
     label = _category_label(category)
     if scene_index == 0:
         return f"Empty workbench with all {label.lower()} parts disassembled and ready for the first placement."
@@ -393,9 +548,13 @@ def _build_scene_plans(category: VehicleCategory, duration_seconds: int) -> list
 
     plans: list[ScenePlan] = []
     previous_stop_state: str | None = None
-    for index, (scene_name, ordered_actions, completion_range) in enumerate(zip(titles, action_groups, ranges)):
+    for index, (scene_name, ordered_actions, completion_range) in enumerate(
+        zip(titles, action_groups, ranges)
+    ):
         is_final_scene = index == len(action_groups) - 1
-        reserved_actions = _sanitize_reserved_future_actions(_reserved_future_actions(action_groups, index))
+        reserved_actions = _sanitize_reserved_future_actions(
+            _reserved_future_actions(action_groups, index)
+        )
         forbidden_actions = _forbidden_future_actions(reserved_actions)
         end_state = _scene_end_state(
             scene_name=scene_name,
@@ -451,95 +610,340 @@ def build_scene_plans_60s(category: VehicleCategory | str) -> list[ScenePlan]:
     """6 scenes for 60s total (6 x 10s)."""
     return _build_scene_plans(_coerce_category(category), 60)
 
+
 # Style Bible per category
 VEHICLE_STYLE_BIBLES: dict[VehicleCategory, dict[str, Any]] = {
     VehicleCategory.CAR: {
-        "materials": {"primary": ["die-cast metal", "plastic", "rubber tires", "clear plastic glass"], "secondary": ["paint", "chrome", "decals"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "file", "cement"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["metallic silver", "gunmetal", "chrome"], "accent": ["model-specific paint"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "rubber tires", "clear plastic glass"],
+            "secondary": ["paint", "chrome", "decals"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "file", "cement"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["metallic silver", "gunmetal", "chrome"],
+            "accent": ["model-specific paint"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.MOTORCYCLE: {
-        "materials": {"primary": ["die-cast metal", "plastic", "rubber tires", "chrome"], "secondary": ["paint", "decals", "leather seat"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "torque wrench"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["metallic silver", "chrome", "black"], "accent": ["model-specific paint"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "rubber tires", "chrome"],
+            "secondary": ["paint", "decals", "leather seat"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "torque wrench"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["metallic silver", "chrome", "black"],
+            "accent": ["model-specific paint"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.AIRPLANE: {
-        "materials": {"primary": ["die-cast metal", "plastic", "rubber tires"], "secondary": ["paint", "decals", "panel lines"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "pin vise"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["metallic silver", "aluminum", "olive drab"], "accent": ["model-specific markings"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "rubber tires"],
+            "secondary": ["paint", "decals", "panel lines"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "pin vise"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["metallic silver", "aluminum", "olive drab"],
+            "accent": ["model-specific markings"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.BOAT: {
-        "materials": {"primary": ["die-cast metal", "plastic", "wood", "fabric sails"], "secondary": ["paint", "varnish", "rigging"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "needle"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["white", "navy", "wood tones"], "accent": ["brass", "copper"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "wood", "fabric sails"],
+            "secondary": ["paint", "varnish", "rigging"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "needle"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["white", "navy", "wood tones"],
+            "accent": ["brass", "copper"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.AGRICULTURAL: {
-        "materials": {"primary": ["die-cast metal", "plastic", "rubber tires/tracks"], "secondary": ["paint", "decals", "hydraulic hoses"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "wrench"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["green", "red", "yellow", "blue"], "accent": ["chrome", "black"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "rubber tires/tracks"],
+            "secondary": ["paint", "decals", "hydraulic hoses"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "wrench"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["green", "red", "yellow", "blue"],
+            "accent": ["chrome", "black"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.HELICOPTER: {
-        "materials": {"primary": ["die-cast metal", "plastic", "composite rotor blades"], "secondary": ["paint", "decals", "clear canopy"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "pin vise"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["olive drab", "gray", "camouflage"], "accent": ["red cross", "warning stripes"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "composite rotor blades"],
+            "secondary": ["paint", "decals", "clear canopy"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "pin vise"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["olive drab", "gray", "camouflage"],
+            "accent": ["red cross", "warning stripes"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.CONSTRUCTION: {
-        "materials": {"primary": ["die-cast metal", "plastic", "rubber tracks/tires"], "secondary": ["paint", "decals", "hydraulic hoses"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "wrench", "allen keys"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["yellow", "orange", "gray"], "accent": ["black tracks", "chrome"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "rubber tracks/tires"],
+            "secondary": ["paint", "decals", "hydraulic hoses"],
+            "tools": [
+                "tweezers",
+                "mini screwdriver",
+                "soft brush",
+                "nippers",
+                "wrench",
+                "allen keys",
+            ],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["yellow", "orange", "gray"],
+            "accent": ["black tracks", "chrome"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.SPACESHIP: {
-        "materials": {"primary": ["die-cast metal", "plastic", "composite"], "secondary": ["paint", "thermal tiles", "decals"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "torque wrench"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["white", "black", "metallic"], "accent": ["engine glow", "grid fins"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "composite"],
+            "secondary": ["paint", "thermal tiles", "decals"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "torque wrench"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["white", "black", "metallic"],
+            "accent": ["engine glow", "grid fins"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.TANK: {
-        "materials": {"primary": ["die-cast metal", "plastic", "rubber/metal tracks"], "secondary": ["paint", "decals", "photo-etched parts"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "file", "cement"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["olive drab", "sand", "gray", "camouflage"], "accent": ["gun metal", "glass"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["die-cast metal", "plastic", "rubber/metal tracks"],
+            "secondary": ["paint", "decals", "photo-etched parts"],
+            "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "file", "cement"],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["olive drab", "sand", "gray", "camouflage"],
+            "accent": ["gun metal", "glass"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
     VehicleCategory.BICYCLE: {
-        "materials": {"primary": ["carbon fiber", "aluminum", "steel", "rubber tires"], "secondary": ["paint", "decals", "bar tape"], "tools": ["tweezers", "mini screwdriver", "soft brush", "nippers", "chain tool", "allen keys"]},
-        "camera": {"lens": "85mm", "angle": "macro_closeup", "movement": "fixed", "distance": "macro"},
-        "lighting": {"key": "bright workshop overhead", "fill": "soft diffuser", "mood": "bright_clean", "consistency": "locked"},
-        "color_palette": {"primary": ["carbon black", "metallic team colors"], "accent": ["chrome", "anodized"], "background": "clean workbench surface", "tone": "cool_cinematic"},
-        "workspace": {"surface": "wooden workbench", "environment": "bright workshop", "clutter_rule": "parts_disappear"},
+        "materials": {
+            "primary": ["carbon fiber", "aluminum", "steel", "rubber tires"],
+            "secondary": ["paint", "decals", "bar tape"],
+            "tools": [
+                "tweezers",
+                "mini screwdriver",
+                "soft brush",
+                "nippers",
+                "chain tool",
+                "allen keys",
+            ],
+        },
+        "camera": {
+            "lens": "85mm",
+            "angle": "macro_closeup",
+            "movement": "fixed",
+            "distance": "macro",
+        },
+        "lighting": {
+            "key": "bright workshop overhead",
+            "fill": "soft diffuser",
+            "mood": "bright_clean",
+            "consistency": "locked",
+        },
+        "color_palette": {
+            "primary": ["carbon black", "metallic team colors"],
+            "accent": ["chrome", "anodized"],
+            "background": "clean workbench surface",
+            "tone": "cool_cinematic",
+        },
+        "workspace": {
+            "surface": "wooden workbench",
+            "environment": "bright workshop",
+            "clutter_rule": "parts_disappear",
+        },
         "hands_rule": "giant_hands_with_tools",
         "motion_rule": "stop_motion_assembly",
     },
@@ -547,6 +951,7 @@ VEHICLE_STYLE_BIBLES: dict[VehicleCategory, dict[str, Any]] = {
 
 # Immutable negative prompt (fixed per spec — matches reference prompt exactly)
 VEHICLE_NEGATIVE_BASE = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry."
+
 
 def make_first_frame_prompt(category: VehicleCategory, model_name: str) -> str:
     """Generate Master Image prompt for category."""
@@ -560,6 +965,8 @@ def make_first_frame_prompt(category: VehicleCategory, model_name: str) -> str:
         f"tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
         f"8K product photo quality, bright workshop lighting, {model_name}, scene: Master Image."
     )
+
+
 def _resolve_scene_plan(
     category: VehicleCategory,
     scene_id: int,
@@ -572,12 +979,18 @@ def _resolve_scene_plan(
         return scene_plan
 
     duration_hint = total_duration if total_duration in {30, 60} else (60 if scene_id > 3 else 30)
-    plans = build_scene_plans_60s(category) if duration_hint == 60 else build_scene_plans_30s(category)
+    plans = (
+        build_scene_plans_60s(category) if duration_hint == 60 else build_scene_plans_30s(category)
+    )
     if 1 <= scene_id <= len(plans):
         return plans[scene_id - 1]
 
     is_final_scene = "final" in scene_name.lower() or "reveal" in scene_name.lower()
-    start_state = "all parts disassembled on workbench" if scene_id == 1 else f"Scene {scene_id - 1} final frame"
+    start_state = (
+        "all parts disassembled on workbench"
+        if scene_id == 1
+        else f"Scene {scene_id - 1} final frame"
+    )
     ordered_actions = VEHICLE_ASSEMBLY_STEPS[category][:1]
     reserved_future_actions = []
     exact_stop_state = (
@@ -613,7 +1026,9 @@ def make_scene_video_prompt(
     category = _coerce_category(category)
     resolved_plan = _resolve_scene_plan(category, scene_id, scene_name, scene_plan, total_duration)
     model_lower = model_name.lower()
-    reserved_future_actions = _sanitize_reserved_future_actions(resolved_plan.reserved_future_actions)
+    reserved_future_actions = _sanitize_reserved_future_actions(
+        resolved_plan.reserved_future_actions
+    )
     reserved_future_clause = (
         f"Prohibited future work: {', '.join(reserved_future_actions)}."
         if reserved_future_actions
@@ -705,8 +1120,7 @@ VEHICLE_SELECTION_SCHEMA = {
             "title": "Vehicle category",
             "enum": [category.value for category in VehicleCategory],
             "x-enum-labels": [
-                category.value.replace("_", " ").title()
-                for category in VehicleCategory
+                category.value.replace("_", " ").title() for category in VehicleCategory
             ],
         },
         "model_name": {
@@ -715,10 +1129,7 @@ VEHICLE_SELECTION_SCHEMA = {
             "minLength": 1,
             "x-dependent-options": {
                 "field": "vehicle_category",
-                "options": {
-                    category.value: models
-                    for category, models in VEHICLE_MODELS.items()
-                },
+                "options": {category.value: models for category, models in VEHICLE_MODELS.items()},
             },
         },
     },
@@ -738,14 +1149,41 @@ vehicle_profile = Profile(
     default_total_duration=30,
     clip_duration_seconds=10,
     scene_plans=build_scene_plans_30s(VehicleCategory.CAR),  # placeholder, factory will override
-    scene_plans_factory=lambda topic, dur, ctx: build_scene_plans_30s(ctx.get("vehicle_category")) if dur == 30 else build_scene_plans_60s(ctx.get("vehicle_category")),
+    scene_plans_factory=lambda topic, dur, ctx: (
+        build_scene_plans_30s(ctx.get("vehicle_category"))
+        if dur == 30
+        else build_scene_plans_60s(ctx.get("vehicle_category"))
+    ),
     selection_schema=VEHICLE_SELECTION_SCHEMA,
-    style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["vehicle_category"], ctx["model_name"]),
-    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["vehicle_category"], ctx["model_name"])} if ctx.get("scene_id") == 1 else {},
-    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_video_prompt(ctx["vehicle_category"], ctx["model_name"], ctx["scene_id"], ctx["scene_name"], ctx.get("scene_plan"), dur)},
-    audio_contract={"type": "asmr_only", "description": "Hands-only assembly sounds. No voices, no music."},
+    style_bible_factory=lambda topic, dur, ctx: make_style_bible(
+        ctx["vehicle_category"], ctx["model_name"]
+    ),
+    first_frame_factory=lambda topic, dur, ctx: (
+        {"first_frame_prompt": make_first_frame_prompt(ctx["vehicle_category"], ctx["model_name"])}
+        if ctx.get("scene_id") == 1
+        else {}
+    ),
+    scene_prompt_factory=lambda topic, dur, ctx: {
+        "video_prompt": make_video_prompt(
+            ctx["vehicle_category"],
+            ctx["model_name"],
+            ctx["scene_id"],
+            ctx["scene_name"],
+            ctx.get("scene_plan"),
+            dur,
+        )
+    },
+    audio_contract={
+        "type": "asmr_only",
+        "description": "Hands-only assembly sounds. No voices, no music.",
+    },
     negative_prompt_base=VEHICLE_NEGATIVE_BASE,
-    template_exclusions=["text, subtitle, caption, watermark, logo, burnt-in text, overlay text", "bad anatomy, deformed hands, blurry", "miniature people, small people, tiny workers, human figures, characters", "floating parts, teleporting parts, completed model at start"],
+    template_exclusions=[
+        "text, subtitle, caption, watermark, logo, burnt-in text, overlay text",
+        "bad anatomy, deformed hands, blurry",
+        "miniature people, small people, tiny workers, human figures, characters",
+        "floating parts, teleporting parts, completed model at start",
+    ],
 )
 
 register_profile(vehicle_profile)

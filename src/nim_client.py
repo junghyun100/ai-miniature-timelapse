@@ -19,9 +19,8 @@ import json
 import logging
 import os
 import uuid
-from dataclasses import asdict
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -34,7 +33,6 @@ from .domain import (
     Provenance,
     ProvenanceSource,
     normalize_nim_response,
-    compute_source_revision,
 )
 
 # Configure logging (filter API keys)
@@ -170,7 +168,16 @@ class NimClient:
             for key, value in data.items():
                 key_lower = key.lower()
                 # Redact known sensitive keys
-                if key_lower in ("authorization", "authorizationheader", "api_key", "nim_api_key", "apikey", "secret", "token", "apikey"):
+                if key_lower in (
+                    "authorization",
+                    "authorizationheader",
+                    "api_key",
+                    "nim_api_key",
+                    "apikey",
+                    "secret",
+                    "token",
+                    "apikey",
+                ):
                     sanitized[key] = "***REDACTED***"
                 elif key_lower in ("headers", "cookies"):
                     # Special handling for headers/cookies dicts
@@ -178,18 +185,20 @@ class NimClient:
                 else:
                     sanitized[key] = self._sanitize_for_log(value)
             return sanitized
-        elif isinstance(data, list):
+        if isinstance(data, list):
             return [self._sanitize_for_log(item) for item in data]
-        elif isinstance(data, str):
+        if isinstance(data, str):
             res = data
             if self.api_key and self.api_key in res:
                 res = res.replace(self.api_key, "***REDACTED***")
             import re
+
             res = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "***REDACTED***", res)
-            res = re.sub(r"Bearer\s+[A-Za-z0-9._-]+", "Bearer ***REDACTED***", res, flags=re.IGNORECASE)
+            res = re.sub(
+                r"Bearer\s+[A-Za-z0-9._-]+", "Bearer ***REDACTED***", res, flags=re.IGNORECASE
+            )
             return res
-        else:
-            return data
+        return data
 
     async def rewrite_prompts(
         self,
@@ -237,7 +246,9 @@ class NimClient:
 
         _logger.info(
             "NIM request: request_id=%s, model=%s, scenes=%d",
-            req_id, nim_model_id, len(nim_request.scenes)
+            req_id,
+            nim_model_id,
+            len(nim_request.scenes),
         )
 
         # Make request with retry logic
@@ -302,15 +313,17 @@ class NimClient:
             if i >= 1 and project.workflow_mode.value == "REFERENCE_FRAME_RELAY":
                 local_ff_prompt = ""  # Scene 2+ must not have first-frame prompt
 
-            scenes.append(NimSceneRequest(
-                id=scene.id,
-                name=scene.name,
-                start_state=scene.asset_ref.flow_asset_label or f"Scene {scene.id} input",
-                ordered_actions=[],  # Not used by NIM
-                end_state="",        # Not used by NIM
-                local_first_frame_prompt=local_ff_prompt,
-                local_video_prompt=scene.video_prompt,
-            ))
+            scenes.append(
+                NimSceneRequest(
+                    id=scene.id,
+                    name=scene.name,
+                    start_state=scene.asset_ref.flow_asset_label or f"Scene {scene.id} input",
+                    ordered_actions=[],  # Not used by NIM
+                    end_state="",  # Not used by NIM
+                    local_first_frame_prompt=local_ff_prompt,
+                    local_video_prompt=scene.video_prompt,
+                )
+            )
 
         return NimRequest(
             request_id=request_id,
@@ -393,9 +406,10 @@ class NimClient:
             except (NimRateLimitError, NimServerError, httpx.TimeoutException) as e:
                 last_error = e
                 if attempt < self.max_retries:
-                    wait = self.RETRY_BACKOFF_BASE * (2 ** attempt)
-                    _logger.warning("NIM retryable error (attempt %d): %s, waiting %.1fs",
-                                   attempt + 1, e, wait)
+                    wait = self.RETRY_BACKOFF_BASE * (2**attempt)
+                    _logger.warning(
+                        "NIM retryable error (attempt %d): %s, waiting %.1fs", attempt + 1, e, wait
+                    )
                     await asyncio.sleep(wait)
                     continue
                 # Retries exhausted
@@ -405,9 +419,10 @@ class NimClient:
                 # Network error - retry
                 last_error = e
                 if attempt < self.max_retries:
-                    wait = self.RETRY_BACKOFF_BASE * (2 ** attempt)
-                    _logger.warning("NIM network error (attempt %d): %s, waiting %.1fs",
-                                   attempt + 1, e, wait)
+                    wait = self.RETRY_BACKOFF_BASE * (2**attempt)
+                    _logger.warning(
+                        "NIM network error (attempt %d): %s, waiting %.1fs", attempt + 1, e, wait
+                    )
                     await asyncio.sleep(wait)
                     continue
                 break
@@ -419,7 +434,9 @@ class NimClient:
             raise NimRateLimitError(str(last_error), status_code=429)
         if isinstance(last_error, NimServerError):
             raise last_error
-        raise NimServerError(f"NIM request failed after {self.max_retries + 1} attempts: {last_error}")
+        raise NimServerError(
+            f"NIM request failed after {self.max_retries + 1} attempts: {last_error}"
+        )
 
     async def _handle_response(
         self,
@@ -446,10 +463,14 @@ class NimClient:
         if status == 429:
             raise NimRateLimitError("Rate limited", status_code=429, details=response.text)
         if status >= 500:
-            raise NimServerError(f"Server error: {status}", status_code=status, details=response.text)
+            raise NimServerError(
+                f"Server error: {status}", status_code=status, details=response.text
+            )
 
         # Unexpected status
-        raise NimClientError(f"Unexpected status: {status}", status_code=status, details=response.text)
+        raise NimClientError(
+            f"Unexpected status: {status}", status_code=status, details=response.text
+        )
 
     def _parse_nim_response(
         self,
@@ -475,11 +496,13 @@ class NimClient:
         # Parse scenes
         scenes = []
         for s in data.get("scenes", []):
-            scenes.append(NimSceneResponse(
-                id=s["id"],
-                first_frame_prompt=s.get("first_frame_prompt", ""),
-                video_prompt=s.get("video_prompt", ""),
-            ))
+            scenes.append(
+                NimSceneResponse(
+                    id=s["id"],
+                    first_frame_prompt=s.get("first_frame_prompt", ""),
+                    video_prompt=s.get("video_prompt", ""),
+                )
+            )
 
         return NimResponse(
             schema_version=data.get("schema_version", "2.0"),

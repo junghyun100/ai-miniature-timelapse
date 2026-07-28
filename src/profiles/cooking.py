@@ -11,9 +11,13 @@ Per Section 13.9:
 """
 
 from ..profile_types import (
-    Profile, ScenePlan, WorkflowMode, StyleBible, InputMode, register_profile
+    InputMode,
+    Profile,
+    ScenePlan,
+    StyleBible,
+    WorkflowMode,
+    register_profile,
 )
-
 
 COOKING_IDENTITY_LOCK = (
     "ultra-realistic 8K HDR macro cinematography, 100mm macro lens, "
@@ -69,64 +73,200 @@ KOREAN_DISHES = {
         "heat_source": "tea light candle under pot",
         "garnish": "sesame oil drizzle, sliced green onion",
         "serveware": "miniature black stone bowl",
-        "actions_prep": ["washing kimchi", "slicing pork belly", "cubing tofu", "chopping green onion", "mincing garlic"],
-        "actions_cook": ["heating oil in pot", "stir-frying kimchi", "adding pork and browning", "pouring water and boiling", "adding tofu and green onion", "simmering until melded"],
-        "actions_finish": ["ladling into stone bowl", "drizzling sesame oil", "sprinkling green onion", "hero shot with steam"],
+        "actions_prep": [
+            "washing kimchi",
+            "slicing pork belly",
+            "cubing tofu",
+            "chopping green onion",
+            "mincing garlic",
+        ],
+        "actions_cook": [
+            "heating oil in pot",
+            "stir-frying kimchi",
+            "adding pork and browning",
+            "pouring water and boiling",
+            "adding tofu and green onion",
+            "simmering until melded",
+        ],
+        "actions_finish": [
+            "ladling into stone bowl",
+            "drizzling sesame oil",
+            "sprinkling green onion",
+            "hero shot with steam",
+        ],
     },
     "bibimbap": {
         "name": "Bibimbap",
-        "ingredients": ["rice", "spinach", "bean sprouts", "carrot", "zucchini", "mushrooms", "gochujang", "egg", "beef"],
+        "ingredients": [
+            "rice",
+            "spinach",
+            "bean sprouts",
+            "carrot",
+            "zucchini",
+            "mushrooms",
+            "gochujang",
+            "egg",
+            "beef",
+        ],
         "cookware": "miniature stone bowl (dolsot)",
         "heat_source": "tea light candle under bowl",
         "garnish": "sesame seeds, sesame oil, fried egg on top",
         "serveware": "miniature stone bowl",
-        "actions_prep": ["cooking rice", "blanching spinach", "blanching bean sprouts", "julienning carrot and zucchini", "sautéing mushrooms", "cooking beef"],
-        "actions_cook": ["heating stone bowl", "arranging vegetables on rice", "cracking egg on top", "adding gochujang", "sizzling rice crust forming"],
-        "actions_finish": ["mixing gently", "hero shot with steam and egg yolk", "sesame oil drizzle"],
+        "actions_prep": [
+            "cooking rice",
+            "blanching spinach",
+            "blanching bean sprouts",
+            "julienning carrot and zucchini",
+            "sautéing mushrooms",
+            "cooking beef",
+        ],
+        "actions_cook": [
+            "heating stone bowl",
+            "arranging vegetables on rice",
+            "cracking egg on top",
+            "adding gochujang",
+            "sizzling rice crust forming",
+        ],
+        "actions_finish": [
+            "mixing gently",
+            "hero shot with steam and egg yolk",
+            "sesame oil drizzle",
+        ],
     },
     "bulgogi": {
         "name": "Bulgogi",
-        "ingredients": ["thinly sliced beef", "soy sauce", "sugar", "garlic", "pear", "onion", "green onion", "sesame oil"],
+        "ingredients": [
+            "thinly sliced beef",
+            "soy sauce",
+            "sugar",
+            "garlic",
+            "pear",
+            "onion",
+            "green onion",
+            "sesame oil",
+        ],
         "cookware": "miniature cast iron grill pan",
         "heat_source": "tea light candle under pan",
         "garnish": "sesame seeds, green onion",
         "serveware": "miniature white porcelain plate",
-        "actions_prep": ["slicing beef thinly", "grating pear and onion", "making marinade", "marinating beef", "chopping green onion"],
-        "actions_cook": ["heating grill pan", "grilling marinated beef", "caramelization and char marks", "juices reducing"],
-        "actions_finish": ["plating on porcelain", "sprinkling sesame seeds", "adding green onion", "hero shot with glistening beef"],
+        "actions_prep": [
+            "slicing beef thinly",
+            "grating pear and onion",
+            "making marinade",
+            "marinating beef",
+            "chopping green onion",
+        ],
+        "actions_cook": [
+            "heating grill pan",
+            "grilling marinated beef",
+            "caramelization and char marks",
+            "juices reducing",
+        ],
+        "actions_finish": [
+            "plating on porcelain",
+            "sprinkling sesame seeds",
+            "adding green onion",
+            "hero shot with glistening beef",
+        ],
     },
     "jjajangmyeon": {
         "name": "Jjajangmyeon",
-        "ingredients": ["noodles", "chunjang (black bean paste)", "pork", "onion", "zucchini", "potato", "cabbage"],
+        "ingredients": [
+            "noodles",
+            "chunjang (black bean paste)",
+            "pork",
+            "onion",
+            "zucchini",
+            "potato",
+            "cabbage",
+        ],
         "cookware": "miniature wok",
         "heat_source": "tea light candle under wok",
         "garnish": "cucumber julienne",
         "serveware": "miniature black bowl",
         "actions_prep": ["boiling noodles", "dicing pork and vegetables", "preparing chunjang"],
-        "actions_cook": ["heating wok", "frying chunjang in oil", "stir-frying pork and vegetables", "adding water and simmering", "thickening with starch slurry"],
-        "actions_finish": ["placing noodles in bowl", "pouring sauce over", "topping with cucumber", "hero shot mixing"],
+        "actions_cook": [
+            "heating wok",
+            "frying chunjang in oil",
+            "stir-frying pork and vegetables",
+            "adding water and simmering",
+            "thickening with starch slurry",
+        ],
+        "actions_finish": [
+            "placing noodles in bowl",
+            "pouring sauce over",
+            "topping with cucumber",
+            "hero shot mixing",
+        ],
     },
     "samgyeopsal": {
         "name": "Samgyeopsal (Grilled Pork Belly)",
-        "ingredients": ["pork belly slices", "garlic", "green chili", "ssamjang", "lettuce", "perilla leaves", "kimchi"],
+        "ingredients": [
+            "pork belly slices",
+            "garlic",
+            "green chili",
+            "ssamjang",
+            "lettuce",
+            "perilla leaves",
+            "kimchi",
+        ],
         "cookware": "miniature tabletop grill",
         "heat_source": "tea light candle under grill",
         "garnish": "grilled garlic and chili",
         "serveware": "miniature grill plate with lettuce wraps",
-        "actions_prep": ["slicing pork belly", "preparing ssamjang", "washing lettuce and perilla", "slicing garlic and chili"],
-        "actions_cook": ["heating grill", "laying pork belly slices", "flipping for even char", "grilling garlic and chili alongside", "fat rendering and sizzling"],
-        "actions_finish": ["wrapping meat in lettuce with ssamjang", "adding grilled garlic/chili", "hero shot of wrap being eaten"],
+        "actions_prep": [
+            "slicing pork belly",
+            "preparing ssamjang",
+            "washing lettuce and perilla",
+            "slicing garlic and chili",
+        ],
+        "actions_cook": [
+            "heating grill",
+            "laying pork belly slices",
+            "flipping for even char",
+            "grilling garlic and chili alongside",
+            "fat rendering and sizzling",
+        ],
+        "actions_finish": [
+            "wrapping meat in lettuce with ssamjang",
+            "adding grilled garlic/chili",
+            "hero shot of wrap being eaten",
+        ],
     },
     "dakgalbi": {
         "name": "Dakgalbi (Spicy Stir-fried Chicken)",
-        "ingredients": ["chicken thigh", "gochujang", "gochugaru", "sweet potato", "cabbage", "perilla leaves", "rice cakes", "cheese"],
+        "ingredients": [
+            "chicken thigh",
+            "gochujang",
+            "gochugaru",
+            "sweet potato",
+            "cabbage",
+            "perilla leaves",
+            "rice cakes",
+            "cheese",
+        ],
         "cookware": "miniature wide pan",
         "heat_source": "tea light candle under pan",
         "garnish": "melted cheese, perilla leaves",
         "serveware": "miniature cast iron pan",
-        "actions_prep": ["cutting chicken", "making spicy marinade", "marinating chicken", "slicing vegetables"],
-        "actions_cook": ["heating pan", "stir-frying chicken", "adding vegetables and rice cakes", "sauce caramelizing", "cheese melting on top"],
-        "actions_finish": ["hero shot with melted cheese pull", "perilla leaves on top", "steam rising"],
+        "actions_prep": [
+            "cutting chicken",
+            "making spicy marinade",
+            "marinating chicken",
+            "slicing vegetables",
+        ],
+        "actions_cook": [
+            "heating pan",
+            "stir-frying chicken",
+            "adding vegetables and rice cakes",
+            "sauce caramelizing",
+            "cheese melting on top",
+        ],
+        "actions_finish": [
+            "hero shot with melted cheese pull",
+            "perilla leaves on top",
+            "steam rising",
+        ],
     },
 }
 
@@ -159,9 +299,7 @@ SCENE_PLANS_30S = [
         start_state="Raw ingredients only on the cutting board, before any heat or cookware is used",
         ordered_actions=COOKING_PREP_ACTIONS,
         end_state=SCENE_1_PREP_STOP,
-        forbidden_changes=[
-            "Kitchen", "Lighting", "Cutting board", "Camera style", "Hand position"
-        ],
+        forbidden_changes=["Kitchen", "Lighting", "Cutting board", "Camera style", "Hand position"],
         input_mode=InputMode.MASTER_IMAGE,
         estimated_clip_duration_seconds=10,
         completion_range="0-35%",
@@ -176,9 +314,7 @@ SCENE_PLANS_30S = [
         start_state=SCENE_1_PREP_STOP,
         ordered_actions=COOKING_COOK_ACTIONS,
         end_state=SCENE_2_COOK_STOP,
-        forbidden_changes=[
-            "Kitchen", "Lighting", "Cookware", "Heat source", "Camera style"
-        ],
+        forbidden_changes=["Kitchen", "Lighting", "Cookware", "Heat source", "Camera style"],
         input_mode=InputMode.PREVIOUS_FINAL_FRAME,
         estimated_clip_duration_seconds=10,
         completion_range="35-80%",
@@ -194,7 +330,11 @@ SCENE_PLANS_30S = [
         ordered_actions=COOKING_PLATING_ACTIONS,
         end_state=SCENE_3_FINAL_STOP,
         forbidden_changes=[
-            "Kitchen", "Lighting", "Serveware", "Camera style", "Cooking state continuity"
+            "Kitchen",
+            "Lighting",
+            "Serveware",
+            "Camera style",
+            "Cooking state continuity",
         ],
         input_mode=InputMode.PREVIOUS_FINAL_FRAME,
         estimated_clip_duration_seconds=10,
@@ -216,9 +356,7 @@ COOKING_SELECTION_SCHEMA = {
             "type": "string",
             "title": "Dish",
             "enum": list(KOREAN_DISHES.keys()),
-            "x-enum-labels": [
-                dish["name"] for dish in KOREAN_DISHES.values()
-            ],
+            "x-enum-labels": [dish["name"] for dish in KOREAN_DISHES.values()],
         },
     },
     "x-ui-order": ["dish_key"],
@@ -237,14 +375,26 @@ cooking_profile = Profile(
     scene_plans_factory=lambda topic, dur, ctx: SCENE_PLANS_30S,
     selection_schema=COOKING_SELECTION_SCHEMA,
     style_bible_factory=lambda topic, dur, ctx: make_style_bible(ctx["dish_key"]),
-    first_frame_factory=lambda topic, dur, ctx: {"first_frame_prompt": make_first_frame_prompt(ctx["dish_key"])} if ctx.get("scene_id") == 1 else {},
-    scene_prompt_factory=lambda topic, dur, ctx: {"video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["dish_key"])},
+    first_frame_factory=lambda topic, dur, ctx: (
+        {"first_frame_prompt": make_first_frame_prompt(ctx["dish_key"])}
+        if ctx.get("scene_id") == 1
+        else {}
+    ),
+    scene_prompt_factory=lambda topic, dur, ctx: {
+        "video_prompt": make_scene_video_prompt(ctx["scene_id"], ctx["dish_key"])
+    },
     audio_contract={
         "type": "asmr_only",
-        "description": "Only satisfying ASMR sounds: knife chops, water drips, sizzle, boil, simmer, pour, drizzle, gentle clink. No voices, no music, no narration."
+        "description": "Only satisfying ASMR sounds: knife chops, water drips, sizzle, boil, simmer, pour, drizzle, gentle clink. No voices, no music, no narration.",
     },
     negative_prompt_base=COOKING_NEGATIVE_BASE,
-    template_exclusions=["miniature people", "tiny chef", "voice", "music", "traditional kitchen tools (non-miniature)"],
+    template_exclusions=[
+        "miniature people",
+        "tiny chef",
+        "voice",
+        "music",
+        "traditional kitchen tools (non-miniature)",
+    ],
 )
 
 register_profile(cooking_profile)
@@ -257,7 +407,13 @@ def make_style_bible(dish_key: str) -> StyleBible:
         materials={
             "primary": dish["ingredients"],
             "secondary": [dish["cookware"], dish["heat_source"], dish["serveware"]],
-            "tools": ["miniature knife", "miniature ladle", "miniature spatula", "miniature chopsticks", "miniature tongs"],
+            "tools": [
+                "miniature knife",
+                "miniature ladle",
+                "miniature spatula",
+                "miniature chopsticks",
+                "miniature tongs",
+            ],
         },
         camera={
             "lens": "100mm macro",

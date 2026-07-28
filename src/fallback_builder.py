@@ -16,7 +16,7 @@ Guarantees:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from .domain import (
     AssetKind,
@@ -36,7 +36,7 @@ from .serializers import IMMUTABLE_NEGATIVE
 
 def create_fallback_scene(
     scene_id: int,
-    scene_plan: Optional[ScenePlan],
+    scene_plan: ScenePlan | None,
     style_bible: StyleBible,
     profile_id: str,
     clip_duration_seconds: int = 10,
@@ -56,7 +56,7 @@ def create_fallback_scene(
         raw_video = f"{scene_name} for {topic}".strip()
 
     # Build first frame prompt for Scene 1 only
-    first_frame_prompt: Optional[str] = None
+    first_frame_prompt: str | None = None
     if scene_id == 1:
         if scene_plan and scene_plan.start_state:
             raw_ff = f"Master image showing initial workspace and setup for {topic}: {scene_plan.start_state}"
@@ -93,9 +93,9 @@ def create_fallback_scene(
 
 
 def reconcile_scenes_with_fallback(
-    nim_scene_data: List[Dict[str, Any]],
+    nim_scene_data: list[dict[str, Any]],
     project: Project,
-) -> Tuple[List[Scene], List[int], ProvenanceSource]:
+) -> tuple[list[Scene], list[int], ProvenanceSource]:
     """
     Reconciles NIM scene data with local project scene plans.
 
@@ -107,10 +107,12 @@ def reconcile_scenes_with_fallback(
     """
     style_bible = project.style_bible
     identity_lock = style_bible.identity_lock if style_bible else "Miniature timelapse style"
-    expected_count = len(project.scene_plans) if project.scene_plans else max(len(project.scenes), 1)
+    expected_count = (
+        len(project.scene_plans) if project.scene_plans else max(len(project.scenes), 1)
+    )
 
     # Map NIM scenes by scene ID
-    nim_map: Dict[int, Dict[str, Any]] = {}
+    nim_map: dict[int, dict[str, Any]] = {}
     for s_dict in nim_scene_data:
         try:
             sid = int(s_dict.get("id", 0))
@@ -119,11 +121,15 @@ def reconcile_scenes_with_fallback(
         except (ValueError, TypeError):
             continue
 
-    resolved_scenes: List[Scene] = []
-    fallback_scene_ids: List[int] = []
+    resolved_scenes: list[Scene] = []
+    fallback_scene_ids: list[int] = []
 
     for i in range(1, expected_count + 1):
-        scene_plan = project.scene_plans[i - 1] if project.scene_plans and i <= len(project.scene_plans) else None
+        scene_plan = (
+            project.scene_plans[i - 1]
+            if project.scene_plans and i <= len(project.scene_plans)
+            else None
+        )
 
         if i in nim_map:
             # NIM provided data for scene i
@@ -150,10 +156,14 @@ def reconcile_scenes_with_fallback(
 
                 # Existing asset_ref or construct default
                 existing_scene = project.scenes[i - 1] if i <= len(project.scenes) else None
-                asset_ref = existing_scene.asset_ref if existing_scene else AssetRef(
-                    logical_id="master_image_v1" if i == 1 else f"scene_{i-1}_final_frame",
-                    kind=AssetKind.IMAGE,
-                    scope=AssetScope.PROJECT if i == 1 else AssetScope.SCENE,
+                asset_ref = (
+                    existing_scene.asset_ref
+                    if existing_scene
+                    else AssetRef(
+                        logical_id="master_image_v1" if i == 1 else f"scene_{i-1}_final_frame",
+                        kind=AssetKind.IMAGE,
+                        scope=AssetScope.PROJECT if i == 1 else AssetScope.SCENE,
+                    )
                 )
 
                 scene = Scene(
