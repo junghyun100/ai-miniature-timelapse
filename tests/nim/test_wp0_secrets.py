@@ -9,10 +9,26 @@ Validates:
 """
 
 import re
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from src.domain import (
+    AspectRatio,
+    AssetKind,
+    AssetRef,
+    AssetScope,
+    InputMode,
+    Project,
+    Provenance,
+    ProvenanceSource,
+    Scene,
+    ScenePlan,
+    SceneStatus,
+    StyleBible,
+    WorkflowMode,
+)
 import src.nim_proxy_server as proxy_module
 from src.nim_client import NimClient
 from src.nim_proxy_server import (
@@ -23,6 +39,87 @@ from src.nim_proxy_server import (
     redact_text,
 )
 from src.serializers import perform_copy_action
+
+
+@pytest.fixture
+def sample_project() -> Project:
+    style_bible = StyleBible(
+        identity_lock="Test identity lock",
+        materials={
+            "primary": ["wood", "stone"],
+            "secondary": ["moss"],
+            "tools": ["brush", "trowel"],
+        },
+        camera={
+            "lens": "85mm",
+            "angle": "45-degree",
+            "movement": "locked",
+            "distance": "fixed",
+        },
+        lighting={
+            "key": "soft daylight",
+            "fill": "ambient",
+            "mood": "warm",
+            "consistency": "locked",
+        },
+        color_palette=["warm wood", "stone gray"],
+        workspace="clean miniature workbench",
+        hands_rule="giant human hands only",
+        motion_rule="continuous timelapse",
+    )
+    scene = Scene(
+        id=1,
+        name="Scene 1",
+        input_mode=InputMode.MASTER_IMAGE,
+        asset_ref=AssetRef(
+            logical_id="scene_01_master",
+            kind=AssetKind.IMAGE,
+            scope=AssetScope.SCENE,
+            flow_asset_label="Scene 1 master image",
+            local_path="scenes/scene_01_master.png",
+            source_scene_id=1,
+            confirmed_by_user=True,
+        ),
+        first_frame_prompt="Master image prompt with nvapi-abc1234567 inside",
+        video_prompt="Video prompt with safe content",
+        template_exclusions="",
+        negative_prompt="text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry",
+        clip_duration_seconds=10,
+        lineage_revision="sha256:" + "0" * 64,
+        status=SceneStatus.CONFIRMED,
+        confirmed_at=datetime.utcnow(),
+    )
+    return Project(
+        topic="test",
+        topic_label="Test",
+        profile_id="architecture.korean",
+        workflow_mode=WorkflowMode.REFERENCE_FRAME_RELAY,
+        duration_seconds=10,
+        aspect_ratio=AspectRatio.RATIO_9_16,
+        scene_plans=[
+            ScenePlan(
+                scene_id=1,
+                name="Scene 1",
+                start_state="Empty workbench",
+                ordered_actions=["Place first materials"],
+                end_state="Scene 1 complete",
+                forbidden_changes=["Remove installed parts"],
+            )
+        ],
+        style_bible=style_bible,
+        scenes=[scene],
+        provenance=Provenance(
+            source=ProvenanceSource.LOCAL_PLANNER,
+            provider="local",
+            model_id="local",
+            base_url_label="local",
+            generated_at=datetime.utcnow(),
+            request_id="req-local",
+            source_revision="sha256:" + "1" * 64,
+        ),
+        source_revision="sha256:" + "1" * 64,
+        idea_seed="seed",
+    )
 
 
 class TestSecretRedaction:
