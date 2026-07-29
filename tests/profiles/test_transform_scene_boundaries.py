@@ -35,7 +35,11 @@ def test_cooking_scene_boundaries_and_final_only_contract() -> None:
     assert len(profile.scene_plans) == 3
 
     scene1, scene2, scene3 = profile.scene_plans
-    assert [scene.completion_range for scene in profile.scene_plans] == ["0-35%", "35-80%", "80-100%"]
+    assert [scene.completion_range for scene in profile.scene_plans] == [
+        "0-35%",
+        "35-80%",
+        "80-100%",
+    ]
     assert scene1.start_state.startswith("Raw ingredients only")
     assert scene1.exact_stop_state == scene2.start_state
     assert scene2.exact_stop_state == scene3.start_state

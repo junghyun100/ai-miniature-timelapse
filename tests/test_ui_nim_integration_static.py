@@ -8,7 +8,7 @@ def test_ui_nim_proxy_contract_is_wired_into_index_html():
     html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert 'id="nimSessionToken"' in html
-    assert 'Proxy Session Token' in html
+    assert "Proxy Session Token" in html
     assert 'placeholder="Proxy session token (세션 전용, 브라우저 미저장)"' in html
     assert "const NIM_PROXY_REWRITE_URL = 'http://127.0.0.1:4174/api/nim/rewrite';" in html
     assert "'X-Session-Token': sessionToken" in html
@@ -43,7 +43,13 @@ def test_ui_nim_proxy_stale_guard_and_scene_update_rules_exist():
 
     assert "responseBody.source_revision !== requestPayload.source_revision" in html
     assert "project.source_revision !== requestPayload.source_revision" in html
-    assert "const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));" in html
-    assert "first_frame_prompt: index === 0 ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '') : ''" in html
+    assert (
+        "const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));"
+        in html
+    )
+    assert (
+        "first_frame_prompt: index === 0 ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '') : ''"
+        in html
+    )
     assert "video_prompt: rewritten.video_prompt || scene.video_prompt" in html
     assert "NIM 실패, 로컬 플랜으로 계속합니다" in html

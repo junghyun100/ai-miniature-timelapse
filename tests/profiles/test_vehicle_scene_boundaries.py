@@ -45,7 +45,9 @@ def _assert_reserved_future_continuity(scene_plans: list[ScenePlan]) -> None:
         assert scene.forbidden_future_actions[0].startswith(
             "Do not perform this later-stage action in the current scene:"
         )
-        assert scene.exact_stop_state.startswith("Exact stop state after this scene's completed actions:")
+        assert scene.exact_stop_state.startswith(
+            "Exact stop state after this scene's completed actions:"
+        )
         assert "visibly incomplete" in scene.exact_stop_state.lower()
         assert "future parts still separate, visible, and unused" in scene.exact_stop_state.lower()
         assert scene.end_state
@@ -104,7 +106,9 @@ def test_airplane_30s_names_ranges_and_continuity() -> None:
     scene1 = scenes[0]
     assert "Airframe skeleton and fuselage frame assembled" in scene1.ordered_actions[0]
     assert "Engine and cockpit mount secured" in scene1.ordered_actions[1]
-    assert scene1.exact_stop_state.startswith("Exact stop state after this scene's completed actions:")
+    assert scene1.exact_stop_state.startswith(
+        "Exact stop state after this scene's completed actions:"
+    )
     assert "wings" in " ".join(scene1.reserved_future_actions).lower()
     assert "landing gear" in " ".join(scene1.reserved_future_actions).lower()
     assert "propeller" in " ".join(scene1.reserved_future_actions).lower()

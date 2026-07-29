@@ -191,8 +191,18 @@ class TestVehicleProfile:
 
     def test_categories(self):
         cats = get_categories()
-        expected = {"car", "motorcycle", "airplane", "boat", "agricultural",
-                    "helicopter", "construction", "spaceship", "tank", "bicycle"}
+        expected = {
+            "car",
+            "motorcycle",
+            "airplane",
+            "boat",
+            "agricultural",
+            "helicopter",
+            "construction",
+            "spaceship",
+            "tank",
+            "bicycle",
+        }
         assert set(cats) == expected
 
     def test_models_for_car(self):
@@ -230,7 +240,9 @@ class TestVehicleProfile:
 
         assert scene1.is_final_scene is False
         assert scene1.completion_range
-        assert scene1.exact_stop_state.startswith("Exact stop state after this scene's completed actions:")
+        assert scene1.exact_stop_state.startswith(
+            "Exact stop state after this scene's completed actions:"
+        )
         assert "visibly incomplete" in scene1.exact_stop_state.lower()
         assert "fully assembled" not in scene1.exact_stop_state.lower()
         assert "clean workbench" not in scene1.exact_stop_state.lower()
@@ -240,7 +252,9 @@ class TestVehicleProfile:
         assert "engine mounts secured" in scene1.ordered_actions
 
         vehicle_module.summarizeVehicleActions = lambda actions: "; ".join(actions)
-        prompt = vehicle_make_video(VehicleCategory.CAR, "Porsche 911", scene1.scene_id, scene1.name)
+        prompt = vehicle_make_video(
+            VehicleCategory.CAR, "Porsche 911", scene1.scene_id, scene1.name
+        )
         assert "exact stop" in prompt.lower()
         assert "visibly incomplete" in prompt.lower()
         assert "wheels and suspension mounted" in prompt.lower()
@@ -261,7 +275,9 @@ class TestVehicleProfile:
         assert "clean workbench" in final_scene.exact_stop_state.lower()
 
         vehicle_module.summarizeVehicleActions = lambda actions: "; ".join(actions)
-        prompt = vehicle_make_video(VehicleCategory.CAR, "Porsche 911", final_scene.scene_id, final_scene.name)
+        prompt = vehicle_make_video(
+            VehicleCategory.CAR, "Porsche 911", final_scene.scene_id, final_scene.name
+        )
         assert "fully assembled car model" in prompt.lower()
         assert "clean workbench" in prompt.lower()
         assert "final reveal" in prompt.lower()
@@ -301,7 +317,7 @@ class TestHomeDecorProfile:
             craft_name="Traditional Lotus Mood Lamp",
             korean_narration="버려진 숟가락이 연꽃이 되다니 손으로 접으니 피어나네요",
             materials=["hanji", "plastic spoon", "wire", "glue"],
-            final_object="Traditional Lotus Mood Lamp"
+            final_object="Traditional Lotus Mood Lamp",
         )
         assert "Opening Hook" in prompt
         assert "Introducing Materials" in prompt

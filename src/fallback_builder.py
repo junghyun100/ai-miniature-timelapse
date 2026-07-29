@@ -66,7 +66,7 @@ def create_fallback_scene(
 
     input_mode = InputMode.MASTER_IMAGE if scene_id == 1 else InputMode.PREVIOUS_FINAL_FRAME
     asset_scope = AssetScope.PROJECT if scene_id == 1 else AssetScope.SCENE
-    logical_id = "master_image_v1" if scene_id == 1 else f"scene_{scene_id-1}_final_frame"
+    logical_id = "master_image_v1" if scene_id == 1 else f"scene_{scene_id - 1}_final_frame"
 
     asset_ref = AssetRef(
         logical_id=logical_id,
@@ -160,7 +160,7 @@ def reconcile_scenes_with_fallback(
                     existing_scene.asset_ref
                     if existing_scene
                     else AssetRef(
-                        logical_id="master_image_v1" if i == 1 else f"scene_{i-1}_final_frame",
+                        logical_id="master_image_v1" if i == 1 else f"scene_{i - 1}_final_frame",
                         kind=AssetKind.IMAGE,
                         scope=AssetScope.PROJECT if i == 1 else AssetScope.SCENE,
                     )

@@ -104,7 +104,11 @@ class TestHashParity:
             "aspect_ratio": "16:9",
             "style_bible": {
                 "identity_lock": "silver metallic Porsche 911 coupe",
-                "materials": {"primary": ["diecast steel"], "secondary": ["rubber tires"], "tools": []},
+                "materials": {
+                    "primary": ["diecast steel"],
+                    "secondary": ["rubber tires"],
+                    "tools": [],
+                },
             },
             "derived_fields": {"category": "car"},
             "scene_plans": [],
@@ -135,7 +139,11 @@ class TestHashParity:
             "aspect_ratio": "9:16",
             "style_bible": {
                 "identity_lock": "traditional hanji paper lotus lamp",
-                "materials": {"primary": ["hanji paper", "plastic spoons"], "secondary": ["LED light"], "tools": ["glue gun"]},
+                "materials": {
+                    "primary": ["hanji paper", "plastic spoons"],
+                    "secondary": ["LED light"],
+                    "tools": ["glue gun"],
+                },
             },
             "derived_fields": {},
             "scene_plans": [],
@@ -166,7 +174,11 @@ class TestHashParity:
             "aspect_ratio": "9:16",
             "style_bible": {
                 "identity_lock": "miniature kimchi stew in earthenware pot",
-                "materials": {"primary": ["aged kimchi", "tofu", "pork"], "secondary": ["scallions"], "tools": ["mini stove"]},
+                "materials": {
+                    "primary": ["aged kimchi", "tofu", "pork"],
+                    "secondary": ["scallions"],
+                    "tools": ["mini stove"],
+                },
             },
             "derived_fields": {"dish_key": "kimchi_jjigae"},
             "scene_plans": [],

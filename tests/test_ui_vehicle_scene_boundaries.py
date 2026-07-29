@@ -8,16 +8,28 @@ from src.profiles.vehicle import VEHICLE_IDENTITY_LOCKS, VEHICLE_KEY_PARTS, VEHI
 def test_vehicle_categories_count():
     """Test that we have 10 vehicle categories."""
     from src.profiles.vehicle import get_categories
+
     categories = get_categories()
     assert len(categories) == 10
-    expected = {"car", "motorcycle", "airplane", "boat", "agricultural",
-                "helicopter", "construction", "spaceship", "tank", "bicycle"}
+    expected = {
+        "car",
+        "motorcycle",
+        "airplane",
+        "boat",
+        "agricultural",
+        "helicopter",
+        "construction",
+        "spaceship",
+        "tank",
+        "bicycle",
+    }
     assert set(categories) == expected
 
 
 def test_vehicle_models_per_category():
     """Test that each category has exactly 10 models."""
     from src.profiles.vehicle import VEHICLE_MODELS
+
     for cat, models in VEHICLE_MODELS.items():
         assert len(models) == 10, f"Category {cat} should have 10 models"
 
@@ -25,6 +37,7 @@ def test_vehicle_models_per_category():
 def test_scene_plans_30s_and_60s():
     """Test that build_scene_plans_30s and 60s work."""
     from src.profiles.vehicle import build_scene_plans_30s, build_scene_plans_60s
+
     plans_30 = build_scene_plans_30s("car")
     plans_60 = build_scene_plans_60s("car")
     assert len(plans_30) == 3  # 30s / 10s per clip = 3 scenes

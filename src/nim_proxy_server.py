@@ -193,6 +193,7 @@ NIM_REQUEST_SCHEMA = {
 # Error Responses (Sanitized - No Secrets)
 # ============================================================================
 
+
 def redact_text(text: str) -> str:
     """Redact raw API key patterns, Bearer tokens, and secrets from string."""
     if not isinstance(text, str):
@@ -251,7 +252,9 @@ def error_response(status: int, code: str, message: str, details: dict | None = 
                             "x-nim-api-key",
                             "x-api-key",
                         )
-                        else redact_text(dv) if isinstance(dv, str) else dv
+                        else redact_text(dv)
+                        if isinstance(dv, str)
+                        else dv
                     )
                     for dk, dv in v.items()
                 }

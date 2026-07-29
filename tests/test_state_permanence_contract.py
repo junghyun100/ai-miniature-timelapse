@@ -51,7 +51,9 @@ def test_architecture_video_prompt_carries_state_permanence():
 
 
 def test_vehicle_video_prompt_carries_state_permanence():
-    prompt = vehicle_video_prompt(VehicleCategory.CAR, "Porsche 911", 1, "Foundation & Chassis", total_duration=30)
+    prompt = vehicle_video_prompt(
+        VehicleCategory.CAR, "Porsche 911", 1, "Foundation & Chassis", total_duration=30
+    )
 
     lowered = prompt.lower()
     assert "keep every already-installed" in lowered

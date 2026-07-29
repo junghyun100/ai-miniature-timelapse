@@ -139,7 +139,9 @@ def finalize(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run final stitching via the optional stitching backend.")
+    parser = argparse.ArgumentParser(
+        description="Run final stitching via the optional stitching backend."
+    )
     parser.add_argument("base_dir", help="Project base directory (contains renders/, exports/)")
     parser.add_argument("output_path", help="Output video file path")
     parser.add_argument("--transition", choices=["cut", "crossfade", "fade"], default="cut")

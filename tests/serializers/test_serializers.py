@@ -1,6 +1,7 @@
 """
 Tests for Canonical Serializers - Section 11.6
 """
+
 from datetime import datetime
 
 import pytest
@@ -32,14 +33,24 @@ from src.serializers import (
 # Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def sample_project() -> Project:
     """Create a sample 3-scene relay project for testing."""
     style_bible = StyleBible(
         identity_lock="Test identity lock for miniature hanok",
-        materials={"primary": ["wood", "stone"], "secondary": ["moss"], "tools": ["chisel", "trowel"]},
+        materials={
+            "primary": ["wood", "stone"],
+            "secondary": ["moss"],
+            "tools": ["chisel", "trowel"],
+        },
         camera={"lens": "85mm", "angle": "45", "movement": "locked", "distance": "fixed"},
-        lighting={"key": "soft daylight", "fill": "ambient", "mood": "warm", "consistency": "locked"},
+        lighting={
+            "key": "soft daylight",
+            "fill": "ambient",
+            "mood": "warm",
+            "consistency": "locked",
+        },
         color_palette=["warm wood", "terracotta", "stone gray"],
         workspace="compacted earth tray",
         hands_rule="giant human hands only",
@@ -134,9 +145,20 @@ def sample_project() -> Project:
         style_bible=style_bible,
         derived_fields={},
         scene_plans=[
-            ScenePlan(1, "Foundation and Walls", "start", ["a", "b"], "end", InputMode.MASTER_IMAGE),
-            ScenePlan(2, "Roofing and Exterior", "start", ["c", "d"], "end", InputMode.PREVIOUS_FINAL_FRAME),
-            ScenePlan(3, "Painting and Reveal", "start", ["e", "f"], "end", InputMode.PREVIOUS_FINAL_FRAME),
+            ScenePlan(
+                1, "Foundation and Walls", "start", ["a", "b"], "end", InputMode.MASTER_IMAGE
+            ),
+            ScenePlan(
+                2,
+                "Roofing and Exterior",
+                "start",
+                ["c", "d"],
+                "end",
+                InputMode.PREVIOUS_FINAL_FRAME,
+            ),
+            ScenePlan(
+                3, "Painting and Reveal", "start", ["e", "f"], "end", InputMode.PREVIOUS_FINAL_FRAME
+            ),
         ],
         scene_count=3,
         source_revision="sha256:" + "0" * 64,  # Will be recomputed
@@ -158,7 +180,11 @@ def sample_project() -> Project:
         relay_branch=RelayBranch(
             branch_id="branch-123",
             parent_branch_id=None,
-            scene_statuses={"1": SceneStatus.CONFIRMED, "2": SceneStatus.CONFIRMED, "3": SceneStatus.AWAITING_PREVIOUS_FRAME},
+            scene_statuses={
+                "1": SceneStatus.CONFIRMED,
+                "2": SceneStatus.CONFIRMED,
+                "3": SceneStatus.AWAITING_PREVIOUS_FRAME,
+            },
             asset_refs=[scene1_asset, scene2_asset, scene3_asset],
             created_at=datetime.utcnow(),
             lineage_revision="sha256:" + "0" * 64,
@@ -240,6 +266,7 @@ def single_clip_project() -> Project:
 # Source Revision Tests
 # ============================================================================
 
+
 class TestSourceRevision:
     """Test source revision computation."""
 
@@ -305,6 +332,7 @@ class TestSourceRevision:
 # Full Plan Serialization Tests
 # ============================================================================
 
+
 class TestSerializeFullPlan:
     """Test full plan canonical serialization per Section 11.6."""
 
@@ -331,13 +359,19 @@ class TestSerializeFullPlan:
         # SCENE 1
         assert "SCENE 1 — Foundation and Walls" in text
         assert "Input: Master Image" in text
-        assert "Output: scene_01_master | kind=image | scope=scene | label=Scene 1 master image | local=scenes/scene_01_master.png | source_scene=1" in text
+        assert (
+            "Output: scene_01_master | kind=image | scope=scene | label=Scene 1 master image | local=scenes/scene_01_master.png | source_scene=1"
+            in text
+        )
         assert "Video Prompt: Video prompt for scene 1 with identity lock" in text
 
         # SCENE 2
         assert "SCENE 2 — Roofing and Exterior" in text
         assert "Input: Scene 1 Final Frame" in text
-        assert "Output: scene_01_last_frame | kind=image | scope=scene | label=Scene 1 final frame | local=scenes/scene_01_last_frame.png | source_scene=1" in text
+        assert (
+            "Output: scene_01_last_frame | kind=image | scope=scene | label=Scene 1 final frame | local=scenes/scene_01_last_frame.png | source_scene=1"
+            in text
+        )
         assert "Video Prompt: Video prompt for scene 2 with identity lock" in text
         # Scene 2 should NOT have First Frame Prompt
         assert "First Frame Prompt:" not in text.split("SCENE 2")[1].split("SCENE 3")[0]
@@ -380,6 +414,7 @@ class TestSerializeFullPlan:
 # Specialized Copy Actions Tests
 # ============================================================================
 
+
 class TestCopyActions:
     """Test specialized copy actions per Section 11.6."""
 
@@ -390,7 +425,9 @@ class TestCopyActions:
         assert result.action == "master_image"
         assert result.scene_id == 1
         assert "MASTER IMAGE" in result.text
-        assert "First Frame Prompt: First frame prompt for scene 1 with identity lock" in result.text
+        assert (
+            "First Frame Prompt: First frame prompt for scene 1 with identity lock" in result.text
+        )
         assert "Template Exclusions: exclusions for scene 1" in result.text
         assert f"Negative Prompt: {IMMUTABLE_NEGATIVE}" in result.text
         assert "SCENE 1" not in result.text
@@ -461,6 +498,7 @@ class TestCopyActions:
 # AssetRef Serialization Tests
 # ============================================================================
 
+
 class TestAssetRefSerialization:
     """Test AssetRef serialized format."""
 
@@ -477,6 +515,7 @@ class TestAssetRefSerialization:
     def test_none_asset_ref(self):
         """None asset ref serializes as 'none'."""
         from src.serializers import _serialize_asset_ref
+
         assert _serialize_asset_ref(None) == "none"
 
 

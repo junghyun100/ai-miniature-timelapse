@@ -4,6 +4,7 @@ NIM Contract Tests - Section 21.3
 Tests for NIM request/response validation, normalization, fallback behavior,
 stale response rejection, and security (secret redaction).
 """
+
 import asyncio
 import uuid
 from datetime import datetime
@@ -46,13 +47,28 @@ from src.nim_client import (
 # Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def sample_style_bible() -> StyleBible:
     return StyleBible(
         identity_lock="A single coherent Korean hanok: one-story warm timber post-and-beam structure, natural stone footings, white hanji doors and windows, deep curved black giwa eaves, restrained dancheong only on appropriate beam ends and eaves",
-        materials={"primary": ["timber", "stone", "hanji"], "secondary": ["giwa tiles"], "tools": ["chisel", "mallet", "level"]},
-        camera={"lens": "85mm macro", "angle": "45-degree", "movement": "locked", "distance": "fixed"},
-        lighting={"key": "warm side daylight", "fill": "soft", "mood": "cinematic", "consistency": "locked"},
+        materials={
+            "primary": ["timber", "stone", "hanji"],
+            "secondary": ["giwa tiles"],
+            "tools": ["chisel", "mallet", "level"],
+        },
+        camera={
+            "lens": "85mm macro",
+            "angle": "45-degree",
+            "movement": "locked",
+            "distance": "fixed",
+        },
+        lighting={
+            "key": "warm side daylight",
+            "fill": "soft",
+            "mood": "cinematic",
+            "consistency": "locked",
+        },
         color_palette=["warm wood", "white hanji", "charcoal-black roof tiles"],
         workspace="one compacted-earth miniature site on one fixed tray",
         hands_rule="giant human hands only; no miniature people, tiny workers, human figures, faces, or full bodies",
@@ -145,9 +161,30 @@ def sample_project(sample_style_bible: StyleBible) -> Project:
         style_bible=sample_style_bible,
         derived_fields={},
         scene_plans=[
-            ScenePlan(1, "Foundation and Walls", "empty site", ["measure", "place footings", "raise columns"], "wall frame complete", InputMode.MASTER_IMAGE),
-            ScenePlan(2, "Roofing and Exterior", "wall frame", ["place beams", "add rafters", "build eaves", "place tiles"], "roof complete", InputMode.PREVIOUS_FINAL_FRAME),
-            ScenePlan(3, "Painting, Landscaping, and Reveal", "roof complete", ["apply finish", "add dancheong", "landscape", "reveal"], "complete hanok", InputMode.PREVIOUS_FINAL_FRAME),
+            ScenePlan(
+                1,
+                "Foundation and Walls",
+                "empty site",
+                ["measure", "place footings", "raise columns"],
+                "wall frame complete",
+                InputMode.MASTER_IMAGE,
+            ),
+            ScenePlan(
+                2,
+                "Roofing and Exterior",
+                "wall frame",
+                ["place beams", "add rafters", "build eaves", "place tiles"],
+                "roof complete",
+                InputMode.PREVIOUS_FINAL_FRAME,
+            ),
+            ScenePlan(
+                3,
+                "Painting, Landscaping, and Reveal",
+                "roof complete",
+                ["apply finish", "add dancheong", "landscape", "reveal"],
+                "complete hanok",
+                InputMode.PREVIOUS_FINAL_FRAME,
+            ),
         ],
         scene_count=3,
         source_revision="",  # Will be computed
@@ -167,6 +204,7 @@ def sample_project(sample_style_bible: StyleBible) -> Project:
 def mock_httpx_client():
     """Mock httpx.AsyncClient for testing."""
     from unittest.mock import AsyncMock
+
     mock_client = MagicMock()
     mock_client.is_closed = False
     mock_client.post = AsyncMock()
@@ -177,6 +215,7 @@ def mock_httpx_client():
 # ============================================================================
 # Test: Valid JSON Request/Response Round-trip
 # ============================================================================
+
 
 class TestNimRequestResponse:
     """Test NIM request/response JSON schema compliance."""
@@ -236,7 +275,11 @@ class TestNimRequestResponse:
             "request_id": str(uuid.uuid4()),
             "source_revision": "sha256:abc123",
             "scenes": [
-                {"id": 1, "first_frame_prompt": "Improved master prompt", "video_prompt": "Improved video 1"},
+                {
+                    "id": 1,
+                    "first_frame_prompt": "Improved master prompt",
+                    "video_prompt": "Improved video 1",
+                },
                 {"id": 2, "first_frame_prompt": "", "video_prompt": "Improved video 2"},
                 {"id": 3, "first_frame_prompt": "", "video_prompt": "Improved video 3"},
             ],
@@ -270,6 +313,7 @@ class TestNimRequestResponse:
 # Test: Normalizer Post-NIM Fallback (Section 14.5)
 # ============================================================================
 
+
 class TestNimNormalization:
     """Test post-NIM normalization per Section 14.5.
 
@@ -295,7 +339,10 @@ class TestNimNormalization:
 
     def test_wrong_scene_count_raises_error(self, sample_project: Project):
         """Response has wrong scene count → ValueError (no padding with fallbacks)."""
-        local_scenes = [NimSceneRequest(i, f"S{i}", "", [], "", "ff" if i == 1 else "", f"local {i}") for i in range(1, 4)]
+        local_scenes = [
+            NimSceneRequest(i, f"S{i}", "", [], "", "ff" if i == 1 else "", f"local {i}")
+            for i in range(1, 4)
+        ]
         nim_response = NimResponse(
             request_id="req-1",
             source_revision=sample_project.source_revision,
@@ -335,7 +382,9 @@ class TestNimNormalization:
                 NimSceneResponse(2, "FORBIDDEN first frame", "nim vid 2"),  # Should be stripped
             ],
         )
-        normalized, warnings = normalize_nim_response(nim_response, local_scenes, sample_project.source_revision)
+        normalized, warnings = normalize_nim_response(
+            nim_response, local_scenes, sample_project.source_revision
+        )
         assert normalized.scenes[1].first_frame_prompt == ""  # Stripped with warning
         assert any("first frame" in w.lower() for w in warnings)
 
@@ -353,7 +402,9 @@ class TestNimNormalization:
             scenes=[NimSceneResponse(1, "stone castle foundation", "stone castle build")],
         )
         # Currently no content-based validation - just verify it normalizes
-        normalized, warnings = normalize_nim_response(nim_response, local_scenes, sample_project.source_revision)
+        normalized, warnings = normalize_nim_response(
+            nim_response, local_scenes, sample_project.source_revision
+        )
         assert normalized.scenes[0].video_prompt == "stone castle build"
 
     def test_empty_video_prompt_raises_error(self, sample_project: Project):
@@ -371,6 +422,7 @@ class TestNimNormalization:
 # ============================================================================
 # Test: Stale/Out-of-Order Response Rejection (Section 14.4)
 # ============================================================================
+
 
 class TestNimStaleRejection:
     """Test stale response discard behavior."""
@@ -434,6 +486,7 @@ class TestNimStaleRejection:
 # ============================================================================
 # Test: HTTP Error Handling & Retry (Section 14.4)
 # ============================================================================
+
 
 class TestNimHttpErrors:
     """Test HTTP error handling and retry logic."""
@@ -525,6 +578,7 @@ class TestNimHttpErrors:
     @pytest.mark.asyncio
     async def test_cancellation_aborts_in_flight(self, sample_project: Project, mock_httpx_client):
         """Cancellation aborts in-flight request."""
+
         # Simulate slow response
         async def slow_post(*args, **kwargs):
             await asyncio.sleep(10)
@@ -544,6 +598,7 @@ class TestNimHttpErrors:
 # ============================================================================
 # Test: Security - Secret Redaction (Section 16.3, 16.4)
 # ============================================================================
+
 
 class TestNimSecurity:
     """Test API key and secret handling."""
@@ -600,7 +655,10 @@ class TestNimSecurity:
 
         dirty_data = {
             "headers": {"Authorization": "Bearer TEST_KEY_123", "Content-Type": "application/json"},
-            "body": {"model": "test", "messages": [{"role": "user", "content": "key TEST_KEY_123 here"}]},
+            "body": {
+                "model": "test",
+                "messages": [{"role": "user", "content": "key TEST_KEY_123 here"}],
+            },
         }
         sanitized = client._sanitize_for_log(dirty_data)
 
@@ -612,6 +670,7 @@ class TestNimSecurity:
 # ============================================================================
 # Test: Provenance (Section 14.6)
 # ============================================================================
+
 
 class TestNimProvenance:
     """Test provenance metadata generation."""
@@ -663,6 +722,7 @@ class TestNimProvenance:
 # Test: SyncNimClient Wrapper
 # ============================================================================
 
+
 class TestSyncNimClient:
     """Test synchronous wrapper for CLI."""
 
@@ -673,9 +733,7 @@ class TestSyncNimClient:
             schema_version="2.0",
             request_id=req_id,
             source_revision=sample_project.source_revision,
-            scenes=[
-                NimSceneResponse(id=1, first_frame_prompt="x", video_prompt="y")
-            ],
+            scenes=[NimSceneResponse(id=1, first_frame_prompt="x", video_prompt="y")],
         )
         expected_provenance = Provenance(
             source=ProvenanceSource.NIM,
@@ -693,7 +751,9 @@ class TestSyncNimClient:
         with patch("src.nim_client.NimClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client
-            mock_client.rewrite_prompts = AsyncMock(return_value=(expected_response, expected_provenance))
+            mock_client.rewrite_prompts = AsyncMock(
+                return_value=(expected_response, expected_provenance)
+            )
             mock_client.close = AsyncMock()
 
             client = SyncNimClient(base_url="https://api.test.com", api_key="test")
@@ -709,9 +769,7 @@ class TestSyncNimClient:
             schema_version="2.0",
             request_id=req_id,
             source_revision=sample_project.source_revision,
-            scenes=[
-                NimSceneResponse(id=1, first_frame_prompt="x", video_prompt="y")
-            ],
+            scenes=[NimSceneResponse(id=1, first_frame_prompt="x", video_prompt="y")],
         )
         expected_provenance = Provenance(
             source=ProvenanceSource.NIM,
@@ -729,7 +787,9 @@ class TestSyncNimClient:
         with patch("src.nim_client.NimClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client
-            mock_client.rewrite_prompts = AsyncMock(return_value=(expected_response, expected_provenance))
+            mock_client.rewrite_prompts = AsyncMock(
+                return_value=(expected_response, expected_provenance)
+            )
             mock_client.close = AsyncMock()
 
             with SyncNimClient(base_url="https://api.test.com", api_key="test") as client:

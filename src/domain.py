@@ -213,7 +213,7 @@ def validate_invariants(project: Project) -> list[str]:
             else:
                 if scene.input_mode != InputMode.PREVIOUS_FINAL_FRAME:
                     errors.append(
-                        f"Scene {i+1} must have PREVIOUS_FINAL_FRAME input_mode in relay mode"
+                        f"Scene {i + 1} must have PREVIOUS_FINAL_FRAME input_mode in relay mode"
                     )
 
     # Invariant: StyleBible.identity_lock must appear in every prompt
@@ -680,20 +680,20 @@ def normalize_nim_response(
         # Scene ID must match
         if nim_scene.id != local_scene.id:
             raise ValueError(
-                f"Scene {i+1}: ID mismatch (expected {local_scene.id}, got {nim_scene.id}). NIM response is invalid."
+                f"Scene {i + 1}: ID mismatch (expected {local_scene.id}, got {nim_scene.id}). NIM response is invalid."
             )
 
         # Scene 2+ first_frame_prompt must be empty in relay mode
         if i >= 1 and nim_scene.first_frame_prompt:
             warnings.append(
-                f"Scene {i+1}: first frame prompt must be empty in relay mode, clearing"
+                f"Scene {i + 1}: first frame prompt must be empty in relay mode, clearing"
             )
             nim_scene.first_frame_prompt = ""
 
         # Video prompt must not be empty - FAIL if NIM doesn't provide one
         if not nim_scene.video_prompt or not nim_scene.video_prompt.strip():
             raise ValueError(
-                f"Scene {i+1}: NIM returned empty video_prompt. No fallback to local templates - NIM must generate valid prompts."
+                f"Scene {i + 1}: NIM returned empty video_prompt. No fallback to local templates - NIM must generate valid prompts."
             )
 
     return response, warnings

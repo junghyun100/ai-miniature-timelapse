@@ -17,16 +17,31 @@ def test_vehicle_json_structure():
 
     # 필수 키 확인
     required_keys = [
-        "categories", "models", "identityLocks", "keyParts",
-        "assemblySteps", "styleBibles", "negativeBase"
+        "categories",
+        "models",
+        "identityLocks",
+        "keyParts",
+        "assemblySteps",
+        "styleBibles",
+        "negativeBase",
     ]
     for key in required_keys:
         assert key in data, f"Missing required key: {key}"
 
     # 10개 카테고리 확인
     assert len(data["categories"]) == 10
-    expected_categories = ["car", "motorcycle", "airplane", "boat", "agricultural",
-                           "helicopter", "construction", "spaceship", "tank", "bicycle"]
+    expected_categories = [
+        "car",
+        "motorcycle",
+        "airplane",
+        "boat",
+        "agricultural",
+        "helicopter",
+        "construction",
+        "spaceship",
+        "tank",
+        "bicycle",
+    ]
     for cat in expected_categories:
         assert cat in data["categories"], f"Missing category: {cat}"
 
@@ -55,6 +70,7 @@ def test_pipeline_scripts_syntax():
 def test_orchestrator_import():
     """오케스트레이터 모듈 임포트 테스트."""
     from profile_types import Profile, ScenePlan, WorkflowMode
+
     assert Profile
     assert WorkflowMode
     assert ScenePlan
@@ -67,6 +83,7 @@ def test_vehicle_module_import():
         build_scene_plans_30s,
         get_categories,
     )
+
     categories = get_categories()
     assert len(categories) == 10
     assert callable(build_scene_plans_30s)

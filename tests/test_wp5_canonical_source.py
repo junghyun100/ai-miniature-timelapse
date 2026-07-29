@@ -38,7 +38,12 @@ def canonical_project() -> Project:
         identity_lock="Identity lock for hanok house",
         materials={"primary": ["wood", "stone"], "secondary": [], "tools": []},
         camera={"lens": "85mm", "angle": "45", "movement": "locked", "distance": "fixed"},
-        lighting={"key": "soft daylight", "fill": "ambient", "mood": "warm", "consistency": "locked"},
+        lighting={
+            "key": "soft daylight",
+            "fill": "ambient",
+            "mood": "warm",
+            "consistency": "locked",
+        },
         color_palette=["warm wood"],
         workspace="compacted earth tray",
         hands_rule="giant human hands only",

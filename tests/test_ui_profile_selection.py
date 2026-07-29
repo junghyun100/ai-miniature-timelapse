@@ -226,9 +226,7 @@ def test_all_common_profiles_and_duration_matrix_are_available():
     assert profiles["home_decor.diy"]["durations"] == [10]
     assert profiles["cooking.miniature"]["durations"] == [30]
     for profile in profiles.values():
-        assert {int(duration) for duration in profile["scene_plans"]} == set(
-            profile["durations"]
-        )
+        assert {int(duration) for duration in profile["scene_plans"]} == set(profile["durations"])
 
 
 def test_profile_selection_schema_covers_each_required_input():
@@ -311,16 +309,16 @@ def test_scene_one_alone_uses_master_image_input():
         for duration in profile["durations"]:
             scenes = profile["scene_plans"][str(duration)]
             assert scenes[0]["input_mode"] == "MASTER_IMAGE"
-            assert all(
-                scene["input_mode"] == "PREVIOUS_FINAL_FRAME"
-                for scene in scenes[1:]
-            )
+            assert all(scene["input_mode"] == "PREVIOUS_FINAL_FRAME" for scene in scenes[1:])
 
     source = INDEX_HTML.read_text(encoding="utf-8")
     assert "const firstFramePrompt = isFirst" in source
     assert "? profile.first_frame_prompt_factory(topic, promptDetail)" in source
     assert ": '';" in source
-    assert "input_mode: index === 0 ? InputMode.MASTER_IMAGE : InputMode.PREVIOUS_FINAL_FRAME" in source
+    assert (
+        "input_mode: index === 0 ? InputMode.MASTER_IMAGE : InputMode.PREVIOUS_FINAL_FRAME"
+        in source
+    )
 
 
 def test_architecture_factory_is_subtype_specific_and_scene_bounded():
@@ -442,9 +440,7 @@ def test_product_profile_uses_subtype_materials_parts_stages_and_ranges():
     assert "Vintage Camera" in product["first_frame_prompt"]
     assert "metal body" in product["first_frame_prompt"]
     assert "lens barrel" in product["first_frame_prompt"]
-    assert [scene["completion_range"] for scene in product["scene_plans"]["10"]] == [
-        "0-100%"
-    ]
+    assert [scene["completion_range"] for scene in product["scene_plans"]["10"]] == ["0-100%"]
     assert [scene["completion_range"] for scene in product["scene_plans"]["30"]] == [
         "0-30%",
         "30-75%",
@@ -474,26 +470,16 @@ def test_serializers_dedupe_negative_and_keep_it_as_last_line():
         assert lines[-1].startswith("Negative Prompt:")
         assert lines[-2] == "Template Exclusions: template exclusions"
 
-    assert serialized["master"].endswith(
-        "Negative Prompt: still-negative, no-logo."
-    )
-    assert serialized["scene_block"].endswith(
-        "Negative Prompt: scene-negative, no-text."
-    )
-    assert serialized["scene_video"].endswith(
-        "Negative Prompt: scene-negative, no-text."
-    )
-    assert "Negative Prompt:" not in serialized["scene_block"].split(
-        "Template Exclusions:", 1
-    )[0]
+    assert serialized["master"].endswith("Negative Prompt: still-negative, no-logo.")
+    assert serialized["scene_block"].endswith("Negative Prompt: scene-negative, no-text.")
+    assert serialized["scene_video"].endswith("Negative Prompt: scene-negative, no-text.")
+    assert "Negative Prompt:" not in serialized["scene_block"].split("Template Exclusions:", 1)[0]
     assert "Input: Master Image" in serialized["scene_block"]
     assert "Output: scene_1_final" in serialized["scene_block"]
     master_block, scene_block = serialized["full_plan"].split("SCENE 1", 1)
     assert master_block.count("Negative Prompt:") == 1
     assert scene_block.count("Negative Prompt:") == 1
-    assert scene_block.rstrip().endswith(
-        "Negative Prompt: scene-negative, no-text."
-    )
+    assert scene_block.rstrip().endswith("Negative Prompt: scene-negative, no-text.")
 
 
 def test_timeline_input_label_uses_previous_scene_not_output_asset():
@@ -505,9 +491,7 @@ def test_timeline_input_label_uses_previous_scene_not_output_asset():
         "Scene 5 Final Frame",
     ]
     source = INDEX_HTML.read_text(encoding="utf-8")
-    timeline_block = source.split("// Scene Timeline", 1)[1].split(
-        "// Full plan output", 1
-    )[0]
+    timeline_block = source.split("// Scene Timeline", 1)[1].split("// Full plan output", 1)[0]
     assert "입력: ${getSceneInputLabel(i + 1, scene.input_mode)}" in timeline_block
     assert "출력: ${scene.asset_ref?.flow_asset_label || 'pending'}" in timeline_block
     assert "입력: ${scene.asset_ref?.flow_asset_label" not in timeline_block
@@ -541,9 +525,11 @@ def test_canonical_selection_is_backend_compatible_and_revisioned():
     assert "const canonicalSelection = getCanonicalSelection" in source
     assert "derived_fields: { selection: canonicalSelection }" in source
     assert "derived_fields: project.derived_fields" in source
-    revision_keys = APP_JS.read_text(encoding="utf-8").split(
-        "const INCLUDED_SOURCE_REVISION_KEYS", 1
-    )[1].split("]);", 1)[0]
+    revision_keys = (
+        APP_JS.read_text(encoding="utf-8")
+        .split("const INCLUDED_SOURCE_REVISION_KEYS", 1)[1]
+        .split("]);", 1)[0]
+    )
     assert '"derived_fields"' in revision_keys
 
 
@@ -579,12 +565,18 @@ def test_non_final_prompts_never_expose_completion_language():
                         f"contains completion phrase: {phrase}"
                     )
                 if profile_id == "architecture.korean":
-                    assert "later-stage components and materials remain separate, visible, and untouched" in lowered
+                    assert (
+                        "later-stage components and materials remain separate, visible, and untouched"
+                        in lowered
+                    )
                 elif profile_id == "product.assembly":
                     assert "prohibited future work:" in lowered
                 else:
                     assert "stop at the exact stop state" in lowered
-                    assert "later-stage components and materials remain separate, visible, and untouched" in lowered
+                    assert (
+                        "later-stage components and materials remain separate, visible, and untouched"
+                        in lowered
+                    )
 
     architecture_final = profiles["architecture.korean"]["prompts"]["30"][-1].lower()
     cooking_final = profiles["cooking.miniature"]["prompts"]["30"][-1].lower()
@@ -617,9 +609,7 @@ def test_selection_and_legacy_fields_are_saved_in_project_and_source_draft():
         assert token in build_block
 
     app_source = APP_JS.read_text(encoding="utf-8")
-    revision_keys = app_source.split(
-        "const INCLUDED_SOURCE_REVISION_KEYS", 1
-    )[1].split("]);", 1)[0]
+    revision_keys = app_source.split("const INCLUDED_SOURCE_REVISION_KEYS", 1)[1].split("]);", 1)[0]
     for key in [
         '"selection"',
         '"subject"',

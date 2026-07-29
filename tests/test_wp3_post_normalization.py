@@ -49,9 +49,23 @@ from src.serializers import IMMUTABLE_NEGATIVE
 def sample_style_bible() -> StyleBible:
     return StyleBible(
         identity_lock="A single coherent Korean hanok: one-story warm timber structure",
-        materials={"primary": ["timber", "stone"], "secondary": ["giwa tiles"], "tools": ["chisel"]},
-        camera={"lens": "85mm macro", "angle": "45-degree", "movement": "locked", "distance": "fixed"},
-        lighting={"key": "warm daylight", "fill": "soft", "mood": "cinematic", "consistency": "locked"},
+        materials={
+            "primary": ["timber", "stone"],
+            "secondary": ["giwa tiles"],
+            "tools": ["chisel"],
+        },
+        camera={
+            "lens": "85mm macro",
+            "angle": "45-degree",
+            "movement": "locked",
+            "distance": "fixed",
+        },
+        lighting={
+            "key": "warm daylight",
+            "fill": "soft",
+            "mood": "cinematic",
+            "consistency": "locked",
+        },
         color_palette=["warm wood", "charcoal-black roof tiles"],
         workspace="one compacted-earth miniature site",
         hands_rule="giant human hands only",
@@ -74,9 +88,33 @@ def sample_project(sample_style_bible: StyleBible) -> Project:
         clip_duration_seconds=10,
         style_bible=sample_style_bible,
         scene_plans=[
-            ScenePlan(scene_id=1, name="Foundation and Walls", start_state="empty site", ordered_actions=["place footings", "raise columns"], end_state="wall frame complete", forbidden_changes=[], input_mode=InputMode.MASTER_IMAGE),
-            ScenePlan(scene_id=2, name="Roofing and Exterior", start_state="wall frame", ordered_actions=["add rafters", "place tiles"], end_state="roof complete", forbidden_changes=[], input_mode=InputMode.PREVIOUS_FINAL_FRAME),
-            ScenePlan(scene_id=3, name="Landscaping and Reveal", start_state="roof complete", ordered_actions=["add moss", "reveal hanok"], end_state="complete hanok", forbidden_changes=[], input_mode=InputMode.PREVIOUS_FINAL_FRAME),
+            ScenePlan(
+                scene_id=1,
+                name="Foundation and Walls",
+                start_state="empty site",
+                ordered_actions=["place footings", "raise columns"],
+                end_state="wall frame complete",
+                forbidden_changes=[],
+                input_mode=InputMode.MASTER_IMAGE,
+            ),
+            ScenePlan(
+                scene_id=2,
+                name="Roofing and Exterior",
+                start_state="wall frame",
+                ordered_actions=["add rafters", "place tiles"],
+                end_state="roof complete",
+                forbidden_changes=[],
+                input_mode=InputMode.PREVIOUS_FINAL_FRAME,
+            ),
+            ScenePlan(
+                scene_id=3,
+                name="Landscaping and Reveal",
+                start_state="roof complete",
+                ordered_actions=["add moss", "reveal hanok"],
+                end_state="complete hanok",
+                forbidden_changes=[],
+                input_mode=InputMode.PREVIOUS_FINAL_FRAME,
+            ),
         ],
         scene_count=3,
         source_revision="",
@@ -84,9 +122,15 @@ def sample_project(sample_style_bible: StyleBible) -> Project:
     project.source_revision = project.compute_source_revision()
 
     # Initial scenes
-    scene1 = create_fallback_scene(1, project.scene_plans[0], sample_style_bible, project.profile_id, topic=project.topic)
-    scene2 = create_fallback_scene(2, project.scene_plans[1], sample_style_bible, project.profile_id, topic=project.topic)
-    scene3 = create_fallback_scene(3, project.scene_plans[2], sample_style_bible, project.profile_id, topic=project.topic)
+    scene1 = create_fallback_scene(
+        1, project.scene_plans[0], sample_style_bible, project.profile_id, topic=project.topic
+    )
+    scene2 = create_fallback_scene(
+        2, project.scene_plans[1], sample_style_bible, project.profile_id, topic=project.topic
+    )
+    scene3 = create_fallback_scene(
+        3, project.scene_plans[2], sample_style_bible, project.profile_id, topic=project.topic
+    )
 
     project.scenes = resolve_project_lineage([scene1, scene2, scene3], project.source_revision)
     return project
@@ -95,6 +139,7 @@ def sample_project(sample_style_bible: StyleBible) -> Project:
 # ============================================================================
 # 1. Response Parse & Header Restoration Tests
 # ============================================================================
+
 
 class TestResponseParse:
     def test_parse_json_dict(self):
@@ -116,7 +161,9 @@ class TestResponseParse:
 
     def test_parse_restores_missing_header_fields(self):
         raw_str = '{"scenes": [{"id": 1, "video_prompt": "no headers"}]}'
-        parsed = parse_raw_nim_response(raw_str, expected_request_id="req-restore", expected_source_revision="sha256:abc")
+        parsed = parse_raw_nim_response(
+            raw_str, expected_request_id="req-restore", expected_source_revision="sha256:abc"
+        )
         assert parsed["request_id"] == "req-restore"
         assert parsed["source_revision"] == "sha256:abc"
         assert parsed["schema_version"] == "2.0"
@@ -129,12 +176,15 @@ class TestResponseParse:
     def test_parse_stale_source_revision_raises_value_error(self):
         data = {"request_id": "req-1", "source_revision": "sha256:old"}
         with pytest.raises(ValueError, match="Stale NIM response: source_revision mismatch"):
-            parse_raw_nim_response(data, expected_request_id="req-1", expected_source_revision="sha256:new")
+            parse_raw_nim_response(
+                data, expected_request_id="req-1", expected_source_revision="sha256:new"
+            )
 
 
 # ============================================================================
 # 2. Scene Canonicalization & Invariant Rules Tests
 # ============================================================================
+
 
 class TestSceneCanonicalizer:
     def test_scene1_first_frame_presence(self, sample_style_bible: StyleBible):
@@ -211,6 +261,7 @@ class TestSceneCanonicalizer:
 # 3. Fallback Builder & Missing Scene Coverage Tests
 # ============================================================================
 
+
 class TestFallbackBuilder:
     def test_missing_scene_2_triggers_partial_fallback(self, sample_project: Project):
         """NIM returns scenes 1 and 3, omitting scene 2."""
@@ -256,6 +307,7 @@ class TestFallbackBuilder:
 # 4. Lineage Resolver & Ancestor Chain Tests
 # ============================================================================
 
+
 class TestLineageResolver:
     def test_lineage_revision_incorporates_ancestor(self, sample_project: Project):
         """
@@ -291,18 +343,21 @@ class TestLineageResolver:
 # 5. Complete Post-Normalization Pipeline & Field Order Tests
 # ============================================================================
 
+
 class TestResponseNormalizerPipeline:
     def test_normalize_nim_response_end_to_end(self, sample_project: Project):
         """End-to-end post-normalization of raw NIM response string."""
-        raw_nim_json = json.dumps({
-            "request_id": "req-e2e",
-            "source_revision": sample_project.source_revision,
-            "scenes": [
-                {"id": 1, "first_frame_prompt": "custom ff1", "video_prompt": "custom vid1"},
-                {"id": 3, "video_prompt": "custom vid3"},
-                # Scene 2 missing!
-            ]
-        })
+        raw_nim_json = json.dumps(
+            {
+                "request_id": "req-e2e",
+                "source_revision": sample_project.source_revision,
+                "scenes": [
+                    {"id": 1, "first_frame_prompt": "custom ff1", "video_prompt": "custom vid1"},
+                    {"id": 3, "video_prompt": "custom vid3"},
+                    # Scene 2 missing!
+                ],
+            }
+        )
 
         updated_project, provenance = normalize_nim_response(
             raw_response=raw_nim_json,
@@ -316,7 +371,9 @@ class TestResponseNormalizerPipeline:
         assert provenance.fallback_scene_ids == [2]
 
         # Verify Scene 1 first frame has identity lock
-        assert sample_project.style_bible.identity_lock in updated_project.scenes[0].first_frame_prompt
+        assert (
+            sample_project.style_bible.identity_lock in updated_project.scenes[0].first_frame_prompt
+        )
         # Verify Scene 2+ first frame is None
         assert updated_project.scenes[1].first_frame_prompt is None
         assert updated_project.scenes[2].first_frame_prompt is None

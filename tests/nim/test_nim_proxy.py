@@ -4,6 +4,7 @@ NIM Proxy Server Tests - Section 16.4
 Tests security hardening: origin allowlist, schema validation,
 session token auth, secret redaction, error sanitization.
 """
+
 import asyncio
 import functools
 import json
@@ -33,15 +34,18 @@ from src.nim_proxy_server import (
 
 def run_async(func):
     """Run an async test function synchronously using asyncio.run()."""
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return asyncio.run(func(*args, **kwargs))
+
     return wrapper
 
 
 # ============================================================================
 # Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def proxy_config():
@@ -67,14 +71,19 @@ def valid_nim_request():
         "profile": {
             "id": "architecture.korean",
             "version": "2.0.0",
-            "workflow_mode": "REFERENCE_FRAME_RELAY"
+            "workflow_mode": "REFERENCE_FRAME_RELAY",
         },
         "subject": {"topic": "hanok", "genre": "architecture", "subtype": "hanok"},
         "style_bible": {
             "identity_lock": "test lock",
             "materials": {"primary": [], "secondary": [], "tools": []},
             "camera": {"lens": "85mm", "angle": "45", "movement": "locked", "distance": "fixed"},
-            "lighting": {"key": "warm", "fill": "soft", "mood": "cinematic", "consistency": "locked"},
+            "lighting": {
+                "key": "warm",
+                "fill": "soft",
+                "mood": "cinematic",
+                "consistency": "locked",
+            },
             "color_palette": ["wood", "white"],
             "workspace": "test tray",
             "hands_rule": "giant hands only",
@@ -88,7 +97,7 @@ def valid_nim_request():
                 "ordered_actions": ["place stones"],
                 "end_state": "foundation done",
                 "local_first_frame_prompt": "master prompt",
-                "local_video_prompt": "video prompt 1"
+                "local_video_prompt": "video prompt 1",
             },
             {
                 "id": 2,
@@ -97,17 +106,18 @@ def valid_nim_request():
                 "ordered_actions": ["add roof"],
                 "end_state": "roof done",
                 "local_first_frame_prompt": "",
-                "local_video_prompt": "video prompt 2"
-            }
+                "local_video_prompt": "video prompt 2",
+            },
         ],
         "mutable_fields": ["scenes.*.first_frame_prompt", "scenes.*.video_prompt"],
-        "immutable_rules": ["preserve identity lock", "preserve negative prompt"]
+        "immutable_rules": ["preserve identity lock", "preserve negative prompt"],
     }
 
 
 # ============================================================================
 # Helper: Mock receive/send for ASGI testing
 # ============================================================================
+
 
 class MockReceive:
     def __init__(self, body=b"", more_body=False):
@@ -134,6 +144,7 @@ class MockSend:
 # Test: Configuration & Error Response
 # ============================================================================
 
+
 class TestProxyConfig:
     """Test ProxyConfig creation and validation."""
 
@@ -155,22 +166,22 @@ class TestProxyConfig:
 
     def test_parse_allowed_origin_env_single(self):
         """Single ALLOWED_ORIGIN value is preserved."""
-        assert _parse_allowed_origins_env("http://127.0.0.1:8765") == [
-            "http://127.0.0.1:8765"
-        ]
+        assert _parse_allowed_origins_env("http://127.0.0.1:8765") == ["http://127.0.0.1:8765"]
 
     def test_parse_allowed_origin_env_comma_separated(self):
         """Comma-separated ALLOWED_ORIGIN values are split and stripped."""
-        assert _parse_allowed_origins_env(
-            "http://127.0.0.1:8765, http://localhost:8765"
-        ) == [
+        assert _parse_allowed_origins_env("http://127.0.0.1:8765, http://localhost:8765") == [
             "http://127.0.0.1:8765",
             "http://localhost:8765",
         ]
 
     def test_resolve_allowed_origins_uses_env_when_cli_missing(self):
         """Env ALLOWED_ORIGIN becomes the default allowlist when CLI is unset."""
-        with patch.dict(os.environ, {"ALLOWED_ORIGIN": "http://127.0.0.1:8765,http://localhost:8765"}, clear=False):
+        with patch.dict(
+            os.environ,
+            {"ALLOWED_ORIGIN": "http://127.0.0.1:8765,http://localhost:8765"},
+            clear=False,
+        ):
             assert _resolve_allowed_origins(None) == [
                 "http://127.0.0.1:8765",
                 "http://localhost:8765",
@@ -200,11 +211,12 @@ class TestErrorResponse:
 
     def test_error_response_redacts_authorization(self):
         """Sensitive keys in details are redacted."""
-        resp = error_response(400, "ERROR", "Failed", {
-            "authorization": "Bearer SECRET",
-            "api_key": "KEY_123",
-            "normal_field": "value"
-        })
+        resp = error_response(
+            400,
+            "ERROR",
+            "Failed",
+            {"authorization": "Bearer SECRET", "api_key": "KEY_123", "normal_field": "value"},
+        )
         assert resp["error"]["details"]["authorization"] == "[REDACTED]"
         assert resp["error"]["details"]["api_key"] == "[REDACTED]"
         assert resp["error"]["details"]["normal_field"] == "value"
@@ -213,6 +225,7 @@ class TestErrorResponse:
 # ============================================================================
 # Test: Origin Validation
 # ============================================================================
+
 
 class TestOriginValidation:
     """Test Origin header validation."""
@@ -239,6 +252,7 @@ class TestOriginValidation:
 # ============================================================================
 # Test: Session Token
 # ============================================================================
+
 
 class TestSessionToken:
     """Test session token validation."""
@@ -274,6 +288,7 @@ class TestSessionToken:
 # ============================================================================
 # Test: ASGI App Integration
 # ============================================================================
+
 
 class TestASGIApp:
     """Integration tests for the ASGI application."""
@@ -549,6 +564,7 @@ class TestASGIApp:
 # Test: Schema Validation (NIM Request)
 # ============================================================================
 
+
 class TestSchemaValidation:
     """Test NIM request schema validation."""
 
@@ -601,6 +617,7 @@ class TestSchemaValidation:
 # ============================================================================
 # Test: Upstream Communication (forward_to_nim) - Mocked
 # ============================================================================
+
 
 class TestForwardToNIM:
     """Test upstream NIM communication with mocked HTTP client."""
@@ -674,8 +691,8 @@ class TestForwardToNIM:
             "source_revision": valid_nim_request["source_revision"],
             "scenes": [
                 {"id": 1, "video_prompt": "rewritten 1"},
-                {"id": 2, "video_prompt": "rewritten 2"}
-            ]
+                {"id": 2, "video_prompt": "rewritten 2"},
+            ],
         }
 
         with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
@@ -707,7 +724,7 @@ class TestForwardToNIM:
             "schema_version": "2.0",
             "request_id": valid_nim_request["request_id"],
             "source_revision": valid_nim_request["source_revision"],
-            "scenes": []
+            "scenes": [],
         }
 
         with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
@@ -728,6 +745,7 @@ class TestForwardToNIM:
 # ============================================================================
 # Test: Security Regression
 # ============================================================================
+
 
 class TestSecurityRegression:
     """Regression tests for security issues."""

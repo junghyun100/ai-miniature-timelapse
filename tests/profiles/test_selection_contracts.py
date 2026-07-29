@@ -62,14 +62,10 @@ def test_duration_matrix_has_one_profile_source_of_truth() -> None:
 def test_vehicle_model_options_depend_on_vehicle_category() -> None:
     from src.profiles.vehicle import VEHICLE_MODELS, VehicleCategory, vehicle_profile
 
-    dependency = vehicle_profile.selection_schema["properties"]["model_name"][
-        "x-dependent-options"
-    ]
+    dependency = vehicle_profile.selection_schema["properties"]["model_name"]["x-dependent-options"]
 
     assert dependency["field"] == "vehicle_category"
-    assert set(dependency["options"]) == {
-        category.value for category in VehicleCategory
-    }
+    assert set(dependency["options"]) == {category.value for category in VehicleCategory}
     for category, models in VEHICLE_MODELS.items():
         assert dependency["options"][category.value] == models
 

@@ -42,7 +42,7 @@ class TestSecretRedaction:
             status=500,
             code="FAIL",
             message=f'Connection failed using api_key="{secret}"',
-            details={"api_key": secret, "raw_error": f"Unauthorized Bearer {secret}"}
+            details={"api_key": secret, "raw_error": f"Unauthorized Bearer {secret}"},
         )
 
         err = resp["error"]
@@ -51,7 +51,9 @@ class TestSecretRedaction:
         assert secret not in err["details"]["raw_error"]
 
     def test_serializer_copy_action_redaction(self, sample_project):
-        sample_project.scenes[0].first_frame_prompt = "Master image prompt with nvapi-abc1234567 inside"
+        sample_project.scenes[
+            0
+        ].first_frame_prompt = "Master image prompt with nvapi-abc1234567 inside"
         res = perform_copy_action(sample_project, "master_image")
         assert "nvapi-abc1234567" not in res.text
         assert "[REDACTED]" in res.text
@@ -80,19 +82,23 @@ class TestSessionKeyTransmissionAndRotation:
             "request_id": "req-1",
             "source_revision": "rev-1",
             "profile": {"id": "test"},
-            "scenes": []
+            "scenes": [],
         }
 
         with patch("httpx.AsyncClient.post") as mock_post:
             mock_resp = AsyncMock()
             mock_resp.raise_for_status = AsyncMock()
-            mock_resp.json = MagicMock(return_value={
-                "choices": [{
-                    "message": {
-                        "content": '{"schema_version": "1.0", "request_id": "req-1", "source_revision": "rev-1", "scenes": []}'
-                    }
-                }]
-            })
+            mock_resp.json = MagicMock(
+                return_value={
+                    "choices": [
+                        {
+                            "message": {
+                                "content": '{"schema_version": "1.0", "request_id": "req-1", "source_revision": "rev-1", "scenes": []}'
+                            }
+                        }
+                    ]
+                }
+            )
             mock_post.return_value = mock_resp
 
             await forward_to_nim(payload, session_api_key=session_key)
@@ -104,22 +110,22 @@ class TestSessionKeyTransmissionAndRotation:
     @pytest.mark.anyio
     async def test_key_rotation(self):
         """Verify rotating key from Key A to Key B updates upstream call."""
-        payload = {
-            "request_id": "req-1",
-            "source_revision": "rev-1",
-            "scenes": []
-        }
+        payload = {"request_id": "req-1", "source_revision": "rev-1", "scenes": []}
 
         with patch("httpx.AsyncClient.post") as mock_post:
             mock_resp = AsyncMock()
             mock_resp.raise_for_status = AsyncMock()
-            mock_resp.json = MagicMock(return_value={
-                "choices": [{
-                    "message": {
-                        "content": '{"schema_version": "1.0", "request_id": "req-1", "source_revision": "rev-1", "scenes": []}'
-                    }
-                }]
-            })
+            mock_resp.json = MagicMock(
+                return_value={
+                    "choices": [
+                        {
+                            "message": {
+                                "content": '{"schema_version": "1.0", "request_id": "req-1", "source_revision": "rev-1", "scenes": []}'
+                            }
+                        }
+                    ]
+                }
+            )
             mock_post.return_value = mock_resp
 
             # Request 1 with Key A

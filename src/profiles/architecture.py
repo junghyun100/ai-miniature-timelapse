@@ -749,9 +749,7 @@ def make_scene_video_prompt(
             "Do not move on to the next construction stage. "
         )
 
-    prompt = (
-        f"{global_rules}" f"{_scene_direction(subtype, plan)}" f"{boundary_rules}" f"{body}"
-    ).rstrip()
+    prompt = (f"{global_rules}{_scene_direction(subtype, plan)}{boundary_rules}{body}").rstrip()
     return f"{prompt} {_negative_prompt_suffix()}"
 
 

@@ -34,6 +34,7 @@ from src.ui_adapter import UIRequestAdapter
 # 1. Monotonic Request ID Tests
 # ============================================================================
 
+
 def test_monotonic_request_id_generation():
     """Verify request ID is strictly monotonically increasing."""
     adapter = UIRequestAdapter()
@@ -50,6 +51,7 @@ def test_monotonic_request_id_generation():
 # ============================================================================
 # 2. Provenance Model Tests
 # ============================================================================
+
 
 def test_provenance_model_creation_and_dict():
     """Verify ProvenanceModel serializes clean dict without secrets."""
@@ -89,6 +91,7 @@ def test_provenance_local_fallback():
 # 3. Error Handling & Sanitization Tests
 # ============================================================================
 
+
 def test_error_sanitization():
     """Verify API keys and tokens are redacted from error messages."""
     raw_msg = "Failed request with nvapi-123456789abcdef and key='secret_token_123'"
@@ -117,6 +120,7 @@ def test_is_retryable_classification():
 # ============================================================================
 # 4. State Store & Stale Guard Tests
 # ============================================================================
+
 
 def test_state_store_stale_guard_rejection():
     """Verify Stale Guard rejects responses with mismatched request_id or source_revision."""
@@ -184,7 +188,9 @@ def test_state_store_failure_rules():
 
     # Timeout test
     store.start_request(request_id=16, source_revision="sha256:v5")
-    store.fail_request(16, RequestTimeoutError("Client timeout of 60s exceeded", timeout_seconds=60.0))
+    store.fail_request(
+        16, RequestTimeoutError("Client timeout of 60s exceeded", timeout_seconds=60.0)
+    )
 
     assert store.state == RequestState.ERROR
     assert store.state != RequestState.SUCCESS
@@ -194,6 +200,7 @@ def test_state_store_failure_rules():
 # ============================================================================
 # 5. UI Request Adapter Async Execution & Retry Tests
 # ============================================================================
+
 
 @pytest.mark.anyio
 async def test_ui_adapter_successful_flow():
@@ -285,7 +292,9 @@ async def test_ui_adapter_non_retryable_401_immediate_failure():
 async def test_ui_adapter_timeout_handling():
     """Test client timeout cancels request and enforces Failure Rule: timeout response not applied."""
     fetch_wrapper = FetchWrapper()
-    fetch_wrapper.fetch_json = AsyncMock(side_effect=RequestTimeoutError("60s timeout exceeded", timeout_seconds=60.0))
+    fetch_wrapper.fetch_json = AsyncMock(
+        side_effect=RequestTimeoutError("60s timeout exceeded", timeout_seconds=60.0)
+    )
 
     adapter = UIRequestAdapter(fetch_wrapper=fetch_wrapper)
     draft = {"topic": "Product"}

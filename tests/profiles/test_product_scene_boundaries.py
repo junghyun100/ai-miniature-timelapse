@@ -43,8 +43,7 @@ def _assert_scene_contract(subtype: str, duration: int) -> None:
 
         assert prompt.count("Negative Prompt:") == 1
         assert prompt.rstrip().endswith(
-            "floating parts, teleporting parts, completed model at start, "
-            "messy final workbench."
+            "floating parts, teleporting parts, completed model at start, messy final workbench."
         )
         assert "giant human hands only" in positive
         assert "no floating or teleporting parts" in positive
@@ -68,10 +67,7 @@ def _assert_scene_contract(subtype: str, duration: int) -> None:
             ]
             assert scene.reserved_future_actions
             assert scene.forbidden_future_actions == scene.reserved_future_actions
-            assert all(
-                action in scene.reserved_future_actions
-                for action in expected_future[:-1]
-            )
+            assert all(action in scene.reserved_future_actions for action in expected_future[:-1])
             assert "completion range:" in positive
             assert "ordered current actions:" in positive
             assert "exact stop state:" in positive

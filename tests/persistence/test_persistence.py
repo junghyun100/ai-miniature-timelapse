@@ -1,6 +1,7 @@
 """
 Tests for Persistence Layer - Section 16.2
 """
+
 import json
 import tempfile
 from datetime import datetime
@@ -42,6 +43,7 @@ from src.persistence import (
 # Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def temp_base_dir():
     """Create a temporary base directory for testing."""
@@ -60,7 +62,12 @@ def sample_project() -> Project:
             "tools": ["chisel", "trowel"],
         },
         camera={"lens": "85mm", "angle": "45", "movement": "locked", "distance": "fixed"},
-        lighting={"key": "soft daylight", "fill": "ambient", "mood": "warm", "consistency": "locked"},
+        lighting={
+            "key": "soft daylight",
+            "fill": "ambient",
+            "mood": "warm",
+            "consistency": "locked",
+        },
         color_palette=["warm wood", "terracotta", "stone gray"],
         workspace="compacted earth tray",
         hands_rule="giant human hands only",
@@ -155,9 +162,20 @@ def sample_project() -> Project:
         style_bible=style_bible,
         derived_fields={},
         scene_plans=[
-            ScenePlan(1, "Foundation and Walls", "start", ["a", "b"], "end", InputMode.MASTER_IMAGE),
-            ScenePlan(2, "Roofing and Exterior", "start", ["c", "d"], "end", InputMode.PREVIOUS_FINAL_FRAME),
-            ScenePlan(3, "Painting and Reveal", "start", ["e", "f"], "end", InputMode.PREVIOUS_FINAL_FRAME),
+            ScenePlan(
+                1, "Foundation and Walls", "start", ["a", "b"], "end", InputMode.MASTER_IMAGE
+            ),
+            ScenePlan(
+                2,
+                "Roofing and Exterior",
+                "start",
+                ["c", "d"],
+                "end",
+                InputMode.PREVIOUS_FINAL_FRAME,
+            ),
+            ScenePlan(
+                3, "Painting and Reveal", "start", ["e", "f"], "end", InputMode.PREVIOUS_FINAL_FRAME
+            ),
         ],
         scene_count=3,
         source_revision="sha256:" + "0" * 64,
@@ -179,7 +197,11 @@ def sample_project() -> Project:
         relay_branch=RelayBranch(
             branch_id="branch-123",
             parent_branch_id=None,
-            scene_statuses={"1": SceneStatus.CONFIRMED, "2": SceneStatus.CONFIRMED, "3": SceneStatus.AWAITING_PREVIOUS_FRAME},
+            scene_statuses={
+                "1": SceneStatus.CONFIRMED,
+                "2": SceneStatus.CONFIRMED,
+                "3": SceneStatus.AWAITING_PREVIOUS_FRAME,
+            },
             asset_refs=[scene1_asset, scene2_asset, scene3_asset],
             created_at=datetime.utcnow(),
             lineage_revision="sha256:" + "0" * 64,
@@ -192,6 +214,7 @@ def sample_project() -> Project:
 # ============================================================================
 # Save/Load Tests
 # ============================================================================
+
 
 class TestSaveLoad:
     """Test saving and loading project state."""
@@ -246,7 +269,9 @@ class TestSaveLoad:
         assert loaded_project.relay_branch is not None
         assert sample_project.relay_branch is not None
         assert loaded_project.relay_branch.branch_id == sample_project.relay_branch.branch_id
-        assert loaded_project.relay_branch.scene_statuses == sample_project.relay_branch.scene_statuses
+        assert (
+            loaded_project.relay_branch.scene_statuses == sample_project.relay_branch.scene_statuses
+        )
 
     def test_save_with_existing_project_id(self, temp_base_dir, sample_project):
         """Save with a specific project_id."""
@@ -281,6 +306,7 @@ class TestSaveLoad:
 # ============================================================================
 # Load Error Handling Tests
 # ============================================================================
+
 
 class TestLoadErrors:
     """Test error handling when loading project state."""
@@ -344,6 +370,7 @@ class TestLoadErrors:
 # Delete Tests
 # ============================================================================
 
+
 class TestDelete:
     """Test deleting project state."""
 
@@ -370,6 +397,7 @@ class TestDelete:
 # List Projects Tests
 # ============================================================================
 
+
 class TestListProjects:
     """Test listing saved projects."""
 
@@ -395,6 +423,7 @@ class TestListProjects:
 
         # Small delay to ensure different timestamps
         import time
+
         time.sleep(0.01)
 
         # Save second project
@@ -422,6 +451,7 @@ class TestListProjects:
 # ============================================================================
 # Active Scene Index Tests
 # ============================================================================
+
 
 class TestActiveSceneIndex:
     """Test determining active scene from relay state."""
@@ -454,6 +484,7 @@ class TestActiveSceneIndex:
 # Resumable Check Tests
 # ============================================================================
 
+
 class TestResumable:
     """Test project resumable check."""
 
@@ -480,6 +511,7 @@ class TestResumable:
 # ============================================================================
 # Storage Path Tests
 # ============================================================================
+
 
 class TestStoragePaths:
     """Test storage path utilities."""
@@ -519,6 +551,7 @@ class TestStoragePaths:
 # Schema Version Tests
 # ============================================================================
 
+
 class TestSchemaVersion:
     """Test schema version handling."""
 
@@ -536,6 +569,7 @@ class TestSchemaVersion:
 # Migration Tests
 # ============================================================================
 
+
 class TestMigration:
     """Test state migration."""
 
@@ -545,6 +579,7 @@ class TestMigration:
         data["schema_version"] = CURRENT_SCHEMA_VERSION
 
         from src.persistence import migrate_project_state_if_needed
+
         result = migrate_project_state_if_needed(data)
 
         assert result == data
@@ -555,6 +590,7 @@ class TestMigration:
         data["schema_version"] = "99.0"
 
         from src.persistence import migrate_project_state_if_needed
+
         result = migrate_project_state_if_needed(data)
 
         assert result == data

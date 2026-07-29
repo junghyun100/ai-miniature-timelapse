@@ -2,6 +2,7 @@
 Tests for source revision computation (Section 14.1).
 Tests cross-platform hash equality between Python and JS implementations.
 """
+
 import hashlib
 import json
 
@@ -178,16 +179,28 @@ class TestSourceRevision:
 
         # Manual computation for verification
         included_keys = {
-            "profile_id", "profile_version", "workflow_mode",
-            "topic", "genre", "subtype", "topic_label",
-            "model_name", "dish_name", "craft_name",
-            "duration_seconds", "clip_duration_seconds", "aspect_ratio",
+            "profile_id",
+            "profile_version",
+            "workflow_mode",
+            "topic",
+            "genre",
+            "subtype",
+            "topic_label",
+            "model_name",
+            "dish_name",
+            "craft_name",
+            "duration_seconds",
+            "clip_duration_seconds",
+            "aspect_ratio",
             "style_bible",
             "derived_fields",
             "scene_plans",
-            "narration", "idea_seed",
+            "narration",
+            "idea_seed",
             "flow_execution_profile_id",
-            "nim_enabled", "nim_model_id", "nim_refinement_policy"
+            "nim_enabled",
+            "nim_model_id",
+            "nim_refinement_policy",
         }
 
         filtered = {k: v for k, v in source_draft.items() if k in included_keys}
