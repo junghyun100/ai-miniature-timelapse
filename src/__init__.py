@@ -1,2 +1,3 @@
-"""Core package for AI Miniature Timelapse."""
-
+"""
+Core package for AI Miniature Timelapse.
+"""

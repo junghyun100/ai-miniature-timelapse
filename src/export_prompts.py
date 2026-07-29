@@ -31,7 +31,11 @@ def ensure_source_revision(
         project_dict = cast(dict[str, Any], project)
         rev = cast(str | None, project_dict.get("source_revision"))
         if not rev:
-            if require_existing or not project_dict.get("profile_id") or not project_dict.get("topic"):
+            if (
+                require_existing
+                or not project_dict.get("profile_id")
+                or not project_dict.get("topic")
+            ):
                 raise ValueError(
                     "Export failed: missing source_revision and required project fields (profile_id, topic)"
                 )
@@ -101,6 +105,7 @@ def export_text_bundle(
             raise ValueError("Export failed: plan is stale")
         ensure_source_revision(project)
         from .serializers import serialize_full_plan
+
         return serialize_full_plan(project)
 
     project_dict = cast(dict[str, Any], project)

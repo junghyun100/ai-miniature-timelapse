@@ -291,7 +291,11 @@ async def _send_json(send, status: int, payload: dict):
                 # CORS - strict allowlist only
                 (
                     b"access-control-allow-origin",
-                    (config.allowed_origins[0] if config.allowed_origins else "http://127.0.0.1:4173").encode(),
+                    (
+                        config.allowed_origins[0]
+                        if config.allowed_origins
+                        else "http://127.0.0.1:4173"
+                    ).encode(),
                 ),
                 (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
                 (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
@@ -536,7 +540,9 @@ async def handle_nim_rewrite(scope, receive, send):
     await _send_json(send, 200, result)
 
 
-async def forward_to_nim(request_payload: dict[str, Any], session_api_key: str | None = None) -> dict[str, Any]:
+async def forward_to_nim(
+    request_payload: dict[str, Any], session_api_key: str | None = None
+) -> dict[str, Any]:
     """Forward validated request to NVIDIA NIM upstream."""
     config = _require_config()
     # Determine upstream URL
