@@ -25,7 +25,13 @@ For complete operational and deployment details, consult the canonical guides:
 
 ## 3. Overview & Supported Profiles
 
-AI-assisted miniature timelapse generator implementing [Reference-Frame Relay v2.0](docs/reference-frame-relay-spec.md). Supports 5 workflow profiles with deterministic relay state machines, NIM proxy integration, and a browser-based Relay Runner UI.
+AI-assisted miniature timelapse generator implementing [Reference-Frame Relay v2.0](docs/reference-frame-relay-spec.md). The project is intentionally built for **Google Flow** as the manual video-generation target, with deterministic relay state machines, NIM proxy integration, and a browser-based Relay Runner UI.
+
+Important Flow constraints:
+
+- Google Flow does **not** provide a public API path for this workflow, so the app is designed around manual browser handoff and scene-by-scene copying.
+- Video generation is organized in **10-second increments** because the relay system depends on saved-frame continuity between scenes.
+- The UI therefore focuses on prompt planning, prompt copying, and frame handoff rather than direct video automation.
 
 | Profile | Workflow Mode | Duration | Scenes | Use Case |
 |---------|---------------|----------|--------|----------|
@@ -101,6 +107,8 @@ flowchart LR
 - Prompt copying must follow the rendered canonical output, not a stale input draft.
 - Scene continuity is preserved by saved-frame relay, not repeated wording alone.
 - The UI must not imply an active final-stitch path when that backend is disconnected or optional.
+- Google Flow is a manual execution target, not an API-driven backend.
+- Scene videos are planned and executed as 10-second units so each generated clip can become the next scene's start frame.
 - `file://` access is intentionally discouraged because ES module, clipboard, and fetch behavior are inconsistent there.
 
 ### 4.6 Problems Solved
