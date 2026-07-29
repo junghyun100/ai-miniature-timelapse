@@ -194,6 +194,7 @@ def validate_invariants(project: Project) -> list[str]:
     Returns list of error messages (empty = valid).
     """
     errors = []
+    from .profile_types import PROFILE_REGISTRY
 
     # Invariant: Scene 1 MUST have first_frame_prompt; Scenes 2+ MUST NOT
     if project.scenes:
@@ -441,13 +442,6 @@ class SourceRevision:
 
     def to_dict(self) -> dict:
         return asdict(self)
-
-
-# ============================================================================
-# Profile Registry (loaded from profile implementations)
-# ============================================================================
-
-from .profile_types import PROFILE_REGISTRY
 
 
 # ============================================================================
