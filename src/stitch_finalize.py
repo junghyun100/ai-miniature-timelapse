@@ -6,8 +6,14 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-# OpenMontage VideoStitch (after: pip install -e /path/to/OpenMontage)
-from tools.video.video_stitch import ToolResult, VideoStitch
+try:
+    # Optional stitching backend. Keep this import lazy/optional so the rest of the
+    # project can run even when the backend is unavailable.
+    from tools.video.video_stitch import ToolResult, VideoStitch
+except Exception as exc:  # pragma: no cover - environment dependent
+    ToolResult = dict[str, Any]  # type: ignore[assignment]
+    VideoStitch = None  # type: ignore[assignment]
+    _STITCH_IMPORT_ERROR = exc
 
 
 def collect_clips_from_render_commands(base_dir: Path) -> list[str]:
@@ -60,8 +66,16 @@ def finalize(
     preset: str = "medium",
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Run final stitching using OpenMontage VideoStitch."""
+    """Run final stitching when the optional stitching backend is available."""
     clips = collect_clips_from_render_commands(base_dir)
+
+    if VideoStitch is None:
+        return {
+            "output": str(output_path),
+            "success": False,
+            "error": f"Stitching backend unavailable: {_STITCH_IMPORT_ERROR}",
+            "method": "disabled",
+        }
 
     if not clips:
         return {
@@ -125,7 +139,7 @@ def finalize(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run final stitching via OpenMontage VideoStitch.")
+    parser = argparse.ArgumentParser(description="Run final stitching via the optional stitching backend.")
     parser.add_argument("base_dir", help="Project base directory (contains renders/, exports/)")
     parser.add_argument("output_path", help="Output video file path")
     parser.add_argument("--transition", choices=["cut", "crossfade", "fade"], default="cut")

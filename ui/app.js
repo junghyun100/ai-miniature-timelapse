@@ -849,19 +849,43 @@ export function getSceneStatusBadgeClass(status) {
 }
 
 export async function copyToClipboard(text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        return true;
-    } catch {
-        // Fallback for older browsers
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return true;
+    const payload = String(text ?? "");
+    if (!payload.trim()) {
+        throw new Error("No text available to copy.");
     }
+    try {
+        if (window.isSecureContext && navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(payload);
+            return true;
+        }
+    } catch (error) {
+        // Fall back to the manual path below.
+        console.warn("navigator.clipboard.writeText failed, using fallback copy:", error);
+    }
+
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = payload;
+        textarea.setAttribute('readonly', 'true');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        textarea.style.left = '-9999px';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+
+        const copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (copied) {
+            return true;
+        }
+    } catch (error) {
+        console.warn("execCommand copy fallback failed:", error);
+    }
+
+    throw new Error("Clipboard copy failed. Please select the text manually and copy it.");
 }
 
 export function showToast(message, type = 'info', duration = 3000) {

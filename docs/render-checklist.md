@@ -6,8 +6,8 @@
 
 ## When done
 
-- The watcher will auto-stitch when all clips are present.
-- If you want to finalize manually, run:
+- The stitching backend is currently optional/disabled in this build.
+- If you need a manual final render hook later, run:
 
 ```bash
 python3 src/stitch_finalize.py output output/exports/final_timeline.mp4

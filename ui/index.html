@@ -102,10 +102,10 @@
             </div>
           </div>
 
-          <!-- Stitching Options -->
-          <div class="setup-card stitch-card">
+          <!-- Stitching controls are currently disabled. -->
+          <div class="setup-card stitch-card" hidden aria-hidden="true">
             <h3>스티칭 옵션</h3>
-            <p class="card-desc">최종 비디오 연결 방식 설정 (OpenMontage VideoStitch)</p>
+            <p class="card-desc">현재 비활성화된 연결 옵션입니다.</p>
             <div class="field-row">
               <div class="field">
                 <label for="stitchTransition">트랜지션</label>
@@ -1572,10 +1572,26 @@
         let result;
         switch (action) {
           case CopyAction.MASTER_IMAGE:
-            result = performCopyAction(project, CopyAction.MASTER_IMAGE, null, project.source_draft);
+            {
+              const renderedMasterPrompt = masterPromptEl?.textContent;
+              const fallbackMasterPrompt = performCopyAction(project, CopyAction.MASTER_IMAGE, null, project.source_draft).text;
+              result = {
+                action,
+                source_revision: project.source_revision,
+                text: renderedMasterPrompt && renderedMasterPrompt.trim() ? renderedMasterPrompt : fallbackMasterPrompt
+              };
+            }
             break;
           case CopyAction.SCENE_VIDEO:
-            result = performCopyAction(project, CopyAction.SCENE_VIDEO, sceneId, project.source_draft);
+            {
+              const renderedVideoPrompt = videoPromptEl?.textContent;
+              const fallbackVideoPrompt = performCopyAction(project, CopyAction.SCENE_VIDEO, sceneId, project.source_draft).text;
+              result = {
+                action,
+                source_revision: project.source_revision,
+                text: renderedVideoPrompt && renderedVideoPrompt.trim() ? renderedVideoPrompt : fallbackVideoPrompt
+              };
+            }
             break;
           case CopyAction.FULL_SCENE:
             result = performCopyAction(project, CopyAction.FULL_SCENE, sceneId, project.source_draft);

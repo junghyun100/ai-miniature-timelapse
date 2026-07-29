@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument("--base-dir", default="output")
     parser.add_argument("--final-output", default="output/exports/final_timeline.mp4")
     parser.add_argument("--summary", default="-")
-    # Stitching options (passed to OpenMontage VideoStitch)
+    # Optional stitching options for the final assembly step
     parser.add_argument("--transition", choices=["cut", "crossfade", "fade"], default="cut")
     parser.add_argument("--transition-duration", type=float, default=0.5)
     parser.add_argument("--no-normalize", dest="auto_normalize", action="store_false", default=True)

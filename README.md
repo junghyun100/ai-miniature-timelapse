@@ -37,7 +37,82 @@ AI-assisted miniature timelapse generator implementing [Reference-Frame Relay v2
 
 ---
 
-## 4. Strict Execution Order
+## 4. System Flow & Design Notes
+
+The app is intentionally structured as a relay system, not a generic prompt editor.
+
+### 4.1 Data Flow
+
+```mermaid
+flowchart LR
+    A["Source Draft<br/>editable setup"] --> B["Canonical serialization<br/>source revision + prompt pack"]
+    B --> C["NIM Proxy<br/>local loopback only"]
+    C --> D["NVIDIA NIM<br/>optional prompt rewrite"]
+    D --> E["Applied Prompt<br/>canonical output"]
+    E --> F["Scene Preview<br/>per-scene copy target"]
+    F --> G["Copy to Google Flow<br/>manual handoff"]
+    G --> H["Saved Flow frame<br/>next scene input"]
+    H --> F
+    B --> I["Fallback local draft<br/>when NIM is unavailable"]
+    I --> E
+```
+
+### 4.2 Relay State Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Setup
+    Setup --> PlanReady: build plan
+    PlanReady --> Scene1Ready: first-frame approved
+    Scene1Ready --> Scene1Done: copy + confirm
+    Scene1Done --> SceneNReady: saved final frame reused
+    SceneNReady --> SceneNDone: copy + confirm
+    SceneNDone --> Complete: all scenes finished
+    SceneNReady --> SceneNReady: hold previous final frame
+    Complete --> [*]
+```
+
+### 4.3 Prompt Lifecycle
+
+```mermaid
+flowchart TB
+    S["Source Draft"] --> R["Source Revision hash"]
+    R --> N{"NIM enabled?"}
+    N -- Yes --> A["Applied Prompt<br/>NIM-refined canonical pack"]
+    N -- No --> L["Applied Prompt<br/>local canonical draft"]
+    A --> P["Scene Preview<br/>read-only applied output"]
+    L --> P
+    P --> C["Copy button<br/>video prompt / master image prompt"]
+    C --> F["Google Flow handoff"]
+```
+
+### 4.4 Optional Stitching Path
+
+```mermaid
+flowchart LR
+    R1["Scene renders"] --> R2["Optional finalization step"]
+    R2 --> R3["Exported final video"]
+    R2 -. currently disabled / optional .-> R4["No active Open Montage dependency"]
+```
+
+### 4.5 Design Constraints That Shape the UI
+
+- The browser and NVIDIA key never meet directly; the proxy is the only upstream path.
+- Prompt copying must follow the rendered canonical output, not a stale input draft.
+- Scene continuity is preserved by saved-frame relay, not repeated wording alone.
+- The UI must not imply an active final-stitch path when that backend is disconnected or optional.
+- `file://` access is intentionally discouraged because ES module, clipboard, and fetch behavior are inconsistent there.
+
+### 4.6 Problems Solved
+
+- Removed the confusion between `file://` and local HTTP serving.
+- Stabilized `Video Prompt` copy so it matches the visible scene output.
+- Prevented stale plans from being copied as if they were valid.
+- Made Open Montage an explicit optional path instead of a misleading active dependency.
+
+---
+
+## 5. Strict Execution Order
 
 Follow this exact sequence to run the system and verify quality:
 
@@ -132,7 +207,7 @@ uv run pytest tests/ -v
 
 ---
 
-## 5. Project Structure
+## 6. Project Structure
 
 ```
 ai-miniature-timelapse/
@@ -174,7 +249,7 @@ ai-miniature-timelapse/
 
 ---
 
-## 6. Reverse Rollback Execution Order
+## 7. Reverse Rollback Execution Order
 
 If a local or deployed environment encounters critical failure, follow this exact reverse sequence:
 
