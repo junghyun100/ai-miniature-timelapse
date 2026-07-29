@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from prompt_templates import (
+from .prompt_templates import (
     CONTINUITY_RULE,
     build_common_core,
     build_first_frame_prompt,

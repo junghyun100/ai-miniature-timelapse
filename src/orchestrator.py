@@ -6,19 +6,19 @@ import os
 from pathlib import Path
 from typing import Any
 
-from export_prompts import export_text_bundle
-from nim_prompt_generator import generate_prompt as generate_nim_prompt
-from pipeline import STYLE_BLOCK, build_project
-from prompt_pack import build_prompt_pack
-from prompt_refiner import refine_prompt
-from prompt_templates import format_building_type_choices, get_supported_building_types
-from qc_report import build_report
-from render_commands import build_commands
-from render_manifest import build_render_manifest
-from render_plan import build_render_plan
-from retry_plan import build_retry_plan
-from retry_selector import build_retry_selection
-from scene_md_export import export_scene_md
+from .export_prompts import export_text_bundle
+from .nim_prompt_generator import generate_prompt as generate_nim_prompt
+from .pipeline import STYLE_BLOCK, build_project
+from .prompt_pack import build_prompt_pack
+from .prompt_refiner import refine_prompt
+from .prompt_templates import format_building_type_choices, get_supported_building_types
+from .qc_report import build_report
+from .render_commands import build_commands
+from .render_manifest import build_render_manifest
+from .render_plan import build_render_plan
+from .retry_plan import build_retry_plan
+from .retry_selector import build_retry_selection
+from .scene_md_export import export_scene_md
 
 
 def ensure_dirs(base_dir: Path) -> None:
@@ -65,6 +65,7 @@ def run(
     building_type: str = "hanok",
     refine_prompts: bool = False,
     use_nim_generate: bool = False,
+    nim_model: str = "",
 ) -> dict[str, Any]:
     ensure_dirs(base_dir)
     scene_md_dir = base_dir / "scenes_md"
@@ -78,7 +79,7 @@ def run(
     prompt_bundle = export_text_bundle(project)
 
     if use_nim_generate:
-        model = os.environ.get("NIM_MODEL", "nvidia/nemotron-3-super-120b-a12b")
+        model = nim_model or os.environ.get("NIM_MODEL", "nvidia/nemotron-3-super-120b-a12b")
         try:
             generated_prompt_bundle = generate_nim_prompt(prompt_bundle, model)
         except RuntimeError as e:

@@ -5,7 +5,7 @@ import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from prompt_templates import (
+from .prompt_templates import (
     FINAL_FRAME_HANDOFF,
     FINAL_REVEAL,
     NEGATIVE_PROMPT,

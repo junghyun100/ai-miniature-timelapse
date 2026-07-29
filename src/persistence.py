@@ -388,7 +388,7 @@ def is_project_resumable(project: Project) -> bool:
         return False
     if not project.source_revision:
         return False
-    return project.profile_id
+    return bool(project.profile_id)
 
 
 def get_supported_schema_versions() -> list[str]:

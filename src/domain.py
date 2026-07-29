@@ -447,10 +447,7 @@ class SourceRevision:
 # Profile Registry (loaded from profile implementations)
 # ============================================================================
 
-try:
-    from profile_types import PROFILE_REGISTRY
-except ImportError:
-    from .profile_types import PROFILE_REGISTRY
+from .profile_types import PROFILE_REGISTRY
 
 
 # ============================================================================

@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from orchestrator import run as run_orchestrator
-from stitch_finalize import finalize as finalize_stitch
+from .orchestrator import run as run_orchestrator
+from .stitch_finalize import finalize as finalize_stitch
 
 
 def load_json(path: str | Path) -> dict[str, Any]:

@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-try:
-    from .domain import Project, compute_source_revision
-except ImportError:
-    from domain import Project, compute_source_revision
+from .domain import Project, compute_source_revision
 
 
 def _is_project_obj(obj: Any) -> bool:
@@ -22,28 +19,29 @@ def ensure_source_revision(
     Computes and attaches revision if missing.
     Raises ValueError if revision is missing and cannot be computed due to corrupt/missing data.
     """
-    if _is_project_obj(project):
+    if isinstance(project, Project):
         if not project.source_revision:
             if not project.profile_id or not project.topic:
                 raise ValueError(
                     "Export failed: project missing required fields (profile_id, topic)"
                 )
             project.source_revision = project.compute_source_revision()
-        rev = project.source_revision
+        rev: str | None = cast(str, project.source_revision)
     else:
-        rev = project.get("source_revision")
+        project_dict = cast(dict[str, Any], project)
+        rev = cast(str | None, project_dict.get("source_revision"))
         if not rev:
-            if require_existing or not project.get("profile_id") or not project.get("topic"):
+            if require_existing or not project_dict.get("profile_id") or not project_dict.get("topic"):
                 raise ValueError(
                     "Export failed: missing source_revision and required project fields (profile_id, topic)"
                 )
             try:
-                rev = compute_source_revision(project)
-                project["source_revision"] = rev
+                rev = compute_source_revision(project_dict)
+                project_dict["source_revision"] = rev
             except Exception as e:
                 raise ValueError(
                     f"Export failed: missing source_revision and unable to compute revision: {e}"
-                )
+                ) from e
 
     if not rev or not isinstance(rev, str) or not rev.startswith("sha256:"):
         raise ValueError(f"Export failed: invalid or missing source_revision '{rev}'")
@@ -65,14 +63,15 @@ def export_project_json(
     Export project as dictionary with attached source_revision.
     Per WP-4 and WP-5: export without valid revision or with stale plan MUST fail.
     """
-    if _is_project_obj(project):
+    if isinstance(project, Project):
         if getattr(project, "is_stale", False):
             raise ValueError("Export failed: plan is stale")
-        data = project.to_dict()
+        data = cast(dict[str, Any], project.to_dict())
     else:
-        if isinstance(project, dict) and project.get("is_stale"):
+        project_dict = cast(dict[str, Any], project)
+        if project_dict.get("is_stale"):
             raise ValueError("Export failed: plan is stale")
-        data = dict(project)
+        data = dict(project_dict)
 
     rev = ensure_source_revision(data)
     data["source_revision"] = rev
@@ -97,20 +96,18 @@ def export_text_bundle(
     Per Section 11.6 and WP-5 Export Parity.
     Uses canonical plan serializer serialize_full_plan when available.
     """
-    if _is_project_obj(project):
+    if isinstance(project, Project):
         if getattr(project, "is_stale", False):
             raise ValueError("Export failed: plan is stale")
         ensure_source_revision(project)
-        try:
-            from .serializers import serialize_full_plan
-        except ImportError:
-            from serializers import serialize_full_plan
+        from .serializers import serialize_full_plan
         return serialize_full_plan(project)
 
-    if isinstance(project, dict) and project.get("is_stale"):
+    project_dict = cast(dict[str, Any], project)
+    if project_dict.get("is_stale"):
         raise ValueError("Export failed: plan is stale")
 
-    rev = ensure_source_revision(project)
+    rev = ensure_source_revision(project_dict)
 
     if current_draft:
         try:
@@ -121,12 +118,12 @@ def export_text_bundle(
         except Exception:
             pass
 
-    topic = project.get("topic", "")
-    topic_label = project.get("topic_label", "")
-    duration = project.get("duration_seconds") or project.get("duration", 0)
-    aspect_ratio = project.get("aspect_ratio") or project.get("format", "")
-    profile_id = f"{project.get('profile_id', '')}@{project.get('profile_version', '')}"
-    raw_scenes = project.get("scenes", [])
+    topic = project_dict.get("topic", "")
+    topic_label = project_dict.get("topic_label", "")
+    duration = project_dict.get("duration_seconds") or project_dict.get("duration", 0)
+    aspect_ratio = project_dict.get("aspect_ratio") or project_dict.get("format", "")
+    profile_id = f"{project_dict.get('profile_id', '')}@{project_dict.get('profile_version', '')}"
+    raw_scenes = project_dict.get("scenes", [])
     scenes = []
     for s in raw_scenes:
         scenes.append(

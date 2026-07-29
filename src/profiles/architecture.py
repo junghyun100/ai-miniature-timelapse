@@ -11,6 +11,8 @@ Per Section 13.5:
 
 from __future__ import annotations
 
+from typing import cast
+
 from ..profile_types import (
     STATE_PERMANENCE_RULE,
     InputMode,
@@ -337,17 +339,19 @@ def _palette_phrase(subtype: str) -> str:
 
 
 def _materials_phrase(subtype: str) -> str:
-    return ", ".join(ARCHITECTURE_SUBTYPES[subtype]["materials"])
+    materials = ARCHITECTURE_SUBTYPES[subtype]["materials"]
+    return ", ".join(materials)
 
 
 def _features_phrase(subtype: str) -> str:
-    return ", ".join(ARCHITECTURE_SUBTYPES[subtype]["key_features"])
+    features = ARCHITECTURE_SUBTYPES[subtype]["key_features"]
+    return ", ".join(features)
 
 
 def _identity_lock(subtype: str) -> str:
     data = ARCHITECTURE_SUBTYPES[subtype]
-    materials = ", ".join(data["materials"][:4])
-    features = ", ".join(data["key_features"][:3])
+    materials = ", ".join(cast(list[str], data["materials"])[:4])
+    features = ", ".join(cast(list[str], data["key_features"])[:3])
     palette = _palette_phrase(subtype)
     return (
         "macro cinematography, 100mm lens, extreme close-up, soft focus pulls, "

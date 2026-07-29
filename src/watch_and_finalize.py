@@ -6,9 +6,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from orchestrator import run as run_orchestrator
-from prompt_templates import format_building_type_choices, get_supported_building_types
-from stitch_finalize import finalize as finalize_stitch
+from .orchestrator import run as run_orchestrator
+from .prompt_templates import format_building_type_choices, get_supported_building_types
+from .stitch_finalize import finalize as finalize_stitch
 
 
 def load_json(path: str | Path) -> dict[str, Any]:

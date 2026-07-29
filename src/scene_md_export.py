@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from prompt_templates import build_first_frame_prompt, get_building_template
+from .prompt_templates import build_first_frame_prompt, get_building_template
 
 
 def load_json(path: str | Path) -> dict[str, Any]:

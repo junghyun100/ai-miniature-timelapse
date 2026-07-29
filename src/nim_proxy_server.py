@@ -25,14 +25,15 @@ import re
 import secrets
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import httpx
-import jsonschema
+import jsonschema  # type: ignore[import-untyped]
 from jsonschema import validate
 
 # Try to import uvloop for better performance
 try:
-    import uvloop
+    import uvloop  # type: ignore[import-not-found]
 
     uvloop.install()
 except ImportError:
@@ -55,13 +56,13 @@ class ProxyConfig:
     port: int = 4174
 
     # CORS - strict allowlist
-    allowed_origins: list[str] = None
+    allowed_origins: list[str] | None = None
 
     # Request limits
     max_body_size: int = 1_048_576  # 1 MiB
 
     # NIM upstream
-    upstream_hosts: list[str] = None
+    upstream_hosts: list[str] | None = None
     default_model: str = "meta/llama-3.1-8b-instruct"
     upstream_timeout: float = 60.0
 
@@ -87,6 +88,13 @@ _config: ProxyConfig | None = None
 _session_token: str | None = None
 
 
+def _require_config() -> ProxyConfig:
+    """Return the initialized proxy config."""
+    if _config is None:
+        raise RuntimeError("Proxy config is not initialized")
+    return _config
+
+
 def _parse_allowed_origins_env(raw_value: str | None) -> list[str] | None:
     """Parse ALLOWED_ORIGIN env into a normalized list."""
     if raw_value is None:
@@ -102,7 +110,7 @@ def _resolve_allowed_origins(cli_allowed_origins: list[str] | None) -> list[str]
     env_origins = _parse_allowed_origins_env(os.environ.get("ALLOWED_ORIGIN"))
     if env_origins:
         return env_origins
-    return ProxyConfig().allowed_origins
+    return ProxyConfig().allowed_origins or []
 
 
 def _resolve_session_token() -> str:
@@ -221,7 +229,7 @@ def error_response(status: int, code: str, message: str, details: dict | None = 
     }
     if details:
         # Sanitize details
-        safe_details = {}
+        safe_details: dict[str, Any] = {}
         for k, v in details.items():
             k_lower = k.lower()
             if k_lower in (
@@ -271,6 +279,7 @@ def error_response(status: int, code: str, message: str, details: dict | None = 
 
 async def _send_json(send, status: int, payload: dict):
     """Send JSON response via ASGI send."""
+    config = _require_config()
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     await send(
         {
@@ -280,7 +289,10 @@ async def _send_json(send, status: int, payload: dict):
                 (b"content-type", b"application/json; charset=utf-8"),
                 (b"content-length", str(len(body)).encode()),
                 # CORS - strict allowlist only
-                (b"access-control-allow-origin", _config.allowed_origins[0].encode()),
+                (
+                    b"access-control-allow-origin",
+                    (config.allowed_origins[0] if config.allowed_origins else "http://127.0.0.1:4173").encode(),
+                ),
                 (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
                 (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
                 (b"access-control-allow-credentials", b"true"),
@@ -297,15 +309,17 @@ async def _send_json(send, status: int, payload: dict):
 
 def _validate_origin(origin: bytes | None) -> bool:
     """Validate Origin header against allowlist."""
+    config = _require_config()
     if not origin:
         return False
     origin_str = origin.decode("latin-1")
-    return origin_str in _config.allowed_origins
+    return origin_str in (config.allowed_origins or [])
 
 
 def _check_session_token(headers: list[tuple[bytes, bytes]]) -> bool:
     """Check X-Session-Token header."""
-    if not _config.require_session_token:
+    config = _require_config()
+    if not config.require_session_token:
         return True
     for k, v in headers:
         if k == b"x-session-token":
@@ -339,6 +353,7 @@ def _sanitize_headers(headers: list[tuple[bytes, bytes]]) -> dict:
 async def app(scope, receive, send):
     """ASGI application entry point."""
     global _config, _session_token
+    config = _require_config()
 
     if scope["type"] != "http":
         await send(
@@ -398,8 +413,8 @@ async def app(scope, receive, send):
             {
                 "status": "ok",
                 "version": PROXY_VERSION,
-                "upstream": _config.upstream_hosts,
-                "default_model": _config.default_model,
+                "upstream": config.upstream_hosts,
+                "default_model": config.default_model,
             },
         )
         return
@@ -427,18 +442,19 @@ async def app(scope, receive, send):
 
 async def handle_nim_rewrite(scope, receive, send):
     """Handle NIM rewrite request with full validation."""
+    config = _require_config()
     # Read body with size limit
     body = b""
     while True:
         message = await receive()
         if message["type"] == "http.request":
             body += message.get("body", b"")
-            if len(body) > _config.max_body_size:
+            if len(body) > config.max_body_size:
                 await _send_json(
                     send,
                     413,
                     error_response(
-                        413, "PAYLOAD_TOO_LARGE", f"Body exceeds {_config.max_body_size} bytes"
+                        413, "PAYLOAD_TOO_LARGE", f"Body exceeds {config.max_body_size} bytes"
                     ),
                 )
                 return
@@ -476,7 +492,7 @@ async def handle_nim_rewrite(scope, receive, send):
 
     # Extract validated fields
     request_id = payload["request_id"]
-    payload["source_revision"]
+    _ = payload["source_revision"]
 
     print(f"  -> NIM rewrite: request_id={request_id[:8]}, scenes={len(payload['scenes'])}")
 
@@ -520,8 +536,9 @@ async def handle_nim_rewrite(scope, receive, send):
     await _send_json(send, 200, result)
 
 
-async def forward_to_nim(request_payload: dict, session_api_key: str | None = None) -> dict:
+async def forward_to_nim(request_payload: dict[str, Any], session_api_key: str | None = None) -> dict[str, Any]:
     """Forward validated request to NVIDIA NIM upstream."""
+    config = _require_config()
     # Determine upstream URL
     upstream_url = os.environ.get(
         "NIM_UPSTREAM_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
@@ -531,13 +548,13 @@ async def forward_to_nim(request_payload: dict, session_api_key: str | None = No
     from urllib.parse import urlparse
 
     parsed = urlparse(upstream_url)
-    if parsed.netloc not in _config.upstream_hosts:
+    if parsed.netloc not in (config.upstream_hosts or []):
         raise ValueError(f"Upstream host {parsed.netloc} not in allowlist")
 
     # Get API key (session header first, then config/env)
     api_key = (
         session_api_key
-        or _config.env_api_key
+        or config.env_api_key
         or os.environ.get("NIM_API_KEY")
         or os.environ.get("NGC_API_KEY")
     )
@@ -549,7 +566,7 @@ async def forward_to_nim(request_payload: dict, session_api_key: str | None = No
     # model is NIM LLM model ID (e.g. "meta/llama-3.1-8b-instruct")
     profile_id = request_payload.get("profile", {}).get("id")
     raw_model = request_payload.get("model_id") or request_payload.get("model")
-    model_id = _config.default_model if not raw_model or raw_model == profile_id else raw_model
+    model_id = config.default_model if not raw_model or raw_model == profile_id else raw_model
 
     # Build upstream request (NIM uses OpenAI-compatible format)
     upstream_payload = {
@@ -576,7 +593,7 @@ async def forward_to_nim(request_payload: dict, session_api_key: str | None = No
         "response_format": {"type": "json_object"},
     }
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(_config.upstream_timeout)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(config.upstream_timeout)) as client:
         response = await client.post(
             upstream_url,
             json=upstream_payload,
@@ -593,11 +610,9 @@ async def forward_to_nim(request_payload: dict, session_api_key: str | None = No
     content = upstream_data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
 
     try:
-        nim_response = json.loads(content)
+        nim_response: dict[str, Any] = json.loads(content)
     except json.JSONDecodeError:
         # Try to extract JSON from text
-        import re
-
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
             nim_response = json.loads(match.group(0))
@@ -673,7 +688,7 @@ def main():
     )
 
     # Run with uvicorn
-    import uvicorn
+    import uvicorn  # type: ignore[import-not-found]
 
     uvicorn.run(
         "nim_proxy_server:app",
