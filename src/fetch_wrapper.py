@@ -8,8 +8,7 @@ exponential backoff retries (max 2), and status code handling per Section 14.4.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
@@ -20,6 +19,9 @@ from .error_handling import (
     RetryExhaustedError,
     is_retryable_error,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class FetchWrapper:
@@ -72,7 +74,7 @@ class FetchWrapper:
 
             try:
                 # Wrap request in timeout and cancel event listener
-                result = await self._single_attempt(
+                return await self._single_attempt(
                     url=url,
                     method=method,
                     json_data=json_data,
@@ -80,7 +82,6 @@ class FetchWrapper:
                     timeout=req_timeout,
                     cancel_event=cancel_event,
                 )
-                return result
 
             except Exception as err:
                 last_error = err
@@ -93,7 +94,7 @@ class FetchWrapper:
                             attempts=attempt + 1,
                             last_error=err,
                         ) from err
-                    raise err
+                    raise
 
                 # Prepare for retry
                 attempt += 1

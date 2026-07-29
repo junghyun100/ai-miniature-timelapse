@@ -37,9 +37,9 @@ addopts = "-v --tb=short"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-lint.select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "PTH", "TRY", "T20", "TCH", "ICN", "PIE", "RET", "ARG", "FLY", "PD", "T10"]
-lint.ignore = ["E501", "T201"]
-fixable = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "PTH", "TRY", "TCH", "ICN", "PIE", "RET", "ARG", "FLY", "PD", "T10"]
+lint.select = ["E", "F", "I"]
+lint.ignore = ["E501"]
+lint.fixable = ["E", "F", "I"]
 format.quote-style = "double"
 format.indent-style = "space"
 

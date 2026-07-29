@@ -5,34 +5,29 @@ WP-5 Tests: Single Canonical Source, Read-Only Projections, Stale Plan Copy Bloc
 import json
 import subprocess
 from pathlib import Path
+
 import pytest
 
 from src.domain import (
+    AspectRatio,
+    AssetKind,
+    AssetRef,
+    AssetScope,
+    InputMode,
     Project,
     Scene,
     ScenePlan,
     StyleBible,
-    AssetRef,
-    AssetKind,
-    AssetScope,
     WorkflowMode,
-    InputMode,
-    SceneStatus,
-    AspectRatio,
-    compute_source_revision,
-)
-from src.serializers import (
-    serialize_full_plan,
-    serialize_master_image_prompt,
-    serialize_scene_video_prompt,
-    serialize_full_scene,
-    perform_copy_action,
-    is_plan_stale,
-    IMMUTABLE_NEGATIVE,
 )
 from src.export_prompts import export_project_json, export_text_bundle
-from src.scene_md_export import build_scene_md, export_scene_md
-
+from src.scene_md_export import build_scene_md
+from src.serializers import (
+    IMMUTABLE_NEGATIVE,
+    is_plan_stale,
+    perform_copy_action,
+    serialize_full_plan,
+)
 
 PROJECT_ROOT = Path(__file__).parent.parent
 

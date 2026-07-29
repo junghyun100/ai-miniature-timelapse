@@ -1,17 +1,27 @@
 """
 Tests for Relay State Machine - Section 10, 16.2
 """
+
 import pytest
-import uuid
-from datetime import datetime
 
 from src.domain import (
-    Project, Scene, ScenePlan, StyleBible, AssetRef, AssetKind, AssetScope,
-    WorkflowMode, InputMode, SceneStatus, ProfileId,
+    AssetKind,
+    AssetRef,
+    AssetScope,
+    InputMode,
+    Project,
+    Scene,
+    ScenePlan,
+    SceneStatus,
+    StyleBible,
+    WorkflowMode,
 )
 from src.relay_state import (
-    RelayStateMachine, TransitionError, get_initial_status,
-    can_transition, validate_project_flow,
+    RelayStateMachine,
+    TransitionError,
+    can_transition,
+    get_initial_status,
+    validate_project_flow,
 )
 
 

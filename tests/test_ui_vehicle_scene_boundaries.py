@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.profiles.vehicle import VEHICLE_MODELS, VEHICLE_IDENTITY_LOCKS, VEHICLE_KEY_PARTS
+from src.profiles.vehicle import VEHICLE_IDENTITY_LOCKS, VEHICLE_KEY_PARTS, VEHICLE_MODELS
 
 
 def test_vehicle_categories_count():
@@ -33,16 +33,14 @@ def test_scene_plans_30s_and_60s():
 
 def test_identity_locks_exist():
     """Test that identity locks exist for all categories."""
-    from src.profiles.vehicle import VEHICLE_IDENTITY_LOCKS
-    for cat in VEHICLE_MODELS.keys():
+    for cat in VEHICLE_MODELS:
         assert cat in VEHICLE_IDENTITY_LOCKS
         assert len(VEHICLE_IDENTITY_LOCKS[cat]) > 0
 
 
 def test_key_parts_exist():
     """Test that key parts exist for all categories."""
-    from src.profiles.vehicle import VEHICLE_KEY_PARTS
-    for cat in VEHICLE_MODELS.keys():
+    for cat in VEHICLE_MODELS:
         assert cat in VEHICLE_KEY_PARTS
         assert len(VEHICLE_KEY_PARTS[cat]) > 0
 

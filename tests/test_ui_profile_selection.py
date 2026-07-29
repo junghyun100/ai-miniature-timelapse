@@ -7,7 +7,6 @@ import os
 import subprocess
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = ROOT / "ui" / "app.js"
 INDEX_HTML = ROOT / "ui" / "index.html"
@@ -570,7 +569,7 @@ def test_non_final_prompts_never_expose_completion_language():
             scenes = profile["scene_plans"][str(duration)]
             prompts = profile["prompts"][str(duration)]
             assert len(scenes) == len(prompts)
-            for scene, prompt in zip(scenes, prompts):
+            for scene, prompt in zip(scenes, prompts, strict=False):
                 if scene["is_final_scene"]:
                     continue
                 lowered = prompt.lower()

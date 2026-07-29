@@ -5,27 +5,42 @@ Tests for NIM request/response validation, normalization, fallback behavior,
 stale response rejection, and security (secret redaction).
 """
 import asyncio
-import json
-import pytest
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
+import pytest
 
 from src.domain import (
-    Project, Scene, ScenePlan, StyleBible, AssetRef, AssetKind, AssetScope,
-    WorkflowMode, ProfileId, ProvenanceSource, InputMode, SceneStatus,
-    compute_source_revision, normalize_nim_response,
-    NimRequest, NimSceneRequest, NimResponse, NimSceneResponse,
+    AssetKind,
+    AssetRef,
+    AssetScope,
+    InputMode,
+    NimResponse,
+    NimSceneRequest,
+    NimSceneResponse,
+    Project,
     Provenance,
+    ProvenanceSource,
+    Scene,
+    ScenePlan,
+    SceneStatus,
+    StyleBible,
+    WorkflowMode,
+    normalize_nim_response,
 )
 from src.nim_client import (
-    NimClient, SyncNimClient,
-    NimClientError, NimAuthError, NimBadRequestError, NimNotFoundError,
-    NimRateLimitError, NimServerError, NimTimeoutError, NimStaleResponseError,
+    NimAuthError,
+    NimBadRequestError,
+    NimClient,
+    NimNotFoundError,
+    NimRateLimitError,
+    NimServerError,
+    NimStaleResponseError,
+    NimTimeoutError,
+    SyncNimClient,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -376,7 +391,7 @@ class TestNimStaleRejection:
         """Client raises NimStaleResponseError on stale response."""
         # Setup mock to return stale response
         req_id = str(uuid.uuid4())
-        source_rev = sample_project.compute_source_revision()
+        sample_project.compute_source_revision()
 
         mock_response = MagicMock()
         mock_response.status_code = 200

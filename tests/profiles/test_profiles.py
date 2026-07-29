@@ -8,45 +8,55 @@ Each profile test verifies:
 - Style bible values match reference prompt tables
 - Audio contract and negative prompt base
 """
-import pytest
 
+import src.profiles.vehicle as vehicle_module
 from src.profile_types import PROFILE_REGISTRY
 from src.profiles import (
     architecture_profile,
-    vehicle_profile,
-    product_profile,
     home_decor_profile,
-    cooking_profile,
 )
 from src.profiles.architecture import (
     ARCHITECTURE_SUBTYPES,
-    make_style_bible,
+    get_scene_plans,
     make_first_frame_prompt,
     make_scene_video_prompt,
-    get_scene_plans,
-)
-from src.profiles.vehicle import (
-    VEHICLE_MODELS,
-    VehicleSubtype,
-    VehicleCategory,
-    make_style_bible as vehicle_make_style_bible,
-    make_first_frame_prompt as vehicle_make_first_frame,
-    make_scene_video_prompt as vehicle_make_video,
-    get_categories,
-    get_models_for_category,
-)
-import src.profiles.vehicle as vehicle_module
-from src.profiles.home_decor import (
-    make_style_bible as hd_make_style_bible,
-    make_scene_video_prompt as hd_make_video,
+    make_style_bible,
 )
 from src.profiles.cooking import (
     KOREAN_DISHES,
-    make_style_bible as cooking_make_style_bible,
-    make_first_frame_prompt as cooking_make_first,
-    make_scene_video_prompt as cooking_make_video,
     get_available_dishes,
 )
+from src.profiles.cooking import (
+    make_first_frame_prompt as cooking_make_first,
+)
+from src.profiles.cooking import (
+    make_scene_video_prompt as cooking_make_video,
+)
+from src.profiles.cooking import (
+    make_style_bible as cooking_make_style_bible,
+)
+from src.profiles.home_decor import (
+    make_scene_video_prompt as hd_make_video,
+)
+from src.profiles.home_decor import (
+    make_style_bible as hd_make_style_bible,
+)
+from src.profiles.vehicle import (
+    VehicleCategory,
+    get_categories,
+    get_models_for_category,
+)
+from src.profiles.vehicle import (
+    make_first_frame_prompt as vehicle_make_first_frame,
+)
+from src.profiles.vehicle import (
+    make_scene_video_prompt as vehicle_make_video,
+)
+from src.profiles.vehicle import (
+    make_style_bible as vehicle_make_style_bible,
+)
+
+
 class TestArchitectureProfile:
     """Test architecture.korean profile (Section 13.5)."""
 

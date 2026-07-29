@@ -7,21 +7,21 @@ Each category has specific identity_lock, style_bible, scene_prompts, and assemb
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from ..profile_types import (
+    STATE_PERMANENCE_RULE,
     InputMode,
     Profile,
     ScenePlan,
     StyleBible,
-    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )
 
 
-class VehicleCategory(str, Enum):
+class VehicleCategory(StrEnum):
     CAR = "car"
     MOTORCYCLE = "motorcycle"
     AIRPLANE = "airplane"
@@ -550,14 +550,14 @@ def _build_scene_plans(category: VehicleCategory, duration_seconds: int) -> list
     plans: list[ScenePlan] = []
     previous_stop_state: str | None = None
     for index, (scene_name, ordered_actions, completion_range) in enumerate(
-        zip(titles, action_groups, ranges)
+        zip(titles, action_groups, ranges, strict=False)
     ):
         is_final_scene = index == len(action_groups) - 1
         reserved_actions = _sanitize_reserved_future_actions(
             _reserved_future_actions(action_groups, index)
         )
         forbidden_actions = _forbidden_future_actions(reserved_actions)
-        end_state = _scene_end_state(
+        _scene_end_state(
             scene_name=scene_name,
             ordered_actions=ordered_actions,
             reserved_future_actions=reserved_actions,
@@ -1049,7 +1049,7 @@ def make_scene_video_prompt(
     ordered_actions = current_actions or "continue the current build step"
 
     if resolved_plan.is_final_scene:
-        body = " ".join(
+        return " ".join(
             [
                 f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
                 f"Completion range: {resolved_plan.completion_range}.",
@@ -1063,9 +1063,8 @@ def make_scene_video_prompt(
                 f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
             ]
         )
-        return body
 
-    body = " ".join(
+    return " ".join(
         [
             f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
             f"Completion range: {resolved_plan.completion_range}.",
@@ -1081,7 +1080,6 @@ def make_scene_video_prompt(
             f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
         ]
     )
-    return body
 
 
 # Alias for backward compatibility

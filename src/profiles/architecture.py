@@ -12,11 +12,11 @@ Per Section 13.5:
 from __future__ import annotations
 
 from ..profile_types import (
+    STATE_PERMANENCE_RULE,
     InputMode,
     Profile,
     ScenePlan,
     StyleBible,
-    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )

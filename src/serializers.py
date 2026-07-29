@@ -14,18 +14,20 @@ All serializations must be deterministic and match between Python and browser.
 from __future__ import annotations
 
 import json
+import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .domain import (
-    AssetRef,
-    Project,
-    ProvenanceSource,
-    Scene,
-    StyleBible,
-)
+if TYPE_CHECKING:
+    from .domain import (
+        AssetRef,
+        Project,
+        ProvenanceSource,
+        Scene,
+        StyleBible,
+    )
 
 # Immutable negative prompt line (shared across all profiles per Section 11.6)
 IMMUTABLE_NEGATIVE = (
@@ -106,7 +108,7 @@ def _serialize_project_header(
     project: Project, provenance: ProvenanceSource | None = None
 ) -> list[str]:
     """Serialize the project header section per Section 11.6."""
-    lines = [
+    return [
         f"Project: {project.topic}",
         f"Topic Label: {project.topic_label}",
         f"Profile: {project.profile_id}@{project.profile_version}",
@@ -116,10 +118,6 @@ def _serialize_project_header(
         f"Source: {provenance.value if provenance else 'local'}",
         f"Source Revision: {project.source_revision}",
     ]
-    return lines
-
-
-import re
 
 
 def split_prompt_negative(
@@ -349,13 +347,12 @@ def redact_secrets(text: str) -> str:
     redacted = re.sub(
         r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE
     )
-    redacted = re.sub(
+    return re.sub(
         r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]",
         "[REDACTED]",
         redacted,
         flags=re.IGNORECASE,
     )
-    return redacted
 
 
 def perform_copy_action(

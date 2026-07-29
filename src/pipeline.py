@@ -89,7 +89,6 @@ def build_project(
     names = build_scene_names(duration, building_type)
     seconds = duration // len(names)
     scenes = []
-    previous_scene = None
     for i, name in enumerate(names):
         scene_id = i + 1
         prompt = build_scene_prompt(building_type, name, duration, scene_id, len(names))
@@ -112,7 +111,6 @@ def build_project(
                 )
             )
         )
-        previous_scene = name
     return {
         "topic": topic,
         "topic_label": build_topic_label(building_type, build_topic_detail(building_type)),

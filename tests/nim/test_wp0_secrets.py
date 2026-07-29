@@ -9,20 +9,20 @@ Validates:
 """
 
 import re
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.nim_proxy_server import (
-    ProxyConfig,
-    error_response,
-    redact_text,
-    _sanitize_headers,
-    forward_to_nim,
-)
+import pytest
+
 import src.nim_proxy_server as proxy_module
 from src.nim_client import NimClient
-from src.serializers import redact_secrets as redact_secrets_serializers, perform_copy_action
-from tests.nim.test_nim_contract import sample_project, sample_style_bible
+from src.nim_proxy_server import (
+    ProxyConfig,
+    _sanitize_headers,
+    error_response,
+    forward_to_nim,
+    redact_text,
+)
+from src.serializers import perform_copy_action
 
 
 class TestSecretRedaction:
@@ -31,7 +31,7 @@ class TestSecretRedaction:
     def test_redact_text_patterns(self):
         sample_key = "nvapi-abc1234567"
         sample_bearer = "Bearer nvapi-shortkey1"
-        
+
         assert redact_text(sample_key) == "[REDACTED]"
         assert redact_text(sample_bearer) == "Bearer [REDACTED]"
         assert redact_text('api_key="secret123"') == "[REDACTED]"
@@ -146,7 +146,7 @@ class TestFrontendSecretContract:
     """Test frontend code invariants for secret handling."""
 
     def test_ui_index_html_contracts(self):
-        with open("ui/index.html", "r", encoding="utf-8") as f:
+        with open("ui/index.html", encoding="utf-8") as f:
             html = f.read()
 
         legacy_key_fragment = "miniature_timelapse_nim_" + "api_key"
@@ -171,7 +171,7 @@ class TestFrontendSecretContract:
         assert "redactObjectSecrets" in html
 
     def test_ui_app_js_contracts(self):
-        with open("ui/app.js", "r", encoding="utf-8") as f:
+        with open("ui/app.js", encoding="utf-8") as f:
             app_js = f.read()
 
         # Invariant: saveProjectState and loadProjectState use redactObjectSecrets

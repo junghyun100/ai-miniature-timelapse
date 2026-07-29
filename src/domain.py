@@ -21,42 +21,42 @@ import unicodedata
 import uuid
 from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any
 
 
-class WorkflowMode(str, Enum):
+class WorkflowMode(StrEnum):
     REFERENCE_FRAME_RELAY = "REFERENCE_FRAME_RELAY"
     SINGLE_CLIP_FROM_MASTER = "SINGLE_CLIP_FROM_MASTER"
 
 
-class ProfileId(str, Enum):
+class ProfileId(StrEnum):
     ARCHITECTURE_KOREAN = "architecture.korean"
     VEHICLE_ASSEMBLY = "vehicle.assembly"
     HOME_DECOR_DIY = "home_decor.diy"
     COOKING_MINIATURE = "cooking.miniature"
 
 
-class Genre(str, Enum):
+class Genre(StrEnum):
     ARCHITECTURE = "architecture"
     VEHICLE = "vehicle"
     HOME_DECOR = "home_decor"
     COOKING = "cooking"
 
 
-class AspectRatio(str, Enum):
+class AspectRatio(StrEnum):
     RATIO_9_16 = "9:16"
     RATIO_16_9 = "16:9"
     RATIO_1_1 = "1:1"
 
 
-class InputMode(str, Enum):
+class InputMode(StrEnum):
     MASTER_IMAGE = "MASTER_IMAGE"
     PREVIOUS_FINAL_FRAME = "PREVIOUS_FINAL_FRAME"
     NONE = "NONE"
 
 
-class SceneStatus(str, Enum):
+class SceneStatus(StrEnum):
     LOCKED = "LOCKED"
     AWAITING_MASTER_IMAGE = "AWAITING_MASTER_IMAGE"
     AWAITING_PREVIOUS_FRAME = "AWAITING_PREVIOUS_FRAME"
@@ -67,24 +67,24 @@ class SceneStatus(str, Enum):
     STALE = "STALE"
 
 
-class NimRefinementPolicy(str, Enum):
+class NimRefinementPolicy(StrEnum):
     MUTABLE_ONLY = "mutable_only"
     ALL = "all"
 
 
-class ProvenanceSource(str, Enum):
+class ProvenanceSource(StrEnum):
     LOCAL_PLANNER = "local_planner"
     NIM = "nim"
     FALLBACK = "fallback"
     NIM_PARTIAL_FALLBACK = "nim_partial_fallback"
 
 
-class AssetKind(str, Enum):
+class AssetKind(StrEnum):
     IMAGE = "image"
     VIDEO = "video"
 
 
-class AssetScope(str, Enum):
+class AssetScope(StrEnum):
     PROJECT = "project"
     SCENE = "scene"
 
@@ -448,7 +448,7 @@ class SourceRevision:
 # ============================================================================
 
 try:
-    from profile_types import PROFILE_REGISTRY, Profile, get_profile, register_profile
+    from profile_types import PROFILE_REGISTRY
 except ImportError:
     from .profile_types import PROFILE_REGISTRY
 
@@ -676,7 +676,7 @@ def normalize_nim_response(
         )
 
     # Per-scene validation - NO FALLBACK to local templates
-    for i, (nim_scene, local_scene) in enumerate(zip(response.scenes, local_plans)):
+    for i, (nim_scene, local_scene) in enumerate(zip(response.scenes, local_plans, strict=False)):
         # Scene ID must match
         if nim_scene.id != local_scene.id:
             raise ValueError(

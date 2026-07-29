@@ -7,40 +7,43 @@ Per Section 13.1 of the Reference-Frame Relay Specification v2.0.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import Enum, StrEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
-class WorkflowMode(str, Enum):
+class WorkflowMode(StrEnum):
     REFERENCE_FRAME_RELAY = "REFERENCE_FRAME_RELAY"
     SINGLE_CLIP_FROM_MASTER = "SINGLE_CLIP_FROM_MASTER"
 
 
-class AspectRatio(str, Enum):
+class AspectRatio(StrEnum):
     RATIO_9_16 = "9:16"
     RATIO_16_9 = "16:9"
     RATIO_1_1 = "1:1"
 
 
-class NimRefinementPolicy(str, Enum):
+class NimRefinementPolicy(StrEnum):
     MUTABLE_ONLY = "mutable_only"
     ALL = "all"
 
 
-class ProvenanceSource(str, Enum):
+class ProvenanceSource(StrEnum):
     LOCAL_PLANNER = "local_planner"
     NVIDIA_NIM = "nvidia_nim"
 
 
-class InputMode(str, Enum):
+class InputMode(StrEnum):
     MASTER_IMAGE = "MASTER_IMAGE"
     PREVIOUS_FINAL_FRAME = "PREVIOUS_FINAL_FRAME"
     NONE = "NONE"
 
 
-class SceneStatus(str, Enum):
+class SceneStatus(StrEnum):
     LOCKED = "LOCKED"
     AWAITING_MASTER_IMAGE = "AWAITING_MASTER_IMAGE"
     AWAITING_PREVIOUS_FRAME = "AWAITING_PREVIOUS_FRAME"
@@ -51,12 +54,12 @@ class SceneStatus(str, Enum):
     STALE = "STALE"
 
 
-class AssetKind(str, Enum):
+class AssetKind(StrEnum):
     IMAGE = "image"
     VIDEO = "video"
 
 
-class AssetScope(str, Enum):
+class AssetScope(StrEnum):
     PROJECT = "project"
     SCENE = "scene"
 
@@ -158,7 +161,7 @@ class ScenePlan:
     exact_stop_state: str = ""
 
     def to_dict(self) -> dict:
-        d = {k: v for k, v in self.__dict__.items()}
+        d = dict(self.__dict__.items())
         d["input_mode"] = self.input_mode.value
         return d
 

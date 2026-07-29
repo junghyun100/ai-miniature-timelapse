@@ -5,12 +5,20 @@ import pytest
 from src.profile_types import PROFILE_REGISTRY
 from src.profiles.cooking import (
     SCENE_PLANS_30S as COOKING_SCENE_PLANS,
+)
+from src.profiles.cooking import (
     cooking_profile,
+)
+from src.profiles.cooking import (
     make_first_frame_prompt as cooking_make_first_frame_prompt,
+)
+from src.profiles.cooking import (
     make_scene_video_prompt as cooking_make_scene_video_prompt,
 )
 from src.profiles.home_decor import (
     home_decor_profile,
+)
+from src.profiles.home_decor import (
     make_scene_video_prompt as home_decor_make_scene_video_prompt,
 )
 

@@ -11,19 +11,17 @@ Verifies:
 import json
 import subprocess
 from pathlib import Path
+
 import pytest
 
 from src.domain import (
-    Project,
-    compute_source_revision,
-    serialize_canonical,
-    normalize_nim_response,
     NimResponse,
-    NimSceneResponse,
     NimSceneRequest,
+    NimSceneResponse,
+    compute_source_revision,
+    normalize_nim_response,
 )
-from src.export_prompts import export_project_json, export_text_bundle, ensure_source_revision
-
+from src.export_prompts import export_project_json, export_text_bundle
 
 PROJECT_ROOT = Path(__file__).parent.parent
 

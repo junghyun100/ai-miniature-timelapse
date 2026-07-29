@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     from .domain import Project, compute_source_revision
@@ -59,7 +59,7 @@ def load_project(path: str | Path) -> dict[str, Any]:
 
 
 def export_project_json(
-    project: Project | dict[str, Any], current_draft: Optional[dict[str, Any]] = None
+    project: Project | dict[str, Any], current_draft: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     """
     Export project as dictionary with attached source_revision.
@@ -90,7 +90,7 @@ def export_project_json(
 
 
 def export_text_bundle(
-    project: Project | dict[str, Any], current_draft: Optional[dict[str, Any]] = None
+    project: Project | dict[str, Any], current_draft: dict[str, Any] | None = None
 ) -> str:
     """
     Export human-readable text bundle with source_revision in header.

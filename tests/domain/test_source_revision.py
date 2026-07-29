@@ -4,7 +4,6 @@ Tests cross-platform hash equality between Python and JS implementations.
 """
 import hashlib
 import json
-import pytest
 
 from src.domain import (
     compute_source_revision,

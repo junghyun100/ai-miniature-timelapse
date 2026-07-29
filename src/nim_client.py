@@ -194,10 +194,9 @@ class NimClient:
             import re
 
             res = re.sub(r"nvapi-[A-Za-z0-9_-]{10,}", "***REDACTED***", res)
-            res = re.sub(
+            return re.sub(
                 r"Bearer\s+[A-Za-z0-9._-]+", "Bearer ***REDACTED***", res, flags=re.IGNORECASE
             )
-            return res
         return data
 
     async def rewrite_prompts(
@@ -400,7 +399,7 @@ class NimClient:
 
             except (NimAuthError, NimBadRequestError, NimNotFoundError) as e:
                 # Non-retryable - raise immediately
-                _logger.error("NIM non-retryable error: %s", e)
+                _logger.exception("NIM non-retryable error: %s", e)
                 raise
 
             except (NimRateLimitError, NimServerError, httpx.TimeoutException) as e:

@@ -10,11 +10,11 @@ Per Section 13.8:
 """
 
 from ..profile_types import (
+    STATE_PERMANENCE_RULE,
     InputMode,
     Profile,
     ScenePlan,
     StyleBible,
-    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )

@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ProvenanceSource(str, Enum):
+class ProvenanceSource(StrEnum):
     LOCAL = "local"
     NIM = "nim"
     NIM_PARTIAL_FALLBACK = "nim_partial_fallback"

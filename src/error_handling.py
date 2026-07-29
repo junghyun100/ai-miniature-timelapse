@@ -111,10 +111,9 @@ def sanitize_error_message(msg: str) -> str:
         return ""
     # Redact key patterns like nvapi-..., Bearer ..., api_key=...
     msg = re.sub(r"nvapi-[A-Za-z0-9_-]+", "[REDACTED_API_KEY]", msg)
-    msg = re.sub(
+    return re.sub(
         r'(?:Bearer|key|token|secret)\s*[:=]\s*["\']?[A-Za-z0-9._-]+["\']?',
         "[REDACTED_SECRET]",
         msg,
         flags=re.IGNORECASE,
     )
-    return msg

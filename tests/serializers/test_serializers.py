@@ -1,25 +1,32 @@
 """
 Tests for Canonical Serializers - Section 11.6
 """
-import pytest
 from datetime import datetime
 
+import pytest
+
 from src.domain import (
-    Project, Scene, ScenePlan, StyleBible, AssetRef, AssetKind, AssetScope,
-    WorkflowMode, InputMode, SceneStatus, AspectRatio,
-    Provenance, ProvenanceSource, RelayBranch,
+    AspectRatio,
+    AssetKind,
+    AssetRef,
+    AssetScope,
+    InputMode,
+    Project,
+    Provenance,
+    ProvenanceSource,
+    RelayBranch,
+    Scene,
+    ScenePlan,
+    SceneStatus,
+    StyleBible,
+    WorkflowMode,
 )
 from src.serializers import (
-    compute_source_revision,
-    serialize_full_plan,
-    serialize_master_image_prompt,
-    serialize_scene_video_prompt,
-    serialize_full_scene,
-    perform_copy_action,
     IMMUTABLE_NEGATIVE,
-    CopyActionResult,
+    compute_source_revision,
+    perform_copy_action,
+    serialize_full_plan,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -459,7 +466,7 @@ class TestAssetRefSerialization:
 
     def test_full_asset_ref(self, sample_project):
         """Full asset ref serializes with all fields."""
-        asset = sample_project.scenes[0].asset_ref
+        sample_project.scenes[0].asset_ref
         # Test via scene serialization
         text = serialize_full_plan(sample_project)
         assert "scene_01_master | kind=image | scope=scene" in text

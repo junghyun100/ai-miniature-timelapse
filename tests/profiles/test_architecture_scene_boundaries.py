@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from src.profiles.architecture import (
-    ARCHITECTURE_SUBTYPES,
-    ARCHITECTURE_INITIAL_STATE,
     ARCH_NEGATIVE_BASE,
+    ARCHITECTURE_INITIAL_STATE,
+    ARCHITECTURE_SUBTYPES,
     get_scene_plans,
     make_first_frame_prompt,
     make_scene_video_prompt,
 )
-
 
 EXPECTED_30S_RANGES = ["0-35%", "35-75%", "75-100%"]
 EXPECTED_60S_RANGES = ["0-15%", "15-35%", "35-55%", "55-75%", "75-90%", "90-100%"]
@@ -63,7 +62,7 @@ EXPECTED_SUBTYPES = {
 
 def _assert_chain(scene_plans) -> None:
     assert scene_plans[0].start_state.startswith("Completely unstarted site")
-    for previous, current in zip(scene_plans, scene_plans[1:]):
+    for previous, current in zip(scene_plans, scene_plans[1:], strict=False):
         assert current.start_state == previous.exact_stop_state
 
 
@@ -113,7 +112,7 @@ def test_30s_and_60s_scene_ranges_chain_and_reserved_actions() -> None:
 def test_python_registry_matches_ui_13_subtype_parity() -> None:
     assert set(ARCHITECTURE_SUBTYPES) == EXPECTED_SUBTYPES
 
-    for subtype, data in ARCHITECTURE_SUBTYPES.items():
+    for _subtype, data in ARCHITECTURE_SUBTYPES.items():
         assert data["label"]
         assert data["materials"]
         assert data["key_features"]

@@ -14,7 +14,6 @@ from src.profiles.product import (
     product_profile,
 )
 
-
 EXPECTED_RANGES = {
     10: ["0-100%"],
     30: ["0-30%", "30-75%", "75-100%"],
@@ -87,9 +86,9 @@ def test_product_module_imports_and_default_scene_plans_are_valid() -> None:
     module = importlib.import_module("src.profiles.product")
 
     assert module.product_profile is product_profile
-    assert SCENE_PLAN_10S == _build_scene_plans("watch", 10)
-    assert SCENE_PLANS_30S == _build_scene_plans("watch", 30)
-    assert SCENE_PLANS_60S == _build_scene_plans("watch", 60)
+    assert _build_scene_plans("watch", 10) == SCENE_PLAN_10S
+    assert _build_scene_plans("watch", 30) == SCENE_PLANS_30S
+    assert _build_scene_plans("watch", 60) == SCENE_PLANS_60S
     assert product_profile.scene_plans == SCENE_PLAN_10S
 
 

@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 
 def test_vehicle_json_exists():
     """vehicle.json 파일이 존재하는지 확인."""
@@ -56,7 +54,7 @@ def test_pipeline_scripts_syntax():
 
 def test_orchestrator_import():
     """오케스트레이터 모듈 임포트 테스트."""
-    from profile_types import Profile, WorkflowMode, ScenePlan
+    from profile_types import Profile, ScenePlan, WorkflowMode
     assert Profile
     assert WorkflowMode
     assert ScenePlan
@@ -66,12 +64,6 @@ def test_vehicle_module_import():
     """vehicle 모듈 임포트 테스트."""
     from src.profiles.vehicle import (
         VehicleCategory,
-        VEHICLE_MODELS,
-        VEHICLE_IDENTITY_LOCKS,
-        VEHICLE_KEY_PARTS,
-        VEHICLE_ASSEMBLY_STEPS,
-        VEHICLE_STYLE_BIBLES,
-        VEHICLE_NEGATIVE_BASE,
         build_scene_plans_30s,
         get_categories,
     )

@@ -10,11 +10,11 @@ Per Section 13.7:
 from __future__ import annotations
 
 from ..profile_types import (
+    STATE_PERMANENCE_RULE,
     InputMode,
     Profile,
     ScenePlan,
     StyleBible,
-    STATE_PERMANENCE_RULE,
     WorkflowMode,
     register_profile,
 )
@@ -423,16 +423,7 @@ def _make_first_frame_prompt(subtype: str) -> str:
 def _make_scene_video_prompt(subtype: str) -> str:
     st = PRODUCT_SUBTYPES[subtype]
     model_lower = st["label"].lower()
-    steps_str = " ".join(
-        [
-            "1. Core structure placed on workbench. "
-            "2. Major sub-assemblies built (engine, movement, frame). "
-            "3. Sub-assemblies joined to core. "
-            "4. External components attached (panels, covers, details). "
-            "5. Fine details added (decals, paint touches, small parts). "
-            "6. Final brush sweep — completed model alone on clean workbench. "
-        ]
-    )
+    "1. Core structure placed on workbench. 2. Major sub-assemblies built (engine, movement, frame). 3. Sub-assemblies joined to core. 4. External components attached (panels, covers, details). 5. Fine details added (decals, paint touches, small parts). 6. Final brush sweep — completed model alone on clean workbench. "
     return (
         f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
         f"no miniature people, no small people, no tiny workers, no human figures, no characters, "

@@ -3,33 +3,40 @@ Tests for Persistence Layer - Section 16.2
 """
 import json
 import tempfile
-import shutil
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
 from src.domain import (
-    Project, Scene, ScenePlan, StyleBible, AssetRef, AssetKind, AssetScope,
-    ProfileId, WorkflowMode, InputMode, SceneStatus, AspectRatio,
-    Provenance, ProvenanceSource, RelayBranch,
+    AspectRatio,
+    AssetKind,
+    AssetRef,
+    AssetScope,
+    InputMode,
+    Project,
+    Provenance,
+    ProvenanceSource,
+    RelayBranch,
+    Scene,
+    ScenePlan,
+    SceneStatus,
+    StyleBible,
+    WorkflowMode,
 )
 from src.persistence import (
-    save_project_state,
-    load_project_state,
-    delete_project_state,
-    list_projects,
-    get_active_scene_index,
-    is_project_resumable,
     CURRENT_SCHEMA_VERSION,
-    PersistenceResult,
-    SchemaVersionError,
     _get_project_state_path,
     _get_storage_dir,
     _quarantine_file,
+    delete_project_state,
+    get_active_scene_index,
     get_supported_schema_versions,
+    is_project_resumable,
+    list_projects,
+    load_project_state,
+    save_project_state,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -133,7 +140,7 @@ def sample_project() -> Project:
         ),
     ]
 
-    project = Project(
+    return Project(
         schema_version="2.0",
         topic="hanok",
         topic_label="Architecture-Hanok",
@@ -180,7 +187,6 @@ def sample_project() -> Project:
         ),
         scenes=scenes,
     )
-    return project
 
 
 # ============================================================================
@@ -228,7 +234,7 @@ class TestSaveLoad:
 
         # Verify scenes
         assert len(loaded_project.scenes) == len(sample_project.scenes)
-        for orig, loaded in zip(sample_project.scenes, loaded_project.scenes):
+        for orig, loaded in zip(sample_project.scenes, loaded_project.scenes, strict=False):
             assert loaded.id == orig.id
             assert loaded.name == orig.name
             assert loaded.input_mode == orig.input_mode
@@ -255,7 +261,7 @@ class TestSaveLoad:
         save_project_state(temp_base_dir, sample_project, project_id="test-id")
 
         state_path = _get_project_state_path(temp_base_dir, "test-id")
-        with open(state_path, "r") as f:
+        with open(state_path) as f:
             data = json.load(f)
 
         assert data["schema_version"] == CURRENT_SCHEMA_VERSION
@@ -265,7 +271,7 @@ class TestSaveLoad:
         save_project_state(temp_base_dir, sample_project, project_id="test-id")
 
         state_path = _get_project_state_path(temp_base_dir, "test-id")
-        with open(state_path, "r") as f:
+        with open(state_path) as f:
             data = json.load(f)
 
         assert "last_saved_at" in data
@@ -309,7 +315,7 @@ class TestLoadErrors:
 
         # Modify schema version in file
         state_path = _get_project_state_path(temp_base_dir, "schema-test")
-        with open(state_path, "r") as f:
+        with open(state_path) as f:
             data = json.load(f)
         data["schema_version"] = "1.0"  # Different major version
         with open(state_path, "w") as f:

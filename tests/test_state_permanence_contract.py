@@ -7,7 +7,8 @@ from src.profiles.architecture import make_scene_video_prompt as architecture_vi
 from src.profiles.cooking import make_scene_video_prompt as cooking_video_prompt
 from src.profiles.home_decor import make_scene_video_prompt as home_decor_video_prompt
 from src.profiles.product import make_scene_video_prompt as product_video_prompt
-from src.profiles.vehicle import VehicleCategory, make_scene_video_prompt as vehicle_video_prompt
+from src.profiles.vehicle import VehicleCategory
+from src.profiles.vehicle import make_scene_video_prompt as vehicle_video_prompt
 from src.scene_canonicalizer import canonicalize_scene
 from src.serializers import IMMUTABLE_NEGATIVE
 

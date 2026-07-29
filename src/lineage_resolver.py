@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .domain import AssetRef, Scene
+if TYPE_CHECKING:
+    from .domain import AssetRef, Scene
 
 
 def compute_scene_lineage_revision(

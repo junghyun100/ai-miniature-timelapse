@@ -10,7 +10,6 @@ from src.profile_types import (
     profile_to_json,
 )
 
-
 PROFILE_IDS = {
     "architecture.korean",
     "vehicle.assembly",

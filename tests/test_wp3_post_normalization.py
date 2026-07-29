@@ -19,8 +19,8 @@ Validates:
 """
 
 import json
+
 import pytest
-from datetime import datetime, timezone
 
 from src.domain import (
     AssetKind,
@@ -35,10 +35,14 @@ from src.domain import (
     WorkflowMode,
 )
 from src.fallback_builder import create_fallback_scene, reconcile_scenes_with_fallback
-from src.lineage_resolver import compute_scene_lineage_revision, resolve_project_lineage
-from src.response_normalizer import normalize_field_order, normalize_nim_response, parse_raw_nim_response
-from src.scene_canonicalizer import canonicalize_scene, ensure_identity_lock
-from src.serializers import IMMUTABLE_NEGATIVE, serialize_full_plan
+from src.lineage_resolver import resolve_project_lineage
+from src.response_normalizer import (
+    normalize_field_order,
+    normalize_nim_response,
+    parse_raw_nim_response,
+)
+from src.scene_canonicalizer import canonicalize_scene
+from src.serializers import IMMUTABLE_NEGATIVE
 
 
 @pytest.fixture
@@ -329,7 +333,7 @@ class TestResponseNormalizerPipeline:
 
         # 1. Project Header at top
         assert lines[0].startswith("Project:")
-        assert any(l.startswith("Source Revision:") for l in lines[:10])
+        assert any(line.startswith("Source Revision:") for line in lines[:10])
 
         # 2. MASTER IMAGE block
         assert "MASTER IMAGE" in serialized

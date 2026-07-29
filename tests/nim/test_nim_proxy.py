@@ -4,31 +4,31 @@ NIM Proxy Server Tests - Section 16.4
 Tests security hardening: origin allowlist, schema validation,
 session token auth, secret redaction, error sanitization.
 """
+import asyncio
+import functools
 import json
 import os
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import httpx
+import pytest
 from jsonschema import validate
+
+import src.nim_proxy_server as proxy_module
 
 # Import the ASGI app and related functions
 from src.nim_proxy_server import (
-    ProxyConfig,
-    error_response,
     NIM_REQUEST_SCHEMA,
-    _validate_origin,
+    ProxyConfig,
     _check_session_token,
     _parse_allowed_origins_env,
     _resolve_allowed_origins,
     _resolve_session_token,
+    _validate_origin,
     app,
+    error_response,
     forward_to_nim,
 )
-
-import functools
-import src.nim_proxy_server as proxy_module
 
 
 def run_async(func):

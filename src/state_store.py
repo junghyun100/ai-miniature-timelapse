@@ -7,8 +7,8 @@ and state transitions per Section 14.4.
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any
 
 from .error_handling import (
     RequestAbortedError,
@@ -16,10 +16,12 @@ from .error_handling import (
     RequestTimeoutError,
     StaleResponseError,
 )
-from .provenance_model import ProvenanceModel
+
+if TYPE_CHECKING:
+    from .provenance_model import ProvenanceModel
 
 
-class RequestState(str, Enum):
+class RequestState(StrEnum):
     IDLE = "IDLE"
     LOADING = "LOADING"
     RETRYING = "RETRYING"

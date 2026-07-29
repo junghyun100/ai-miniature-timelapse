@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import secrets
 import time
 from dataclasses import dataclass
@@ -192,9 +193,6 @@ NIM_REQUEST_SCHEMA = {
 # Error Responses (Sanitized - No Secrets)
 # ============================================================================
 
-import re
-
-
 def redact_text(text: str) -> str:
     """Redact raw API key patterns, Bearer tokens, and secrets from string."""
     if not isinstance(text, str):
@@ -203,13 +201,12 @@ def redact_text(text: str) -> str:
     redacted = re.sub(
         r"Bearer\s+[A-Za-z0-9._-]+", "Bearer [REDACTED]", redacted, flags=re.IGNORECASE
     )
-    redacted = re.sub(
+    return re.sub(
         r"(?:api[_-]?key|secret|token)\s*=\s*['\"][^'\"]+['\"]",
         "[REDACTED]",
         redacted,
         flags=re.IGNORECASE,
     )
-    return redacted
 
 
 def error_response(status: int, code: str, message: str, details: dict | None = None) -> dict:
@@ -476,7 +473,7 @@ async def handle_nim_rewrite(scope, receive, send):
 
     # Extract validated fields
     request_id = payload["request_id"]
-    source_revision = payload["source_revision"]
+    payload["source_revision"]
 
     print(f"  -> NIM rewrite: request_id={request_id[:8]}, scenes={len(payload['scenes'])}")
 
@@ -549,10 +546,7 @@ async def forward_to_nim(request_payload: dict, session_api_key: str | None = No
     # model is NIM LLM model ID (e.g. "meta/llama-3.1-8b-instruct")
     profile_id = request_payload.get("profile", {}).get("id")
     raw_model = request_payload.get("model_id") or request_payload.get("model")
-    if not raw_model or raw_model == profile_id:
-        model_id = _config.default_model
-    else:
-        model_id = raw_model
+    model_id = _config.default_model if not raw_model or raw_model == profile_id else raw_model
 
     # Build upstream request (NIM uses OpenAI-compatible format)
     upstream_payload = {

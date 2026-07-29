@@ -11,28 +11,24 @@ Validates:
 - Provenance model without secrets
 """
 
-import asyncio
-import json
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 from src.domain import compute_source_revision
-from src.provenance_model import ProvenanceModel, ProvenanceSource
 from src.error_handling import (
-    RequestAdapterError,
-    RequestTimeoutError,
-    RequestAbortedError,
-    StaleResponseError,
     HttpError,
-    RetryExhaustedError,
-    is_retryable_status,
+    RequestAbortedError,
+    RequestTimeoutError,
+    StaleResponseError,
     is_retryable_error,
+    is_retryable_status,
     sanitize_error_message,
 )
-from src.state_store import StateStore, RequestState
 from src.fetch_wrapper import FetchWrapper
+from src.provenance_model import ProvenanceModel, ProvenanceSource
+from src.state_store import RequestState, StateStore
 from src.ui_adapter import UIRequestAdapter
-
 
 # ============================================================================
 # 1. Monotonic Request ID Tests
@@ -309,7 +305,6 @@ async def test_ui_adapter_timeout_handling():
 async def test_ui_adapter_abort_in_flight_on_new_request():
     """Test starting a new request automatically aborts the previous active in-flight request."""
     adapter = UIRequestAdapter()
-    draft1 = {"topic": "Hanok initial"}
 
     # Start request 1 in state store
     req_id_1 = adapter.get_next_request_id()
@@ -317,7 +312,7 @@ async def test_ui_adapter_abort_in_flight_on_new_request():
     assert adapter.state_store.is_busy() is True
 
     # Draft change triggers cancel of request 1
-    new_rev = adapter.on_draft_change({"topic": "Hanok edited"})
+    adapter.on_draft_change({"topic": "Hanok edited"})
 
     assert adapter.state_store.state == RequestState.ABORTED
     assert adapter.state_store.applied_plan is None  # Abort NOT treated as success!

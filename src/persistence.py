@@ -23,9 +23,12 @@ import shutil
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .domain import Project
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Current schema version that this implementation reads/writes
 CURRENT_SCHEMA_VERSION = "2.0"
@@ -128,8 +131,7 @@ def _validate_required_fields(data: dict) -> list[str]:
         "clip_duration_seconds",
         "source_revision",
     ]
-    missing = [field for field in required if field not in data]
-    return missing
+    return [field for field in required if field not in data]
 
 
 def load_project_state(base_dir: Path, project_id: str) -> PersistenceResult:
@@ -386,9 +388,7 @@ def is_project_resumable(project: Project) -> bool:
         return False
     if not project.source_revision:
         return False
-    if not project.profile_id:
-        return False
-    return True
+    return project.profile_id
 
 
 def get_supported_schema_versions() -> list[str]:
