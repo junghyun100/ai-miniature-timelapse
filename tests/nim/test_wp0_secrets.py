@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import src.nim_proxy_server as proxy_module
 from src.domain import (
     AspectRatio,
     AssetKind,
@@ -29,7 +30,6 @@ from src.domain import (
     StyleBible,
     WorkflowMode,
 )
-import src.nim_proxy_server as proxy_module
 from src.nim_client import NimClient
 from src.nim_proxy_server import (
     ProxyConfig,
