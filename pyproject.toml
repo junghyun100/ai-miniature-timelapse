@@ -55,8 +55,6 @@ disallow_untyped_defs = false
 no_implicit_optional = true
 strict = false
 namespace_packages = true
-explicit_package_bases = true
-mypy_path = "src"
 disable_error_code = ["union-attr", "arg-type", "attr-defined", "var-annotated"]
 
 [[tool.mypy.overrides]]
