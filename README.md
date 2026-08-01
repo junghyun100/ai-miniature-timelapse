@@ -152,7 +152,9 @@ curl -s http://127.0.0.1:4174/health
 ```bash
 python3 -m http.server 4173 --bind 127.0.0.1
 ```
-Run this from the project root, then access the UI at `http://127.0.0.1:4173/ui/`.
+Run this from the **project root**, then access the UI at **`http://127.0.0.1:4173/ui/`** (or `http://127.0.0.1:4173/ui/index.html`).
+
+> ⚠️ **중요**: `http://127.0.0.1:4173/` (루트 경로)로 접속하면 디렉토리 리스팅이 나옵니다. **반드시 `/ui/` 경로**로 접속하세요. ES 모듈 사용으로 `file://` 프로토콜로는 열리지 않습니다.
 
 ### Step 6: Rewrite Smoke Check
 ```bash
