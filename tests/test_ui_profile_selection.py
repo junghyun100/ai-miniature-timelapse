@@ -639,6 +639,12 @@ def test_master_image_panel_precedes_video_and_copy_labels_can_wrap():
     styles = (ROOT / "ui" / "styles.css").read_text(encoding="utf-8")
 
     assert html.index('id="masterPromptPanel"') < html.index('id="videoPrompt"')
+    assert 'id="copyMasterPanelBtn" data-copy-action="master_image"' in html
+    assert 'id="copyVideoPanelBtn" data-copy-action="scene_video"' in html
+    assert "copyVideoPanelBtn.disabled = !canCopyVideo" in html
+    assert "copyMasterPanelBtn.disabled = !canCopyMaster" in html
+    assert "data-copy-action" in html
+    assert "copyToClipboard(target.textContent)" not in html
     assert "Master Image Prompt 복사 (정지 이미지용)" in html
     assert "Video Prompt 복사 (Flow 10초 비디오용)" in html
     assert ".copy-btn-label" in styles

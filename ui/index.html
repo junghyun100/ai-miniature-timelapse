@@ -311,14 +311,14 @@
                 <div class="prompt-panel" id="masterPromptPanel" hidden>
                   <div class="prompt-header">
                     <h4>Master Image Prompt (Scene 1만) → 정지 이미지 생성기용</h4>
-                    <button class="btn-copy-small" data-target="masterPrompt">복사</button>
+                    <button class="btn-copy-small" id="copyMasterPanelBtn" data-copy-action="master_image" type="button" disabled>복사</button>
                   </div>
                   <pre id="masterPrompt" class="prompt-content"></pre>
                 </div>
                 <div class="prompt-panel">
                   <div class="prompt-header">
                     <h4>Video Prompt → Flow "Frames to Video"용</h4>
-                    <button class="btn-copy-small" data-target="videoPrompt">복사</button>
+                    <button class="btn-copy-small" id="copyVideoPanelBtn" data-copy-action="scene_video" type="button" disabled>복사</button>
                   </div>
                   <pre id="videoPrompt" class="prompt-content"></pre>
                 </div>
@@ -472,6 +472,8 @@
     const copyMasterBtn = document.getElementById('copyMasterBtn');
     const copyVideoBtn = document.getElementById('copyVideoBtn');
     const copyFullSceneBtn = document.getElementById('copyFullSceneBtn');
+    const copyMasterPanelBtn = document.getElementById('copyMasterPanelBtn');
+    const copyVideoPanelBtn = document.getElementById('copyVideoPanelBtn');
     const confirmStepBtn = document.getElementById('confirmStepBtn');
     const confirmBtnText = document.getElementById('confirmBtnText');
     const resetRelayBtn = document.getElementById('resetRelayBtn');
@@ -573,12 +575,13 @@
       newProjectBtn.addEventListener('click', startNewProject);
       resumeProjectBtn.addEventListener('click', resumeLastProject);
 
-      // Copy buttons in prompt panels
-      document.querySelectorAll('.btn-copy-small').forEach(btn => {
+      // Prompt-panel copy buttons must use the same canonical copy path as the
+      // large action buttons. Directly copying textContent bypassed stale-plan
+      // checks and gave no user feedback when clipboard access failed.
+      document.querySelectorAll('.btn-copy-small[data-copy-action]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const targetId = e.currentTarget.dataset.target;
-          const target = document.getElementById(targetId);
-          if (target) copyToClipboard(target.textContent);
+          const action = e.currentTarget.dataset.copyAction;
+          if (action) copyAction(action);
         });
       });
 
@@ -1453,6 +1456,8 @@
       copyMasterBtn.disabled = !canCopyMaster;
       copyVideoBtn.disabled = !canCopyVideo;
       copyFullSceneBtn.disabled = !canCopyVideo;
+      copyMasterPanelBtn.disabled = !canCopyMaster;
+      copyVideoPanelBtn.disabled = !canCopyVideo;
 
       // Update button text for clarity
       if (isFirstScene) {
