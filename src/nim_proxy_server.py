@@ -118,6 +118,30 @@ def _resolve_session_token() -> str:
     return os.environ.get("NIM_PROXY_SESSION_TOKEN") or secrets.token_urlsafe(32)
 
 
+def _init_config_from_env():
+    """Initialize config from environment variables when module is imported."""
+    global _config, _session_token
+    if _config is None:
+        _config = ProxyConfig(
+            host=os.environ.get("NIM_PROXY_HOST", "127.0.0.1"),
+            port=int(os.environ.get("NIM_PROXY_PORT", "4174")),
+            allowed_origins=_resolve_allowed_origins(None),
+            max_body_size=int(os.environ.get("NIM_PROXY_MAX_BODY", "1048576")),
+            upstream_hosts=os.environ.get("NIM_PROXY_UPSTREAM_HOSTS", "integrate.api.nvidia.com,api.nvidia.com").split(","),
+            default_model=os.environ.get("NIM_PROXY_DEFAULT_MODEL", "meta/llama-3.1-8b-instruct"),
+            require_session_token=os.environ.get("NIM_PROXY_REQUIRE_TOKEN", "true").lower() != "false",
+            env_api_key=os.environ.get("NIM_PROXY_ENV_API_KEY", ""),
+        )
+        _session_token = _resolve_session_token()
+
+
+# ============================================================================
+# Module-level initialization (runs on import for uvicorn)
+# ============================================================================
+
+_init_config_from_env()
+
+
 # ============================================================================
 # JSON Schemas (inline for self-contained proxy)
 # ============================================================================
