@@ -127,9 +127,12 @@ def _init_config_from_env():
             port=int(os.environ.get("NIM_PROXY_PORT", "4174")),
             allowed_origins=_resolve_allowed_origins(None),
             max_body_size=int(os.environ.get("NIM_PROXY_MAX_BODY", "1048576")),
-            upstream_hosts=os.environ.get("NIM_PROXY_UPSTREAM_HOSTS", "integrate.api.nvidia.com,api.nvidia.com").split(","),
+            upstream_hosts=os.environ.get(
+                "NIM_PROXY_UPSTREAM_HOSTS", "integrate.api.nvidia.com,api.nvidia.com"
+            ).split(","),
             default_model=os.environ.get("NIM_PROXY_DEFAULT_MODEL", "meta/llama-3.1-8b-instruct"),
-            require_session_token=os.environ.get("NIM_PROXY_REQUIRE_TOKEN", "true").lower() != "false",
+            require_session_token=os.environ.get("NIM_PROXY_REQUIRE_TOKEN", "true").lower()
+            != "false",
             env_api_key=os.environ.get("NIM_PROXY_ENV_API_KEY", ""),
         )
         _session_token = _resolve_session_token()
