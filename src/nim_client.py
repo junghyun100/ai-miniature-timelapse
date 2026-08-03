@@ -291,7 +291,7 @@ class NimClient:
     ) -> NimRequest:
         """Build NimRequest from canonical Project."""
         # Extract subject fields based on genre
-        subject = {}
+        subject: dict[str, Any] = {}
         if project.topic:
             subject["topic"] = project.topic
         if project.genre:
@@ -304,6 +304,8 @@ class NimClient:
             subject["dish_name"] = project.dish_name
         if project.craft_name:
             subject["craft_name"] = project.craft_name
+        if project.user_overrides:
+            subject["user_overrides"] = project.user_overrides
 
         # Build scene requests
         scenes = []
@@ -344,6 +346,10 @@ class NimClient:
                 "Preserve identity lock in all prompts",
                 "Preserve hands-only rule: giant human hands only",
                 "Preserve camera/lighting/workspace consistency",
+                "Preserve cumulative installed state frame by frame; only listed current actions may change geometry",
+                "Never morph, redesign, replace, remove, reset, or rebuild the subject",
+                "Keep camera and scale fixed during listed work; framing may change only for an explicitly listed final reveal after all work and cleanup",
+                "Apply user scale and composition overrides as mandatory visual constraints",
                 "Scene 1 only may have first_frame_prompt",
                 "Negative prompt must remain identical",
                 "Template exclusions must remain",

@@ -729,7 +729,7 @@ def make_scene_video_prompt(
 
     global_rules = (
         "ultra fast timelapse speed, human hands continuously constructing and moving rapidly, "
-        "multiple rapid scene cuts within the exact same locked camera composition, cinematic macro photography, giant human hands only, "
+        "rapid procedural timelapse in one uninterrupted locked camera composition, no editorial cuts or alternate shots, cinematic macro photography, giant human hands only, "
         "no miniature people, fixed identity, fixed camera, fixed lighting. "
     )
     if plan.is_final_scene:

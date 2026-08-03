@@ -939,8 +939,19 @@
       if (!text) return {};
       const lowered = text.toLowerCase();
       const overrides = { additional_instructions: text };
-      if (/(크게|큰|larger|bigger|increase.*scale|70%)/i.test(lowered)) {
-        overrides.scale = 'larger miniature subject occupying approximately 70% of the frame while preserving the locked camera composition';
+      const percentage = text.match(/(\d{1,3})\s*%/);
+      const multiplier = text.match(/(\d+(?:\.\d+)?)\s*(?:배|x\b)/i);
+      if (/(규모|크게|큰\s*규모|대형|larger|bigger|increase.*scale|frame.*(?:size|coverage)|\d+\s*%|\d+(?:\.\d+)?\s*(?:배|x\b))/i.test(lowered)) {
+        if (percentage) {
+          const coverage = Math.min(90, Math.max(20, Number(percentage[1])));
+          overrides.scale = `subject occupies approximately ${coverage}% of the frame in the master image`;
+        } else if (multiplier) {
+          overrides.scale = `subject appears approximately ${multiplier[1]} times larger than the default while remaining fully inside the frame`;
+        } else {
+          overrides.scale = 'larger miniature subject occupying approximately 70% of the frame in the master image';
+        }
+      } else if (/(작게|작은\s*규모|smaller|reduce.*scale)/i.test(lowered)) {
+        overrides.scale = 'smaller miniature subject occupying approximately 40% of the frame in the master image';
       }
       if (/(작업량|촘촘|더 많은 단계|dense|more steps|more action)/i.test(lowered)) {
         overrides.workload = 'dense multi-step work expressed as visible micro-actions within each allowed scene stage';
@@ -959,21 +970,53 @@
       return 'Nothing may appear, disappear, move, or transform unless caused by a listed visible action.';
     }
 
+    function buildUserOverrideLock(userOverrides = {}, isFinalScene = false) {
+      const overrides = Object.fromEntries(Object.entries(userOverrides).filter(([, value]) => value));
+      if (!Object.keys(overrides).length) return '';
+      const scale = overrides.scale || overrides.frame_coverage;
+      delete overrides.scale;
+      delete overrides.frame_coverage;
+      const additional = overrides.additional_instructions;
+      delete overrides.additional_instructions;
+      const clauses = Object.entries(overrides).map(([key, value]) => `${key}: ${value}`);
+      if (additional) clauses.push(`additional instructions: ${additional}`);
+      const parts = ['USER OVERRIDE LOCK (HIGH PRIORITY):'];
+      if (scale) {
+        parts.push(`required scale and composition: ${scale}.`);
+        parts.push(isFinalScene
+          ? 'Preserve that apparent size until an explicitly listed final reveal begins.'
+          : 'Preserve that exact apparent size and frame occupancy for the entire clip.');
+        parts.push('Do not zoom, crop, reframe, shrink, or enlarge the subject during construction.');
+      }
+      if (clauses.length) parts.push(`${clauses.join('; ')}.`);
+      return `${parts.join(' ')} `;
+    }
+
+    function ensureIdentityLock(prompt, identityLock) {
+      const text = String(prompt || '').trim();
+      const lock = String(identityLock || '').trim();
+      if (!lock || text.includes(lock)) return text;
+      const marker = 'Negative Prompt:';
+      const markerIndex = text.indexOf(marker);
+      const body = markerIndex >= 0 ? text.slice(0, markerIndex).trim() : text;
+      const suffix = markerIndex >= 0 ? ` ${marker}${text.slice(text.lastIndexOf(marker) + marker.length).trim()}` : '';
+      return `${body} Identity Lock: ${lock}.`.replace(/\.\.$/, '.') + suffix;
+    }
+
     function buildSceneControlBlock(scenePlan, userOverrides = {}, profileId = '') {
       const actionItems = (scenePlan.visible_micro_actions || scenePlan.ordered_actions || []).filter(Boolean);
       const cleanClause = value => String(value || '').trim().replace(/[.;\s]+$/, '');
       const actions = actionItems.map((action, index) => `${index + 1}. ${cleanClause(action)}`).join(' ') || '1. Continue only the listed current action';
-      const overrideText = Object.entries(userOverrides)
-        .filter(([, value]) => value)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('; ');
       const completionRange = scenePlan.completion_range || 'current stage only';
-      const base = `INPUT FRAME LOCK: The uploaded frame is immutable visual ground truth. Keep subject identity, silhouette, proportions, camera, scale, lighting, workspace, and every unlisted element unchanged. START STATE: ${cleanClause(scenePlan.start_state)}. CURRENT STAGE RANGE: ${completionRange}; stop immediately at the end-frame contract and do not proceed beyond it. STATE RULE: ${statePolicyForProfile(profileId)} VISIBLE ACTION SEQUENCE (${actionItems.length} physically observable actions): ${actions}. Perform only this sequence in order; do not invent work or begin a later stage. END FRAME CONTRACT: ${cleanClause(scenePlan.exact_stop_state)}.`;
-      const overrideRule = overrideText ? ` User overrides (apply without violating continuity or safety): ${overrideText}.` : '';
+      const overrideRule = buildUserOverrideLock(userOverrides, scenePlan.is_final_scene);
+      const temporalCameraLock = scenePlan.is_final_scene
+        ? 'Never morph, redesign, replace, remove, reset, or rebuild the subject during motion. During all listed work and cleanup, never rescale, reframe, change camera angle, or use a cutaway shot. Only after every listed action and cleanup is complete may an explicitly listed final reveal change framing.'
+        : 'Never morph, redesign, replace, remove, rescale, reframe, reset, or rebuild the subject during motion; no alternate camera angle or cutaway shot.';
+      const base = `INPUT FRAME LOCK: The uploaded frame is immutable visual ground truth. Keep subject identity, silhouette, proportions, camera, scale, lighting, workspace, and every unlisted element unchanged. ${overrideRule}START STATE: ${cleanClause(scenePlan.start_state)}. CURRENT STAGE RANGE: ${completionRange}; stop immediately at the end-frame contract and do not proceed beyond it. STATE RULE: ${statePolicyForProfile(profileId)} VISIBLE ACTION SEQUENCE (${actionItems.length} physically observable actions): ${actions}. Perform only this sequence in order; do not invent work or begin a later stage. TEMPORAL DELTA LOCK: every frame must be the previous frame plus only the currently listed hand-driven change. Carry all completed work cumulatively through every action. ${temporalCameraLock} END FRAME CONTRACT: ${cleanClause(scenePlan.exact_stop_state)}.`;
       if (scenePlan.is_final_scene) {
-        return `${base}${overrideRule} FINAL CLEANUP: after the listed work, visibly move unused loose materials, scraps, and tools out of frame by hand. Leave only the completed subject and required environment, withdraw the hands, and hold the clean hero frame for the remaining moment.`;
+        return `${base} FINAL CLEANUP: after the listed work, visibly move unused loose materials, scraps, and tools out of frame by hand. Leave only the completed subject and required environment, withdraw the hands, and hold the clean hero frame for the remaining moment.`;
       }
-      return `${base}${overrideRule} STAGING LOCK: all not-yet-used materials and parts remain visible, untouched, and in the same positions inside the designated edge staging tray. If the sequence finishes early, start no new work; hold the exact end frame with minimal hand withdrawal.`;
+      return `${base} STAGING LOCK: all not-yet-used materials and parts remain visible, untouched, and in the same positions inside the designated edge staging tray. If the sequence finishes early, start no new work; hold the exact end frame with minimal hand withdrawal.`;
     }
 
     function appendSceneControlBlock(prompt, scenePlan, userOverrides = {}, profileId = '') {
@@ -981,26 +1024,30 @@
       const control = buildSceneControlBlock(scenePlan, userOverrides, profileId);
       const markerIndex = prompt.indexOf(marker);
       let body = markerIndex >= 0 ? prompt.slice(0, markerIndex).trim() : prompt.trim();
-      for (const existingMarker of ['INPUT FRAME LOCK:', 'The uploaded input frame is immutable visual ground truth.']) {
-        if (body.includes(existingMarker)) body = body.split(existingMarker, 1)[0].trim();
+      if (body.includes('PROMPT BODY:')) {
+        body = body.split('PROMPT BODY:').slice(1).join('PROMPT BODY:').trim();
+      } else {
+        for (const existingMarker of ['INPUT FRAME LOCK:', 'The uploaded input frame is immutable visual ground truth.']) {
+          if (body.includes(existingMarker)) body = body.split(existingMarker, 1)[0].trim();
+        }
       }
       return markerIndex >= 0
-        ? `${body} ${control} ${marker}${prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim()}`
-        : `${body} ${control}`;
+        ? `${control} PROMPT BODY: ${body} ${marker}${prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim()}`
+        : `${control} PROMPT BODY: ${body}`;
     }
 
     function appendMasterOverride(prompt, userOverrides = {}) {
-      const overrideText = Object.entries(userOverrides)
-        .filter(([, value]) => value)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('; ');
-      if (!overrideText) return prompt;
+      const overrideLock = buildUserOverrideLock(userOverrides);
+      if (!overrideLock) return String(prompt || '').trim();
       const marker = 'Negative Prompt:';
       const markerIndex = prompt.indexOf(marker);
-      const rule = `User overrides (apply without violating safety): ${overrideText}.`;
+      let body = markerIndex >= 0 ? prompt.slice(0, markerIndex).trim() : prompt.trim();
+      const bodyMarker = 'MASTER PROMPT BODY:';
+      if (body.includes(bodyMarker)) body = body.split(bodyMarker).slice(1).join(bodyMarker).trim();
+      const composed = `MASTER COMPOSITION CONTRACT: Establish the requested subject size and framing now; this master image becomes the immutable scale reference for every later scene. ${overrideLock}${bodyMarker} ${body}`;
       return markerIndex >= 0
-        ? `${prompt.slice(0, markerIndex).trim()} ${rule} ${marker}${prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim()}`
-        : `${prompt.trim()} ${rule}`;
+        ? `${composed} ${marker}${prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim()}`
+        : composed;
     }
 
     function buildNimSubject(projectData) {
@@ -1021,6 +1068,9 @@
         'Only giant human hands may appear. Miniature people, small people, tiny workers, human figures, and characters are forbidden.',
         'Do not alter the negative prompt or template exclusions.',
         'Maintain identity lock, camera angle, scale, lighting direction, and object placement continuity across scenes.',
+        'Every video frame must preserve the cumulative installed state from the preceding frame; only the listed current hand-driven action may change geometry.',
+        'Never morph, redesign, replace, remove, reset, or rebuild the subject. Keep scale and framing fixed during listed work; framing may change only for an explicitly listed final reveal after all work and cleanup.',
+        'User scale and composition overrides are mandatory visual constraints, not optional creative suggestions.',
         'Preserve scene ids, names, start_state, ordered_actions, and end_state exactly as provided.',
         `User overrides: ${JSON.stringify(projectData.user_overrides || {})}`,
         `Identity lock: ${projectData.identity_lock}`,
@@ -1097,9 +1147,15 @@
       projectData.scenes = projectData.scenes.map((scene, index) => {
         const rewritten = rewrittenById.get(scene.id);
         if (!rewritten) return scene;
-        const rewrittenVideo = rewritten.video_prompt || scene.video_prompt;
+        const rewrittenVideo = ensureIdentityLock(
+          rewritten.video_prompt || scene.video_prompt,
+          projectData.identity_lock
+        );
         const rewrittenFirstFrame = index === 0
-          ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '')
+          ? ensureIdentityLock(
+              rewritten.first_frame_prompt || scene.first_frame_prompt || '',
+              projectData.identity_lock
+            )
           : '';
         return {
           ...scene,
@@ -1272,7 +1328,12 @@
           const rawVideoPrompt = profile.scene_prompt_factory
             ? profile.scene_prompt_factory(topic, promptDetail, sp, i + 1)
             : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Selection: ${promptDetail}. Identity: ${profile.identity_lock}`;
-          const videoPrompt = appendSceneControlBlock(rawVideoPrompt, sp, userOverrides, currentProfileId);
+          const videoPrompt = appendSceneControlBlock(
+            ensureIdentityLock(rawVideoPrompt, project.identity_lock),
+            sp,
+            userOverrides,
+            currentProfileId
+          );
 
           const assetRef = {
             logical_id: `scene_${i + 1}_final`,
@@ -1300,7 +1361,9 @@
             exact_stop_state: sp.exact_stop_state,
             reserved_future_actions: sp.reserved_future_actions,
             forbidden_future_actions: sp.forbidden_future_actions,
-            first_frame_prompt: isFirst ? appendMasterOverride(firstFramePrompt, userOverrides) : '',
+            first_frame_prompt: isFirst
+              ? appendMasterOverride(ensureIdentityLock(firstFramePrompt, project.identity_lock), userOverrides)
+              : '',
             video_prompt: videoPrompt,
             negative_prompt_base: project.negative_prompt_base,
             template_exclusions: project.template_exclusions,

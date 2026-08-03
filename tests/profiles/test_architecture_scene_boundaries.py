@@ -39,7 +39,8 @@ REQUIRED_BOUNDARY_PHRASES = [
 REQUIRED_GLOBAL_PHRASES = [
     "ultra fast timelapse speed",
     "human hands continuously constructing and moving rapidly",
-    "multiple rapid scene cuts",
+    "rapid procedural timelapse in one uninterrupted locked camera composition",
+    "no editorial cuts or alternate shots",
     "cinematic macro photography",
 ]
 

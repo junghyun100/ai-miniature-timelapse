@@ -1465,7 +1465,7 @@ function buildArchitectureProfile(selection = {}) {
             const finalRules = scenePlan.is_final_scene
                 ? "Only in this final scene, remove the hands, return to normal cinematic speed, and perform a cinematic zoom-out reveal."
                 : "Stop immediately at the exact stop state. Later-stage components and materials remain visible and untouched in the edge staging tray.";
-            return `Ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, multiple rapid scene cuts within the exact same locked camera composition, cinematic macro photography. Architecture subtype: ${subtype.label}. Topic: ${topic}. Subtype materials: ${materials}. Subtype features: ${features}. ${finalRules} Maintain the exact same building identity, camera angle, scale, lighting direction, ground tray, and object placement. ${detail} Negative Prompt: ${negativePrompt}.`;
+            return `Ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, rapid procedural timelapse in one uninterrupted locked camera composition, no editorial cuts or alternate shots, cinematic macro photography. Architecture subtype: ${subtype.label}. Topic: ${topic}. Subtype materials: ${materials}. Subtype features: ${features}. ${finalRules} Maintain the exact same building identity, camera angle, scale, lighting direction, ground tray, and object placement. ${detail} Negative Prompt: ${negativePrompt}.`;
         }
     };
 }

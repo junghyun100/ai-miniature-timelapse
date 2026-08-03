@@ -35,6 +35,12 @@ KOREAN_MATERIALS = [
 
 HOME_DECOR_NARRATION_MAX_NON_WHITESPACE = 60
 
+HOME_DECOR_CONTINUITY_LOCK = (
+    "one uninterrupted locked composition, cumulative crafted state, "
+    "no alternate camera, no zoom or reframe during crafting, no completed-state jump, no shape loss, "
+    "no morphing into a different craft, no rebuild from scratch"
+)
+
 
 def count_narration_characters(value: str) -> int:
     """Count narration characters using the channel's whitespace-excluded rule."""
@@ -125,7 +131,7 @@ def _make_scene_video_prompt(
         f"captured from a clean, top-down perspective. Macro close-up, hands only, "
         f"fixed top-down 45-degree angle, steady camera, bright even studio lighting, "
         f"shallow depth of field, clean background, pastel and jewel-tone palette, "
-        f"9:16 vertical, photorealistic 8K. {STATE_PERMANENCE_RULE}. "
+        f"9:16 vertical, photorealistic 8K. {STATE_PERMANENCE_RULE}. {HOME_DECOR_CONTINUITY_LOCK}. "
         f"Korean female voiceover narrates continuously "
         f'without pause: "{korean_narration}". No background music. '
         f"Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, "
@@ -162,7 +168,7 @@ SCENE_PLAN = [
         is_final_scene=True,
         reserved_future_actions=[],
         forbidden_future_actions=[],
-        exact_stop_state="Final object reveal on clean desk",
+        exact_stop_state="Final object reveal on clean desk with the same craft scale and footprint preserved.",
     ),
 ]
 

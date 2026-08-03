@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from src.domain import AssetKind, AssetRef, AssetScope, InputMode, Scene
-from src.profile_types import ScenePlan, append_scene_control_block
+from src.profile_types import (
+    ScenePlan,
+    append_scene_control_block,
+    apply_master_prompt_overrides,
+)
 from src.profiles.architecture import make_first_frame_prompt as architecture_first_frame_prompt
 from src.profiles.architecture import make_scene_video_prompt as architecture_video_prompt
 from src.profiles.cooking import make_scene_video_prompt as cooking_video_prompt
@@ -109,10 +113,97 @@ def test_shared_control_block_preserves_terminal_negative_once_and_applies_overr
 
     assert prompt.count("Negative Prompt:") == 1
     assert prompt.rstrip().endswith("Negative Prompt:final.")
+    assert prompt.startswith("INPUT FRAME LOCK:")
     assert "immutable visual ground truth" in prompt
     assert "visible action sequence (3 physically observable actions)" in prompt.lower()
     assert "edge staging tray" in prompt
-    assert "scale: subject occupies 70% of frame" in prompt
+    assert "USER OVERRIDE LOCK (HIGH PRIORITY)" in prompt
+    assert "required scale and composition: subject occupies 70% of frame" in prompt
+    assert prompt.index("USER OVERRIDE LOCK") < prompt.index("START STATE")
+    assert "TEMPORAL DELTA LOCK" in prompt
+    assert "Never morph, redesign, replace, remove, rescale" in prompt
+    assert prompt.index("END FRAME CONTRACT") < prompt.index("PROMPT BODY:")
+    assert (
+        append_scene_control_block(
+            prompt,
+            plan,
+            {"scale": "subject occupies 70% of frame"},
+        )
+        == prompt
+    )
+
+
+def test_master_prompt_establishes_scale_before_the_visual_body():
+    prompt = apply_master_prompt_overrides(
+        "Macro image body. Negative Prompt: fixed.",
+        {"scale": "subject occupies approximately 82% of the frame"},
+    )
+
+    assert prompt.startswith("MASTER COMPOSITION CONTRACT:")
+    assert prompt.index("subject occupies approximately 82%") < prompt.index("MASTER PROMPT BODY:")
+    assert "immutable scale reference for every later scene" in prompt
+    assert prompt.count("Negative Prompt:") == 1
+    assert prompt.rstrip().endswith("Negative Prompt:fixed.")
+    assert (
+        apply_master_prompt_overrides(
+            prompt, {"scale": "subject occupies approximately 82% of the frame"}
+        )
+        == prompt
+    )
+
+
+def test_final_scene_allows_reveal_only_after_work_and_cleanup():
+    plan = ScenePlan(
+        scene_id=3,
+        name="Final reveal",
+        start_state="Nearly complete subject",
+        ordered_actions=["finish details", "clean workspace", "reveal"],
+        end_state="Clean completed subject",
+        forbidden_changes=[],
+        exact_stop_state="Clean completed subject in hero frame",
+        is_final_scene=True,
+    )
+
+    prompt = append_scene_control_block("Finish and reveal.", plan)
+
+    assert "During all listed work and cleanup, never rescale, reframe" in prompt
+    assert "Only after every listed action and cleanup is complete" in prompt
+    assert "explicitly listed final reveal change framing" in prompt
+
+
+def test_canonicalizer_keeps_identity_and_state_rules_before_negative_prompt():
+    scene = _dummy_scene(
+        1,
+        "Build in order. Negative Prompt: fixed.",
+        "Unstarted master image. Negative Prompt: fixed.",
+    )
+    plan = ScenePlan(
+        scene_id=1,
+        name="Foundation",
+        start_state="Bare ground",
+        ordered_actions=["mark", "level", "place"],
+        end_state="Foundation complete",
+        forbidden_changes=[],
+        exact_stop_state="Foundation complete and nothing more",
+    )
+
+    canonical = canonicalize_scene(
+        scene,
+        1,
+        "LOCKED SUBJECT IDENTITY",
+        scene_plan=plan,
+        user_overrides={"scale": "subject occupies 82% of frame"},
+        profile_id="architecture.korean",
+    )
+
+    video_body, video_negative = canonical.video_prompt.split("Negative Prompt:", 1)
+    master_body, master_negative = canonical.first_frame_prompt.split("Negative Prompt:", 1)
+    assert "LOCKED SUBJECT IDENTITY" in video_body
+    assert "TEMPORAL DELTA LOCK" in video_body
+    assert "LOCKED SUBJECT IDENTITY" not in video_negative
+    assert "LOCKED SUBJECT IDENTITY" in master_body
+    assert "subject occupies 82% of frame" in master_body
+    assert "LOCKED SUBJECT IDENTITY" not in master_negative
 
 
 def test_every_profile_uses_shared_scene_control_contract():
@@ -133,9 +224,17 @@ def test_every_profile_uses_shared_scene_control_contract():
 
     for prompt in prompts:
         lowered = prompt.lower()
+        assert prompt.startswith("INPUT FRAME LOCK:")
         assert "immutable visual ground truth" in lowered
         assert "current stage range:" in lowered
         assert "state rule:" in lowered
         assert "visible action sequence (" in lowered
+        assert "temporal delta lock:" in lowered
+        assert "never morph, redesign, replace, remove" in lowered
+        assert (
+            "never morph, redesign, replace, remove, rescale" in lowered
+            or "only after every listed action and cleanup is complete" in lowered
+        )
         assert "end frame contract:" in lowered
+        assert prompt.index("END FRAME CONTRACT:") < prompt.index("PROMPT BODY:")
         assert prompt.count("Negative Prompt:") == 1

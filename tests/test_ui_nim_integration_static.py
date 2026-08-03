@@ -49,6 +49,24 @@ def test_ui_nim_proxy_stale_guard_and_scene_update_rules_exist():
     )
     assert "const rewrittenFirstFrame = index === 0" in html
     assert "appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)" in html
-    assert "const rewrittenVideo = rewritten.video_prompt || scene.video_prompt" in html
+    assert "const rewrittenVideo = ensureIdentityLock(" in html
+    assert "rewritten.video_prompt || scene.video_prompt" in html
+    assert "projectData.identity_lock" in html
     assert "video_prompt: appendSceneControlBlock(rewrittenVideo" in html
     assert "NIM 실패, 로컬 플랜으로 계속합니다" in html
+
+
+def test_ui_restores_identity_and_scale_contracts_after_nim_rewrite():
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
+    assert "function normalizeUserOverrides(instructions)" in html
+    assert "subject occupies approximately ${coverage}% of the frame in the master image" in html
+    assert "function ensureIdentityLock(prompt, identityLock)" in html
+    assert "MASTER COMPOSITION CONTRACT:" in html
+    assert "USER OVERRIDE LOCK (HIGH PRIORITY):" in html
+    assert "TEMPORAL DELTA LOCK:" in html
+    assert "Never morph, redesign, replace, remove, reset, or rebuild" in html
+    assert "`${control} PROMPT BODY: ${body}" in html
+    assert "User scale and composition overrides are mandatory visual constraints" in html
+    assert "appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)" in html
+    assert "appendSceneControlBlock(rewrittenVideo, scene, projectData.user_overrides" in html

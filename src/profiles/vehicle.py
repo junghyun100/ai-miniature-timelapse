@@ -539,11 +539,15 @@ def _scene_end_state(
 ) -> str:
     label = _category_label(category)
     if is_final_scene:
-        return f"Fully assembled {label.lower()} model revealed on a clean workbench."
+        return (
+            f"Fully assembled {label.lower()} model revealed on a clean workbench. "
+            f"All installed components remain fixed in their final positions."
+        )
     completed_summary = _summarize_actions(ordered_actions) or scene_name
     return (
         f"Completed actions in this scene: {completed_summary}. "
         f"The {label.lower()} remains visibly incomplete; all not-yet-used parts stay visible and untouched in the edge staging tray."
+        f" Every installed component remains visible and fixed in place."
     )
 
 
@@ -559,12 +563,14 @@ def _scene_exact_stop_state(
     if is_final_scene:
         return (
             f"Final reveal only: the fully assembled {label.lower()} model sits alone on a clean workbench "
-            f"after the final polish. {STATE_PERMANENCE_RULE}."
+            f"after the final polish. All installed components remain fixed in their final positions. "
+            f"{STATE_PERMANENCE_RULE}."
         )
     completed_summary = _summarize_actions(ordered_actions) or scene_name
     return (
         f"Exact stop state after this scene's completed actions: {completed_summary}. "
         f"The {label.lower()} must remain visibly incomplete; all not-yet-used parts stay visible and untouched in the edge staging tray. "
+        f"Every installed component remains visible and fixed in place. "
         f"{STATE_PERMANENCE_RULE}."
     )
 
@@ -606,6 +612,10 @@ def _build_scene_plans(category: VehicleCategory, duration_seconds: int) -> list
             "Workbench layout",
             "Camera scale",
             "Model identity",
+            "Zoom or reframe",
+            "Alternate camera",
+            "Completed-state jump",
+            "Installed-state loss",
         ]
 
         plans.append(
@@ -982,6 +992,12 @@ VEHICLE_STYLE_BIBLES: dict[VehicleCategory, dict[str, Any]] = {
 # Immutable negative prompt (fixed per spec — matches reference prompt exactly)
 VEHICLE_NEGATIVE_BASE = "text, subtitle, caption, watermark, logo, burnt-in text, overlay text, bad anatomy, deformed hands, blurry."
 
+VEHICLE_CONTINUITY_LOCK = (
+    "one uninterrupted locked composition, cumulative installed state, "
+    "no alternate camera, no zoom, no reframe during assembly, no completed-state jump, no installed-state loss, "
+    "no morphing into a different vehicle, no rebuild from scratch"
+)
+
 
 def make_first_frame_prompt(category: VehicleCategory, model_name: str) -> str:
     """Generate Master Image prompt for category."""
@@ -1064,12 +1080,14 @@ def make_scene_video_prompt(
         "tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
         "8K product quality, bright workshop lighting"
     )
+    continuity_lock = f"{VEHICLE_CONTINUITY_LOCK}."
 
     if resolved_plan.is_final_scene:
         return append_scene_control_block(
             " ".join(
                 [
                     f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
+                    continuity_lock,
                     "Final-only permissions: final polish, cleanup, and hero reveal are allowed only here.",
                     "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
                     "Hands only. No floating or teleporting parts.",
@@ -1084,6 +1102,7 @@ def make_scene_video_prompt(
         " ".join(
             [
                 f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
+                continuity_lock,
                 "The model must remain visibly incomplete; future parts stay visible and untouched in the edge staging tray.",
                 "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
                 "Hands only. No floating or teleporting parts.",

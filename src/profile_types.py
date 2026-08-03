@@ -218,27 +218,28 @@ def build_scene_control_block(
             "Nothing may appear, disappear, move, or transform unless caused by a listed visible action."
         ),
     }
-    override_pairs = [
-        f"{key}: {value}"
-        for key, value in (user_overrides or {}).items()
-        if value not in (None, "", [])
-    ]
-    override_line = (
-        "User overrides (apply without violating continuity or safety): "
-        + "; ".join(override_pairs)
-        + ". "
-        if override_pairs
-        else ""
+    override_line = build_user_override_lock(user_overrides, is_final_scene)
+    temporal_camera_lock = (
+        "Never morph, redesign, replace, remove, reset, or rebuild the subject during motion. During all listed "
+        "work and cleanup, never rescale, reframe, change camera angle, or use a cutaway shot. Only after every "
+        "listed action and cleanup is complete may an explicitly listed final reveal change framing. "
+        if is_final_scene
+        else "Never morph, redesign, replace, remove, rescale, reframe, reset, or rebuild the subject during "
+        "motion; no alternate camera angle or cutaway shot. "
     )
     base = (
         "INPUT FRAME LOCK: The uploaded frame is immutable visual ground truth. Keep subject identity, silhouette, "
         "proportions, camera, scale, lighting, workspace, and every unlisted element unchanged. "
-        f"START STATE: {start_state}. "
+        + override_line
+        + f"START STATE: {start_state}. "
         f"CURRENT STAGE RANGE: {completion_range}; stop immediately at the end-frame contract and do not proceed beyond it. "
         f"STATE RULE: {state_rules.get(state_policy, state_rules['generic'])} "
         f"VISIBLE ACTION SEQUENCE ({len(action_items)} physically observable actions): {actions}. "
         "Perform only this sequence in order; do not invent work or begin a later stage. "
-        f"END FRAME CONTRACT: {stop_state}. " + override_line
+        "TEMPORAL DELTA LOCK: every frame must be the previous frame plus only the currently listed hand-driven change. "
+        "Carry all completed work cumulatively through every action. "
+        + temporal_camera_lock
+        + f"END FRAME CONTRACT: {stop_state}. "
     )
     if is_final_scene:
         return (
@@ -253,6 +254,62 @@ def build_scene_control_block(
         "inside the designated edge staging tray. If the sequence finishes early, start no new work; hold the exact "
         "end frame with minimal hand withdrawal."
     )
+
+
+def build_user_override_lock(
+    user_overrides: dict[str, Any] | None,
+    is_final_scene: bool = False,
+) -> str:
+    """Compile user intent into a high-priority visual contract."""
+    overrides = {
+        key: value for key, value in (user_overrides or {}).items() if value not in (None, "", [])
+    }
+    if not overrides:
+        return ""
+
+    scale_value = overrides.pop("scale", None) or overrides.pop("frame_coverage", None)
+    additional = overrides.pop("additional_instructions", None)
+    clauses = [f"{key}: {value}" for key, value in overrides.items()]
+    if additional:
+        clauses.append(f"additional instructions: {additional}")
+
+    parts = ["USER OVERRIDE LOCK (HIGH PRIORITY):"]
+    if scale_value:
+        reveal_exception = (
+            " Preserve that apparent size until an explicitly listed final reveal begins."
+            if is_final_scene
+            else " Preserve that exact apparent size and frame occupancy for the entire clip."
+        )
+        parts.append(f"required scale and composition: {scale_value}.{reveal_exception}")
+        parts.append(
+            "Do not zoom, crop, reframe, shrink, or enlarge the subject during construction."
+        )
+    if clauses:
+        parts.append("; ".join(clauses) + ".")
+    return " ".join(parts) + " "
+
+
+def apply_master_prompt_overrides(
+    prompt: str,
+    user_overrides: dict[str, Any] | None,
+) -> str:
+    """Place composition overrides before the master-image description."""
+    lock = build_user_override_lock(user_overrides)
+    if not lock:
+        return prompt.strip()
+    marker = "Negative Prompt:"
+    body = prompt.split(marker, 1)[0].strip()
+    body_marker = "MASTER PROMPT BODY:"
+    if body_marker in body:
+        body = body.split(body_marker, 1)[1].strip()
+    composed = (
+        f"MASTER COMPOSITION CONTRACT: Establish the requested subject size and framing now; this master image "
+        f"becomes the immutable scale reference for every later scene. {lock}{body_marker} {body}"
+    )
+    if marker not in prompt:
+        return composed
+    negative = prompt.rsplit(marker, 1)[1].lstrip()
+    return f"{composed} {marker}{negative}"
 
 
 def state_policy_for_profile(profile_id: str) -> str:
@@ -278,17 +335,20 @@ def append_scene_control_block(
     control = build_scene_control_block(scene_plan, user_overrides, state_policy)
     marker = "Negative Prompt:"
     if marker not in prompt:
-        return f"{prompt.rstrip()} {control}"
+        return f"{control} PROMPT BODY: {prompt.rstrip()}"
     # A model may repeat the terminal section. Keep only its final value.
     body = prompt.split(marker, 1)[0]
-    for existing_marker in (
-        "INPUT FRAME LOCK:",
-        "The uploaded input frame is immutable visual ground truth.",
-    ):
-        if existing_marker in body:
-            body = body.split(existing_marker, 1)[0]
+    if "PROMPT BODY:" in body:
+        body = body.split("PROMPT BODY:", 1)[1].strip()
+    else:
+        for existing_marker in (
+            "INPUT FRAME LOCK:",
+            "The uploaded input frame is immutable visual ground truth.",
+        ):
+            if existing_marker in body:
+                body = body.split(existing_marker, 1)[0]
     negative = prompt.rsplit(marker, 1)[1]
-    return f"{body.rstrip()} {control} {marker}{negative.lstrip()}"
+    return f"{control} PROMPT BODY: {body.rstrip()} {marker}{negative.lstrip()}"
 
 
 # Profile interface per Section 13.1

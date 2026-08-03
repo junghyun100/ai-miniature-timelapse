@@ -233,6 +233,12 @@ PRODUCT_NEGATIVE_BASE = (
     "floating parts, teleporting parts, completed model at start, messy final workbench"
 )
 
+PRODUCT_CONTINUITY_LOCK = (
+    "one uninterrupted locked composition, cumulative installed state, "
+    "no alternate camera, no zoom, no reframe during assembly, no completed-state jump, no installed-state loss, "
+    "no morphing into a different product, no rebuild from scratch"
+)
+
 
 def _sanitize_reserved_future_action(action: str) -> str:
     lowered = action.lower()
@@ -501,10 +507,12 @@ def _build_prompt_prefix(subtype: str, scene_plan: ScenePlan, duration_seconds: 
         f"tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
         f"8K product quality, bright workshop lighting, {label}, scene: {scene_plan.name}. "
     )
+    continuity_lock = f"{PRODUCT_CONTINUITY_LOCK}. "
 
     if scene_plan.is_final_scene or duration_seconds == 10:
         return (
             base
+            + continuity_lock
             + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
             + f"{PRODUCT_FINAL_ONLY_LOCK}. "
             + "After explicit hand cleanup, unused loose parts are moved to the staging tray. "
@@ -513,6 +521,7 @@ def _build_prompt_prefix(subtype: str, scene_plan: ScenePlan, duration_seconds: 
 
     return (
         base
+        + continuity_lock
         + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
         + "The subject remains visibly incomplete in this scene. "
     )

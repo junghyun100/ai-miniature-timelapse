@@ -16,6 +16,7 @@ from .domain import InputMode, Scene
 from .profile_types import (
     STATE_PERMANENCE_RULE,
     append_scene_control_block,
+    apply_master_prompt_overrides,
     state_policy_for_profile,
 )
 from .serializers import IMMUTABLE_NEGATIVE
@@ -31,11 +32,7 @@ def ensure_identity_lock(prompt: str, identity_lock: str) -> str:
     if identity_lock in prompt:
         return prompt.strip()
 
-    # Append identity lock cleanly
-    trimmed = prompt.strip()
-    if trimmed.endswith("."):
-        return f"{trimmed} {identity_lock}"
-    return f"{trimmed}, {identity_lock}"
+    return _append_before_negative(prompt, identity_lock)
 
 
 def ensure_state_permanence(prompt: str) -> str:
@@ -45,10 +42,21 @@ def ensure_state_permanence(prompt: str) -> str:
     if STATE_PERMANENCE_RULE in prompt:
         return prompt.strip()
 
+    return _append_before_negative(prompt, STATE_PERMANENCE_RULE)
+
+
+def _append_before_negative(prompt: str, clause: str) -> str:
+    """Append a required clause to the positive body, never to the negative payload."""
+    marker = "Negative Prompt:"
     trimmed = prompt.strip()
-    if trimmed.endswith("."):
-        return f"{trimmed} {STATE_PERMANENCE_RULE}"
-    return f"{trimmed}. {STATE_PERMANENCE_RULE}"
+    if marker not in trimmed:
+        separator = " " if trimmed.endswith(".") else ". "
+        return f"{trimmed}{separator}{clause}"
+
+    body = trimmed.split(marker, 1)[0].rstrip()
+    negative = trimmed.rsplit(marker, 1)[1].lstrip()
+    separator = " " if body.endswith(".") else ". "
+    return f"{body}{separator}{clause} {marker}{negative}"
 
 
 def canonicalize_scene(
@@ -75,6 +83,9 @@ def canonicalize_scene(
             scene.first_frame_prompt = f"Master image setup for scene 1, {identity_lock}"
         else:
             scene.first_frame_prompt = ensure_identity_lock(scene.first_frame_prompt, identity_lock)
+        scene.first_frame_prompt = apply_master_prompt_overrides(
+            scene.first_frame_prompt, user_overrides
+        )
     else:
         # Failure Rule: Scene 2+ first frame MUST NOT be regenerated or kept
         scene.input_mode = InputMode.PREVIOUS_FINAL_FRAME
