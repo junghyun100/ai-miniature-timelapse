@@ -10,7 +10,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -159,6 +159,7 @@ class ScenePlan:
     reserved_future_actions: list[str] = field(default_factory=list)
     forbidden_future_actions: list[str] = field(default_factory=list)
     exact_stop_state: str = ""
+    visible_micro_actions: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         d = dict(self.__dict__.items())
@@ -173,6 +174,121 @@ class ScenePlan:
             input_mode = InputMode(input_mode)
         data["input_mode"] = input_mode
         return cls(**data)
+
+
+def build_scene_control_block(
+    scene_plan: ScenePlan | Any,
+    user_overrides: dict[str, Any] | None = None,
+    state_policy: str = "generic",
+) -> str:
+    """Build a concise, category-aware state contract for one Flow clip."""
+
+    def clean_clause(value: Any) -> str:
+        return str(value).strip().rstrip(". ;")
+
+    action_items = getattr(scene_plan, "visible_micro_actions", []) or getattr(
+        scene_plan, "ordered_actions", []
+    )
+    actions = " ".join(
+        f"{index}. {clean_clause(action)}" for index, action in enumerate(action_items, 1)
+    )
+    start_state = clean_clause(
+        getattr(scene_plan, "start_state", "the approved current scene state")
+    )
+    stop_state = clean_clause(
+        getattr(scene_plan, "exact_stop_state", "")
+        or getattr(scene_plan, "end_state", "the listed current construction state")
+    )
+    completion_range = getattr(scene_plan, "completion_range", "") or "current stage only"
+    is_final_scene = bool(getattr(scene_plan, "is_final_scene", False))
+    state_rules = {
+        "architecture": (
+            "Keep every already-built structural element visible and fixed; only surfaces or components named in the action sequence may change."
+        ),
+        "assembly": (
+            "Keep every already-installed component visible, attached, and fixed in the same position; loose parts move only through visible hand or tool contact."
+        ),
+        "cooking": (
+            "Keep every already-prepared or cooked element visible in its current state; ingredients may change only through the listed visible action."
+        ),
+        "craft": (
+            "Keep every already-attached craft element visible and fixed; loose materials, scraps, and tools move only through visible hand contact."
+        ),
+        "generic": (
+            "Nothing may appear, disappear, move, or transform unless caused by a listed visible action."
+        ),
+    }
+    override_pairs = [
+        f"{key}: {value}"
+        for key, value in (user_overrides or {}).items()
+        if value not in (None, "", [])
+    ]
+    override_line = (
+        "User overrides (apply without violating continuity or safety): "
+        + "; ".join(override_pairs)
+        + ". "
+        if override_pairs
+        else ""
+    )
+    base = (
+        "INPUT FRAME LOCK: The uploaded frame is immutable visual ground truth. Keep subject identity, silhouette, "
+        "proportions, camera, scale, lighting, workspace, and every unlisted element unchanged. "
+        f"START STATE: {start_state}. "
+        f"CURRENT STAGE RANGE: {completion_range}; stop immediately at the end-frame contract and do not proceed beyond it. "
+        f"STATE RULE: {state_rules.get(state_policy, state_rules['generic'])} "
+        f"VISIBLE ACTION SEQUENCE ({len(action_items)} physically observable actions): {actions}. "
+        "Perform only this sequence in order; do not invent work or begin a later stage. "
+        f"END FRAME CONTRACT: {stop_state}. " + override_line
+    )
+    if is_final_scene:
+        return (
+            base
+            + "FINAL CLEANUP: after the listed work, visibly move unused loose materials, scraps, and tools out of "
+            "frame by hand. Leave only the completed subject and required environment, withdraw the hands, and hold "
+            "the clean hero frame for the remaining moment."
+        )
+    return (
+        base
+        + "STAGING LOCK: all not-yet-used materials and parts remain visible, untouched, and in the same positions "
+        "inside the designated edge staging tray. If the sequence finishes early, start no new work; hold the exact "
+        "end frame with minimal hand withdrawal."
+    )
+
+
+def state_policy_for_profile(profile_id: str) -> str:
+    """Map a profile to the physical state policy used after NIM rewriting."""
+    if profile_id == "architecture.korean":
+        return "architecture"
+    if profile_id in {"vehicle.assembly", "product.assembly"}:
+        return "assembly"
+    if profile_id == "cooking.miniature":
+        return "cooking"
+    if profile_id == "home_decor.diy":
+        return "craft"
+    return "generic"
+
+
+def append_scene_control_block(
+    prompt: str,
+    scene_plan: ScenePlan | Any,
+    user_overrides: dict[str, Any] | None = None,
+    state_policy: str = "generic",
+) -> str:
+    """Keep the immutable negative prompt terminal while adding shared scene controls."""
+    control = build_scene_control_block(scene_plan, user_overrides, state_policy)
+    marker = "Negative Prompt:"
+    if marker not in prompt:
+        return f"{prompt.rstrip()} {control}"
+    # A model may repeat the terminal section. Keep only its final value.
+    body = prompt.split(marker, 1)[0]
+    for existing_marker in (
+        "INPUT FRAME LOCK:",
+        "The uploaded input frame is immutable visual ground truth.",
+    ):
+        if existing_marker in body:
+            body = body.split(existing_marker, 1)[0]
+    negative = prompt.rsplit(marker, 1)[1]
+    return f"{body.rstrip()} {control} {marker}{negative.lstrip()}"
 
 
 # Profile interface per Section 13.1

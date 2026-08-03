@@ -17,6 +17,7 @@ from ..profile_types import (
     ScenePlan,
     StyleBible,
     WorkflowMode,
+    append_scene_control_block,
     register_profile,
 )
 
@@ -278,7 +279,7 @@ SCENE_1_PREP_STOP = (
     "Raw ingredients stay visible and fixed."
 )
 SCENE_2_COOK_STOP = (
-    "Dish fully cooked with steam visible, all finishing materials still untouched. "
+    "Dish fully cooked with steam visible, all finishing materials visible and untouched in the edge prep tray. "
     "Prepared ingredients and cookware remain visible and fixed."
 )
 SCENE_3_FINAL_STOP = (
@@ -470,8 +471,9 @@ def make_first_frame_prompt(dish_key: str) -> str:
 
 
 def _build_scene_prompt(scene_id: int, dish: dict) -> str:
+    scene_plan = SCENE_PLANS_30S[scene_id - 1]
     if scene_id == 1:
-        return (
+        prompt = (
             f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
             f"soft focus pulls. Giant human hands only, no miniature people, {dish['name']} "
             f"prep stage on a natural wooden cutting board in a clean modern kitchen with a "
@@ -484,8 +486,8 @@ def _build_scene_prompt(scene_id: int, dish: dict) -> str:
             f"camera, same hand choreography. {STATE_PERMANENCE_RULE}. No voices, no music, "
             f"only satisfying ASMR sounds. Negative Prompt: {COOKING_NEGATIVE_BASE}."
         )
-    if scene_id == 2:
-        return (
+    elif scene_id == 2:
+        prompt = (
             f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
             f"seamless continuation from the previous exact stop state. Giant human hands only, "
             f"same kitchen, same cutting board, same lighting, same camera. Move the prepared "
@@ -497,17 +499,19 @@ def _build_scene_prompt(scene_id: int, dish: dict) -> str:
             f"{STATE_PERMANENCE_RULE}. "
             f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
         )
-    return (
-        f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
-        f"seamless continuation from the previous exact stop state. Giant human hands only, "
-        f"same kitchen, same cookware, same lighting, same camera. Ladle the fully cooked "
-        f"{dish['name']} into {dish['serveware']}, drizzle the finishing oil, sprinkle the "
-        f"garnish, and reveal the plated steam-filled hero shot. Exact input/start state: "
-        f"{SCENE_2_COOK_STOP}. Exact stop state: {SCENE_3_FINAL_STOP}. "
-        f"All earlier prep and cooking steps remain complete and unchanged. Same kitchen, same "
-        f"lighting, same camera, same ASMR-only soundscape. {STATE_PERMANENCE_RULE}. "
-        f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
-    )
+    else:
+        prompt = (
+            f"Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, "
+            f"seamless continuation from the previous exact stop state. Giant human hands only, "
+            f"same kitchen, same cookware, same lighting, same camera. Ladle the fully cooked "
+            f"{dish['name']} into {dish['serveware']}, drizzle the finishing oil, sprinkle the "
+            f"garnish, and reveal the plated steam-filled hero shot. Exact input/start state: "
+            f"{SCENE_2_COOK_STOP}. Exact stop state: {SCENE_3_FINAL_STOP}. "
+            f"All earlier prep and cooking steps remain complete and unchanged. Same kitchen, same "
+            f"lighting, same camera, same ASMR-only soundscape. {STATE_PERMANENCE_RULE}. "
+            f"Negative Prompt: {COOKING_NEGATIVE_BASE}."
+        )
+    return append_scene_control_block(prompt, scene_plan, state_policy="cooking")
 
 
 def make_scene_video_prompt(scene_id: int, dish_key: str) -> str:

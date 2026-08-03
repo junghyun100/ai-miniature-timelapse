@@ -228,8 +228,9 @@ class TestVehicleProfile:
     def test_video_prompt_cleanup_rule(self):
         # make_scene_video_prompt(category, model_name, scene_id, scene_name) - category is VehicleCategory
         prompt = vehicle_make_video(VehicleCategory.CAR, "Porsche 911", 1, "Foundation & Chassis")
-        assert "disappear from the workbench" in prompt
-        assert "parts attach in realistic order" in prompt
+        assert "visible edge staging tray" in prompt
+        assert "visible hand contact" in prompt
+        assert "installed parts remain fixed" in prompt
         assert "fully assembled car model" not in prompt.lower()
         assert "Negative Prompt:" in prompt
 
@@ -257,7 +258,8 @@ class TestVehicleProfile:
         )
         assert "exact stop" in prompt.lower()
         assert "visibly incomplete" in prompt.lower()
-        assert "wheels and suspension mounted" in prompt.lower()
+        assert "wheels and suspension mounted" not in prompt.lower()
+        assert "do not invent work or begin a later stage" in prompt.lower()
         assert "fully assembled model" not in prompt.lower()
         assert "clean workbench" not in prompt.lower()
         assert "final reveal" not in prompt.lower()
@@ -381,7 +383,7 @@ class TestCookingProfile:
     def test_scene_2_cooking(self):
         prompt = cooking_make_video(2, "kimchi_jjigae")
         assert "cooked" in prompt.lower()
-        assert "all finishing materials still untouched" in prompt.lower()
+        assert "all finishing materials visible and untouched" in prompt.lower()
         assert "reserved next-stage actions" not in prompt.lower()
         assert "do not advance beyond the current cooking stage" in prompt.lower()
         assert "hero" not in prompt.lower()

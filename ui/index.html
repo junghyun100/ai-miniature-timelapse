@@ -161,10 +161,10 @@
 
           <!-- Optional refinement input -->
           <div class="setup-card topic-card">
-            <h3>추가 아이디어</h3>
+            <h3>추가 지시</h3>
             <div class="field">
-              <label for="ideaSeed">아이디어 시드 (선택)</label>
-              <input id="ideaSeed" type="text" placeholder="비워두면 자동 생성됨" />
+              <label for="ideaSeed">규모·재료·작업량 지시 (선택)</label>
+              <input id="ideaSeed" type="text" placeholder="예: 피사체를 화면의 70%로 크게, 작업량을 촘촘하게" />
             </div>
           </div>
 
@@ -934,12 +934,82 @@
       return `${segments[0]}-${segments[1]}-${segments[2]}-${segments[3]}-${segments[4]}`;
     }
 
+    function normalizeUserOverrides(instructions) {
+      const text = String(instructions || '').trim();
+      if (!text) return {};
+      const lowered = text.toLowerCase();
+      const overrides = { additional_instructions: text };
+      if (/(크게|큰|larger|bigger|increase.*scale|70%)/i.test(lowered)) {
+        overrides.scale = 'larger miniature subject occupying approximately 70% of the frame while preserving the locked camera composition';
+      }
+      if (/(작업량|촘촘|더 많은 단계|dense|more steps|more action)/i.test(lowered)) {
+        overrides.workload = 'dense multi-step work expressed as visible micro-actions within each allowed scene stage';
+      }
+      if (/(정리|깔끔|clean workspace|cleanup)/i.test(lowered)) {
+        overrides.cleanup = 'explicit final cleanup that removes unused loose materials, scraps, and tools from the frame by visible hand contact';
+      }
+      return overrides;
+    }
+
+    function statePolicyForProfile(profileId) {
+      if (profileId === 'architecture.korean') return 'Keep every already-built structural element visible and fixed; only surfaces or components named in the action sequence may change.';
+      if (profileId === 'vehicle.assembly' || profileId === 'product.assembly') return 'Keep every already-installed component visible, attached, and fixed in the same position; loose parts move only through visible hand or tool contact.';
+      if (profileId === 'cooking.miniature') return 'Keep every already-prepared or cooked element visible in its current state; ingredients may change only through the listed visible action.';
+      if (profileId === 'home_decor.diy') return 'Keep every already-attached craft element visible and fixed; loose materials, scraps, and tools move only through visible hand contact.';
+      return 'Nothing may appear, disappear, move, or transform unless caused by a listed visible action.';
+    }
+
+    function buildSceneControlBlock(scenePlan, userOverrides = {}, profileId = '') {
+      const actionItems = (scenePlan.visible_micro_actions || scenePlan.ordered_actions || []).filter(Boolean);
+      const cleanClause = value => String(value || '').trim().replace(/[.;\s]+$/, '');
+      const actions = actionItems.map((action, index) => `${index + 1}. ${cleanClause(action)}`).join(' ') || '1. Continue only the listed current action';
+      const overrideText = Object.entries(userOverrides)
+        .filter(([, value]) => value)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('; ');
+      const completionRange = scenePlan.completion_range || 'current stage only';
+      const base = `INPUT FRAME LOCK: The uploaded frame is immutable visual ground truth. Keep subject identity, silhouette, proportions, camera, scale, lighting, workspace, and every unlisted element unchanged. START STATE: ${cleanClause(scenePlan.start_state)}. CURRENT STAGE RANGE: ${completionRange}; stop immediately at the end-frame contract and do not proceed beyond it. STATE RULE: ${statePolicyForProfile(profileId)} VISIBLE ACTION SEQUENCE (${actionItems.length} physically observable actions): ${actions}. Perform only this sequence in order; do not invent work or begin a later stage. END FRAME CONTRACT: ${cleanClause(scenePlan.exact_stop_state)}.`;
+      const overrideRule = overrideText ? ` User overrides (apply without violating continuity or safety): ${overrideText}.` : '';
+      if (scenePlan.is_final_scene) {
+        return `${base}${overrideRule} FINAL CLEANUP: after the listed work, visibly move unused loose materials, scraps, and tools out of frame by hand. Leave only the completed subject and required environment, withdraw the hands, and hold the clean hero frame for the remaining moment.`;
+      }
+      return `${base}${overrideRule} STAGING LOCK: all not-yet-used materials and parts remain visible, untouched, and in the same positions inside the designated edge staging tray. If the sequence finishes early, start no new work; hold the exact end frame with minimal hand withdrawal.`;
+    }
+
+    function appendSceneControlBlock(prompt, scenePlan, userOverrides = {}, profileId = '') {
+      const marker = 'Negative Prompt:';
+      const control = buildSceneControlBlock(scenePlan, userOverrides, profileId);
+      const markerIndex = prompt.indexOf(marker);
+      let body = markerIndex >= 0 ? prompt.slice(0, markerIndex).trim() : prompt.trim();
+      for (const existingMarker of ['INPUT FRAME LOCK:', 'The uploaded input frame is immutable visual ground truth.']) {
+        if (body.includes(existingMarker)) body = body.split(existingMarker, 1)[0].trim();
+      }
+      return markerIndex >= 0
+        ? `${body} ${control} ${marker}${prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim()}`
+        : `${body} ${control}`;
+    }
+
+    function appendMasterOverride(prompt, userOverrides = {}) {
+      const overrideText = Object.entries(userOverrides)
+        .filter(([, value]) => value)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('; ');
+      if (!overrideText) return prompt;
+      const marker = 'Negative Prompt:';
+      const markerIndex = prompt.indexOf(marker);
+      const rule = `User overrides (apply without violating safety): ${overrideText}.`;
+      return markerIndex >= 0
+        ? `${prompt.slice(0, markerIndex).trim()} ${rule} ${marker}${prompt.slice(prompt.lastIndexOf(marker) + marker.length).trim()}`
+        : `${prompt.trim()} ${rule}`;
+    }
+
     function buildNimSubject(projectData) {
       return {
         topic: projectData.topic,
         topic_label: projectData.topic_label,
         genre: projectData.genre,
         subtype: projectData.subtype,
+        user_overrides: projectData.user_overrides || {},
         ...projectData.selection,
         ...(projectData.derived_fields?.selection || {})
       };
@@ -952,6 +1022,7 @@
         'Do not alter the negative prompt or template exclusions.',
         'Maintain identity lock, camera angle, scale, lighting direction, and object placement continuity across scenes.',
         'Preserve scene ids, names, start_state, ordered_actions, and end_state exactly as provided.',
+        `User overrides: ${JSON.stringify(projectData.user_overrides || {})}`,
         `Identity lock: ${projectData.identity_lock}`,
         `Negative prompt base: ${projectData.negative_prompt_base}`,
         `Template exclusions: ${projectData.template_exclusions}`
@@ -1026,10 +1097,16 @@
       projectData.scenes = projectData.scenes.map((scene, index) => {
         const rewritten = rewrittenById.get(scene.id);
         if (!rewritten) return scene;
+        const rewrittenVideo = rewritten.video_prompt || scene.video_prompt;
+        const rewrittenFirstFrame = index === 0
+          ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '')
+          : '';
         return {
           ...scene,
-          first_frame_prompt: index === 0 ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '') : '',
-          video_prompt: rewritten.video_prompt || scene.video_prompt
+          first_frame_prompt: index === 0
+            ? appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)
+            : '',
+          video_prompt: appendSceneControlBlock(rewrittenVideo, scene, projectData.user_overrides, projectData.profile_id)
         };
       });
       projectData.provenance = {
@@ -1064,6 +1141,7 @@
         const topic = legacyFields.topic || topicEl.value.trim();
         const topicLabel = deriveTopicLabel(currentProfileId, selectionValues);
         const ideaSeed = ideaSeedEl.value.trim() || undefined;
+        const userOverrides = normalizeUserOverrides(ideaSeed);
         const selectionDetail = Object.entries(selectionValues)
           .filter(([, value]) => String(value || '').trim())
           .map(([key, value]) => `${key}: ${value}`)
@@ -1103,6 +1181,7 @@
           subtype: legacyFields.subtype || profile.id.split('.')[1],
           selection: { ...selectionValues },
           derived_fields: { selection: canonicalSelection },
+          user_overrides: userOverrides,
           ...legacyFields,
           duration_seconds: duration,
           clip_duration_seconds: profile.clip_duration_seconds,
@@ -1149,6 +1228,7 @@
           materials: project.materials,
           final_object: project.final_object,
           korean_narration: project.korean_narration,
+          user_overrides: project.user_overrides,
           duration_seconds: project.duration_seconds,
           clip_duration_seconds: project.clip_duration_seconds,
           aspect_ratio: project.aspect_ratio,
@@ -1159,6 +1239,7 @@
             name: sp.name,
             start_state: sp.start_state,
             ordered_actions: sp.ordered_actions,
+            visible_micro_actions: sp.visible_micro_actions,
             end_state: sp.end_state,
             completion_range: sp.completion_range,
             is_final_scene: sp.is_final_scene,
@@ -1188,9 +1269,10 @@
             ? profile.first_frame_prompt_factory(topic, promptDetail)
             : '';
 
-          const videoPrompt = profile.scene_prompt_factory
+          const rawVideoPrompt = profile.scene_prompt_factory
             ? profile.scene_prompt_factory(topic, promptDetail, sp, i + 1)
             : `${topic} - ${sp.name}: ${sp.ordered_actions.join(', ')}. Selection: ${promptDetail}. Identity: ${profile.identity_lock}`;
+          const videoPrompt = appendSceneControlBlock(rawVideoPrompt, sp, userOverrides, currentProfileId);
 
           const assetRef = {
             logical_id: `scene_${i + 1}_final`,
@@ -1211,13 +1293,14 @@
             forbidden_changes: sp.forbidden_changes,
             start_state: sp.start_state,
             ordered_actions: sp.ordered_actions,
+            visible_micro_actions: sp.visible_micro_actions,
             end_state: sp.end_state,
             completion_range: sp.completion_range,
             is_final_scene: sp.is_final_scene,
             exact_stop_state: sp.exact_stop_state,
             reserved_future_actions: sp.reserved_future_actions,
             forbidden_future_actions: sp.forbidden_future_actions,
-            first_frame_prompt: firstFramePrompt,
+            first_frame_prompt: isFirst ? appendMasterOverride(firstFramePrompt, userOverrides) : '',
             video_prompt: videoPrompt,
             negative_prompt_base: project.negative_prompt_base,
             template_exclusions: project.template_exclusions,
@@ -1450,7 +1533,10 @@
 
     function updateActionButtons(status, isFirstScene) {
       // Copy buttons
-      const canCopyVideo = [SceneStatus.VIDEO_READY, SceneStatus.CONFIRMED, SceneStatus.COMPLETE].includes(status);
+      // Copying text does not require the image asset to be approved. Only locked
+      // or stale scenes are blocked; execution still follows the relay state machine.
+      const canCopyVideo = ![SceneStatus.LOCKED, SceneStatus.STALE].includes(status)
+        && Boolean(project.scenes[activeSceneIndex]?.video_prompt?.trim());
       const canCopyMaster = isFirstScene && [SceneStatus.AWAITING_MASTER_IMAGE, SceneStatus.VIDEO_READY, SceneStatus.CONFIRMED, SceneStatus.COMPLETE].includes(status);
 
       copyMasterBtn.disabled = !canCopyMaster;

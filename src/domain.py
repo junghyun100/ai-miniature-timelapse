@@ -156,6 +156,7 @@ def compute_source_revision(source_draft: dict[str, Any]) -> str:
         "materials",
         "final_object",
         "korean_narration",
+        "user_overrides",
         "duration_seconds",
         "clip_duration_seconds",
         "aspect_ratio",
@@ -476,6 +477,7 @@ class Project:
     nim_refinement_policy: NimRefinementPolicy = NimRefinementPolicy.MUTABLE_ONLY
     narration: str | None = None
     idea_seed: str | None = None
+    user_overrides: dict[str, Any] = field(default_factory=dict)
     provenance: Provenance | None = None
     relay_branch: RelayBranch | None = None
     scenes: list[Scene] = field(default_factory=list)
@@ -549,6 +551,7 @@ class Project:
             "scene_plans": [sp.to_dict() for sp in self.scene_plans],
             "narration": self.narration,
             "idea_seed": self.idea_seed,
+            "user_overrides": self.user_overrides,
             "flow_execution_profile_id": self.flow_execution_profile_id,
             "nim_enabled": self.nim_enabled,
             "nim_model_id": self.nim_model_id,

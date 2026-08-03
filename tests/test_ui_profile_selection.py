@@ -454,9 +454,18 @@ def test_product_profile_uses_subtype_materials_parts_stages_and_ranges():
         "75-90%",
         "90-100%",
     ]
-    assert "Lock the shutter box and body shell" in product["prompts"]["30"][0]
-    assert "Install the lens barrel and glass elements" in product["prompts"]["30"][0]
-    assert "Fit the film chamber" in product["prompts"]["30"][1]
+    assert any(
+        "Lock the shutter box and body shell" in action
+        for action in product["scene_plans"]["30"][0]["ordered_actions"]
+    )
+    assert any(
+        "Install the lens barrel and glass elements" in action
+        for action in product["scene_plans"]["30"][0]["ordered_actions"]
+    )
+    assert any(
+        "Fit the film chamber" in action
+        for action in product["scene_plans"]["30"][1]["ordered_actions"]
+    )
     assert "Leica M3 rangefinder" in product["prompts"]["30"][1]
 
 
@@ -565,18 +574,12 @@ def test_non_final_prompts_never_expose_completion_language():
                         f"contains completion phrase: {phrase}"
                     )
                 if profile_id == "architecture.korean":
-                    assert (
-                        "later-stage components and materials remain separate, visible, and untouched"
-                        in lowered
-                    )
+                    assert "edge staging tray" in lowered
                 elif profile_id == "product.assembly":
-                    assert "prohibited future work:" in lowered
+                    assert "edge staging tray" in scene["exact_stop_state"].lower()
                 else:
                     assert "stop at the exact stop state" in lowered
-                    assert (
-                        "later-stage components and materials remain separate, visible, and untouched"
-                        in lowered
-                    )
+                    assert "edge prep tray" in lowered
 
     architecture_final = profiles["architecture.korean"]["prompts"]["30"][-1].lower()
     cooking_final = profiles["cooking.miniature"]["prompts"]["30"][-1].lower()

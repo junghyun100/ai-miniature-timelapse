@@ -47,9 +47,8 @@ def test_ui_nim_proxy_stale_guard_and_scene_update_rules_exist():
         "const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));"
         in html
     )
-    assert (
-        "first_frame_prompt: index === 0 ? (rewritten.first_frame_prompt || scene.first_frame_prompt || '') : ''"
-        in html
-    )
-    assert "video_prompt: rewritten.video_prompt || scene.video_prompt" in html
+    assert "const rewrittenFirstFrame = index === 0" in html
+    assert "appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)" in html
+    assert "const rewrittenVideo = rewritten.video_prompt || scene.video_prompt" in html
+    assert "video_prompt: appendSceneControlBlock(rewrittenVideo" in html
     assert "NIM 실패, 로컬 플랜으로 계속합니다" in html

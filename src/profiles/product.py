@@ -10,12 +10,12 @@ Per Section 13.7:
 from __future__ import annotations
 
 from ..profile_types import (
-    STATE_PERMANENCE_RULE,
     InputMode,
     Profile,
     ScenePlan,
     StyleBible,
     WorkflowMode,
+    append_scene_control_block,
     register_profile,
 )
 
@@ -214,8 +214,7 @@ PRODUCT_IDENTITY_LOCK_BASE = (
     "hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
     "no miniature people, no small people, no tiny workers, no human figures, no characters, "
     "precise mechanical/organic assembly logic, "
-    f"{STATE_PERMANENCE_RULE}, "
-    "parts attach in realistic order and disappear from workbench as installed, "
+    "parts move from a visible edge staging tray through visible hand contact and attach in realistic order; installed parts remain fixed, "
     "camera angle, scale, workbench position, and lighting physically fixed throughout, "
     "tweezers, mini screwdriver, soft brush, 85mm lens, shallow depth of field, "
     "8K product quality, bright workshop lighting"
@@ -299,6 +298,38 @@ def _scene_action_groups(stage_actions: list[str], duration_seconds: int) -> lis
     return [stage_actions]
 
 
+def _assembly_micro_actions(actions: list[str], is_final: bool) -> list[str]:
+    """Turn broad stages into observable motions without inventing future work."""
+    if len(actions) >= 4:
+        return actions
+    if is_final:
+        return [
+            *actions,
+            "Inspect the completed subject without changing installed components",
+            "Use the soft brush to clear dust and loose scraps",
+            "Move every unused tool and loose material out of frame by hand",
+            "Withdraw the hands and hold the clean final hero frame",
+        ][:6]
+    if len(actions) == 2:
+        return [
+            "Select only the components required for the first listed operation",
+            actions[0],
+            "Seat and secure the first new connections with visible tool contact",
+            "Select only the components required for the second listed operation",
+            actions[1],
+            "Seat, verify, and leave every newly attached component fixed",
+        ]
+    joined = actions[0] if actions else "complete the current assembly operation"
+    return [
+        "Select only the components required for this stage",
+        "Lift those components from the visible edge staging tray with the appropriate tool",
+        "Align them to their intended attachment surfaces without disturbing installed work",
+        joined,
+        "Seat, press, stitch, pin, or fasten each new connection as physically appropriate",
+        "Withdraw the tool and verify the newly attached components remain fixed",
+    ]
+
+
 def _build_scene_plans(subtype: str, duration_seconds: int) -> list[ScenePlan]:
     stage_actions = _get_stage_actions(subtype)
     action_groups = _scene_action_groups(stage_actions, duration_seconds)
@@ -312,10 +343,9 @@ def _build_scene_plans(subtype: str, duration_seconds: int) -> list[ScenePlan]:
             [action for later in action_groups[idx + 1 :] for action in later]
         )
         completed_summary = _summarize_actions(actions) or PRODUCT_SUBTYPES[subtype]["label"]
-        future_summary = _summarize_future_actions(future_actions)
         exact_stop_state = (
             f"Completed actions in this scene: {completed_summary}. "
-            f"The {PRODUCT_SUBTYPES[subtype]['label'].lower()} remains visibly incomplete, with future parts still separate, visible, and untouched on the workbench: {future_summary}."
+            f"The {PRODUCT_SUBTYPES[subtype]['label'].lower()} remains visibly incomplete; all not-yet-used parts remain visible and untouched in the edge staging tray."
             f" Installed parts remain visible and fixed."
             if not is_final
             else (
@@ -348,6 +378,7 @@ def _build_scene_plans(subtype: str, duration_seconds: int) -> list[ScenePlan]:
                 reserved_future_actions=future_actions,
                 forbidden_future_actions=[] if is_final else future_actions,
                 exact_stop_state=exact_stop_state,
+                visible_micro_actions=_assembly_micro_actions(actions, is_final),
             )
         )
 
@@ -428,11 +459,11 @@ def _make_scene_video_prompt(subtype: str) -> str:
         f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
         f"no miniature people, no small people, no tiny workers, no human figures, no characters, "
         f"precise assembly logic, 100% disassembled parts to fully assembled model, "
-        f"no floating or teleporting parts, parts attach in realistic order and disappear from "
-        f"workbench as installed, final step leaves only the fully assembled model on a clean "
+        f"no floating or teleporting parts, parts move by visible hand contact from the visible edge staging tray and attach in realistic order, "
+        f"final step leaves only the fully assembled model on a clean "
         f"workbench, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth "
         f"of field, 8K product quality, bright workshop lighting, {model_lower}, scene: Assembly. "
-        f"As parts are attached, they logically disappear from the workbench. "
+        f"After explicit hand cleanup, unused loose parts are moved to the staging tray. "
         f"By the final step, the workspace is completely clean, leaving only the fully assembled model. "
         f"Negative Prompt: {PRODUCT_NEGATIVE_BASE}."
     )
@@ -463,23 +494,12 @@ def _select_scene_plan(duration_seconds: int, scene_id: int, subtype: str) -> Sc
 
 def _build_prompt_prefix(subtype: str, scene_plan: ScenePlan, duration_seconds: int) -> str:
     label = PRODUCT_SUBTYPES[subtype]["label"]
-    current_actions = _summarize_actions(scene_plan.ordered_actions)
-    reserved_future_actions = _sanitize_reserved_future_actions(scene_plan.reserved_future_actions)
-    prohibited_future_work = (
-        f"Prohibited future work: {', '.join(reserved_future_actions)}."
-        if reserved_future_actions and not scene_plan.is_final_scene
-        else "Prohibited future work: none remain."
-    )
     base = (
         f"hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
         f"no miniature people, no small people, no tiny workers, no human figures, no characters, "
         f"precise mechanical assembly logic, no floating or teleporting parts, "
         f"tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
         f"8K product quality, bright workshop lighting, {label}, scene: {scene_plan.name}. "
-        f"Completion range: {scene_plan.completion_range}. "
-        f"Exact input/start state: {scene_plan.start_state}. "
-        f"Ordered current actions: {current_actions}. "
-        f"Exact stop state: {scene_plan.exact_stop_state}. "
     )
 
     if scene_plan.is_final_scene or duration_seconds == 10:
@@ -487,17 +507,14 @@ def _build_prompt_prefix(subtype: str, scene_plan: ScenePlan, duration_seconds: 
             base
             + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
             + f"{PRODUCT_FINAL_ONLY_LOCK}. "
-            + "As parts are attached, they logically disappear from the workbench. "
+            + "After explicit hand cleanup, unused loose parts are moved to the staging tray. "
             + "By the final step, the workspace is completely clean, leaving only the fully assembled model. "
         )
 
     return (
         base
         + f"{PRODUCT_IDENTITY_LOCK_BASE}. "
-        + prohibited_future_work
-        + " "
-        + "Leave all future parts separate, visible, and untouched. "
-        + "Do not advance to any later-stage operation in this scene. "
+        + "The subject remains visibly incomplete in this scene. "
     )
 
 
@@ -566,4 +583,8 @@ def make_scene_video_prompt(
         duration_seconds = duration_seconds if duration_seconds is not None else 10
 
     prompt = _build_prompt_prefix(subtype, scene_plan, duration_seconds)
-    return prompt + f"Negative Prompt: {PRODUCT_NEGATIVE_BASE}."
+    return append_scene_control_block(
+        prompt + f"Negative Prompt: {PRODUCT_NEGATIVE_BASE}.",
+        scene_plan,
+        state_policy="assembly",
+    )

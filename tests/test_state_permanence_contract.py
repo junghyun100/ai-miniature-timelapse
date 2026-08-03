@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.domain import AssetKind, AssetRef, AssetScope, InputMode, Scene
-from src.profile_types import STATE_PERMANENCE_RULE
+from src.profile_types import ScenePlan, append_scene_control_block
 from src.profiles.architecture import make_first_frame_prompt as architecture_first_frame_prompt
 from src.profiles.architecture import make_scene_video_prompt as architecture_video_prompt
 from src.profiles.cooking import make_scene_video_prompt as cooking_video_prompt
@@ -45,9 +45,9 @@ def test_architecture_video_prompt_carries_state_permanence():
     prompt = architecture_video_prompt(2, "hanok", 30)
 
     lowered = prompt.lower()
-    assert "exact stop state" in lowered
-    assert "keep every already-installed" in lowered
-    assert STATE_PERMANENCE_RULE in lowered
+    assert "current stage range: 35-75%" in lowered
+    assert "end frame contract" in lowered
+    assert "keep every already-built structural element" in lowered
 
 
 def test_vehicle_video_prompt_carries_state_permanence():
@@ -64,7 +64,7 @@ def test_product_video_prompt_carries_state_permanence():
     prompt = product_video_prompt(1, "watch", 30)
 
     lowered = prompt.lower()
-    assert "keep every already-installed" in lowered
+    assert "keep every already-installed component" in lowered
     assert "installed parts remain visible and fixed" in lowered
 
 
@@ -88,3 +88,54 @@ def test_canonicalizer_restores_state_permanence():
 
     assert "identity lock for hanok" in canonical.video_prompt.lower()
     assert "keep every already-installed" in canonical.video_prompt.lower()
+
+
+def test_shared_control_block_preserves_terminal_negative_once_and_applies_overrides():
+    plan = ScenePlan(
+        scene_id=1,
+        name="Foundation",
+        start_state="Bare ground with no structure installed",
+        ordered_actions=["mark footprint", "level ground", "place foundation"],
+        end_state="Foundation complete",
+        forbidden_changes=[],
+        reserved_future_actions=["raise walls", "install roof"],
+        exact_stop_state="Foundation complete, walls not started",
+    )
+    prompt = append_scene_control_block(
+        "Build the foundation. Negative Prompt: old. Negative Prompt: final.",
+        plan,
+        {"scale": "subject occupies 70% of frame"},
+    )
+
+    assert prompt.count("Negative Prompt:") == 1
+    assert prompt.rstrip().endswith("Negative Prompt:final.")
+    assert "immutable visual ground truth" in prompt
+    assert "visible action sequence (3 physically observable actions)" in prompt.lower()
+    assert "edge staging tray" in prompt
+    assert "scale: subject occupies 70% of frame" in prompt
+
+
+def test_every_profile_uses_shared_scene_control_contract():
+    prompts = [
+        architecture_video_prompt(1, "hanok", 30),
+        vehicle_video_prompt(
+            VehicleCategory.CAR, "Porsche 911", 1, "Foundation & Chassis", total_duration=30
+        ),
+        product_video_prompt(1, "watch", 30),
+        cooking_video_prompt(1, "kimchi_jjigae"),
+        home_decor_video_prompt(
+            "Hanji bottle lantern",
+            "버린 병에 한지를 붙이면 등불이 돼요",
+            ["hanji paper", "discarded glass bottle", "silk thread"],
+            "Korean lotus bottle lantern",
+        ),
+    ]
+
+    for prompt in prompts:
+        lowered = prompt.lower()
+        assert "immutable visual ground truth" in lowered
+        assert "current stage range:" in lowered
+        assert "state rule:" in lowered
+        assert "visible action sequence (" in lowered
+        assert "end frame contract:" in lowered
+        assert prompt.count("Negative Prompt:") == 1

@@ -13,7 +13,11 @@ Invariants:
 from __future__ import annotations
 
 from .domain import InputMode, Scene
-from .profile_types import STATE_PERMANENCE_RULE
+from .profile_types import (
+    STATE_PERMANENCE_RULE,
+    append_scene_control_block,
+    state_policy_for_profile,
+)
 from .serializers import IMMUTABLE_NEGATIVE
 
 
@@ -52,6 +56,9 @@ def canonicalize_scene(
     scene_index: int,
     identity_lock: str,
     total_scenes: int = 1,
+    scene_plan: object | None = None,
+    user_overrides: dict | None = None,
+    profile_id: str = "",
 ) -> Scene:
     """
     Canonicalizes a Scene instance:
@@ -77,6 +84,13 @@ def canonicalize_scene(
     scene.video_prompt = ensure_state_permanence(
         ensure_identity_lock(scene.video_prompt, identity_lock)
     )
+    if scene_plan is not None:
+        scene.video_prompt = append_scene_control_block(
+            scene.video_prompt,
+            scene_plan,
+            user_overrides,
+            state_policy_for_profile(profile_id),
+        )
 
     # 3. Negative Once-Last (Immutable Negative)
     # Failure Rule: negative line must not be mutated or altered

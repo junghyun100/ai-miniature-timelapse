@@ -32,9 +32,9 @@ NON_FINAL_FORBIDDEN_PHRASES = [
     "tools removed",
 ]
 REQUIRED_BOUNDARY_PHRASES = [
-    "This clip covers only",
-    "Stop immediately",
-    "Do not proceed beyond this construction state",
+    "CURRENT STAGE RANGE:",
+    "stop immediately at the end-frame contract",
+    "do not proceed beyond it",
 ]
 REQUIRED_GLOBAL_PHRASES = [
     "ultra fast timelapse speed",
@@ -71,8 +71,8 @@ def _assert_non_final_prompt(prompt: str, exact_stop_state: str) -> None:
     for phrase in REQUIRED_BOUNDARY_PHRASES + REQUIRED_GLOBAL_PHRASES:
         assert phrase.lower() in lowered
     assert exact_stop_state.lower() in lowered
-    assert "later-stage materials remain visible, separated, and unused" in lowered
-    assert "do not move on to the next construction stage" in lowered
+    assert "edge staging tray" in lowered
+    assert "start no new work" in lowered
     for phrase in NON_FINAL_FORBIDDEN_PHRASES:
         assert phrase not in lowered
     assert prompt.count("Negative Prompt:") == 1

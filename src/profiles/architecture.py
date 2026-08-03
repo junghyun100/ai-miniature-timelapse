@@ -14,12 +14,12 @@ from __future__ import annotations
 from typing import cast
 
 from ..profile_types import (
-    STATE_PERMANENCE_RULE,
     InputMode,
     Profile,
     ScenePlan,
     StyleBible,
     WorkflowMode,
+    append_scene_control_block,
     register_profile,
 )
 
@@ -367,7 +367,7 @@ ARCH_NEGATIVE_BASE = (
 
 
 ARCHITECTURE_INITIAL_STATE = (
-    "Completely unstarted site: bare sand or soil, all subtype materials separated and unused, "
+    "Completely unstarted site: bare sand or soil, with all subtype materials organized in a visible edge staging tray, "
     "no foundation, no walls, no posts, no roof structure, no finish work, "
     "no later-stage elements already visible."
 )
@@ -416,9 +416,9 @@ def _build_scene_plans_30s() -> list[ScenePlan]:
             "Raise the structural posts or frame and build the wall sections.",
             "Install the door and window frames while roof and finish materials remain separate.",
         ],
-        end_state="Foundation, walls, and door and window frames installed, with roof and finish materials still separate and unused.",
+        end_state="Foundation, walls, and door and window frames installed, with roof and finish materials visible and untouched in the edge staging tray.",
         completion_range="0-35%",
-        exact_stop_state="Foundation, walls, and door and window frames installed, with roof and finish materials still separate and unused.",
+        exact_stop_state="Foundation, walls, and door and window frames installed, with roof and finish materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Assemble the roof frame and install roof tiles or panels.",
             "Complete the exterior surfaces, doors, windows, and decorative details.",
@@ -441,9 +441,9 @@ def _build_scene_plans_30s() -> list[ScenePlan]:
             "Finish the exterior wall surfaces and install doors and windows.",
             "Attach subtype-specific trim and decorative details while paint and landscaping materials remain separate.",
         ],
-        end_state="Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials still separate and unused.",
+        end_state="Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials visible and untouched in the edge staging tray.",
         completion_range="35-75%",
-        exact_stop_state="Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials still separate and unused.",
+        exact_stop_state="Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Apply primer, paint, and weathering.",
             "Add landscaping and perform the reveal.",
@@ -487,9 +487,9 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
             "Place and level the foundation stones, slab, or pads.",
             "Keep wall, roof, and finish materials separated beside the work area.",
         ],
-        end_state="Foundation laid and level, with wall, roof, and finish materials still separate and unused.",
+        end_state="Foundation laid and level, with wall, roof, and finish materials visible and untouched in the edge staging tray.",
         completion_range="0-15%",
-        exact_stop_state="Foundation laid and level, with wall, roof, and finish materials still separate and unused.",
+        exact_stop_state="Foundation laid and level, with wall, roof, and finish materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Build walls and install door and window frames.",
             "Assemble and cover the roof.",
@@ -511,9 +511,9 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
             "Install and align the door and window frames.",
             "Keep rafters, roof covering, and finish materials separated beside the work area.",
         ],
-        end_state="Walls and door and window frames installed, with roofing and finish materials still separate and unused.",
+        end_state="Walls and door and window frames installed, with roofing and finish materials visible and untouched in the edge staging tray.",
         completion_range="15-35%",
-        exact_stop_state="Walls and door and window frames installed, with roofing and finish materials still separate and unused.",
+        exact_stop_state="Walls and door and window frames installed, with roofing and finish materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Assemble the roof frame and install roof tiles or panels.",
             "Complete exterior surfaces, doors, windows, and decorative details.",
@@ -535,9 +535,9 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
             "Install roof tiles, panels, or metal covering in logical rows.",
             "Keep exterior fixtures, paint, and landscaping materials separated.",
         ],
-        end_state="Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials still separate and unused.",
+        end_state="Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials visible and untouched in the edge staging tray.",
         completion_range="35-55%",
-        exact_stop_state="Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials still separate and unused.",
+        exact_stop_state="Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Complete exterior surfaces, doors, windows, and decorative details.",
             "Apply primer, paint, and weathering.",
@@ -559,9 +559,9 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
             "Attach trim, brackets, ornaments, signage, or other subtype-specific details.",
             "Keep primer, paint, weathering, and landscaping materials separated.",
         ],
-        end_state="Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials still separate and unused.",
+        end_state="Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials visible and untouched in the edge staging tray.",
         completion_range="55-75%",
-        exact_stop_state="Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials still separate and unused.",
+        exact_stop_state="Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Apply primer, paint, and weathering.",
             "Add landscaping and perform the reveal.",
@@ -582,9 +582,9 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
             "Add controlled weathering and age variation.",
             "Keep grass, soil, fences, and other landscaping materials separated.",
         ],
-        end_state="Primer, paint, and weathering applied, with all landscaping materials still separate and unused.",
+        end_state="Primer, paint, and weathering applied, with all landscaping materials visible and untouched in the edge staging tray.",
         completion_range="75-90%",
-        exact_stop_state="Primer, paint, and weathering applied, with all landscaping materials still separate and unused.",
+        exact_stop_state="Primer, paint, and weathering applied, with all landscaping materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Add grass, soil, fences, and subtype-specific landscaping.",
             "Remove the hands and perform the cinematic reveal.",
@@ -673,8 +673,8 @@ def make_first_frame_prompt(subtype: str) -> str:
         "Ultra realistic macro photography, miniature construction site, sand or soil surface, "
         "giant human fingers interacting with miniature materials, tiny realistic construction tools, "
         f"exact starting state: {ARCHITECTURE_INITIAL_STATE} "
-        "The hands begin only the first material placement; nothing has been built yet. "
-        "Later-stage walls, roof, and finish details remain separate and unused. "
+        "One giant hand hovers above the first foundation piece without touching it; nothing has been built yet. "
+        "Later-stage walls, roof, and finish details remain visible and untouched in the edge staging tray. "
         "8K detail, cinematic studio lighting, shallow depth of field. "
         f"Architecture subtype: {st['label']}. "
         f"Primary subtype materials: {materials}. "
@@ -716,7 +716,6 @@ def _scene_direction(subtype: str, plan: ScenePlan) -> str:
         f"Subtype features: {features}. "
         f"Recommended palette: {palette}. "
         f"Scene focus: {plan.name}. "
-        f"Ordered actions for this clip: {'; '.join(plan.ordered_actions)}. "
     )
 
 
@@ -730,31 +729,21 @@ def make_scene_video_prompt(
 
     global_rules = (
         "ultra fast timelapse speed, human hands continuously constructing and moving rapidly, "
-        "multiple rapid scene cuts, cinematic macro photography, giant human hands only, "
+        "multiple rapid scene cuts within the exact same locked camera composition, cinematic macro photography, giant human hands only, "
         "no miniature people, fixed identity, fixed camera, fixed lighting. "
     )
-    boundary_rules = (
-        f"This clip covers only {plan.completion_range} of the construction phase. "
-        f"Exact stop state: {plan.exact_stop_state}. "
-        f"{STATE_PERMANENCE_RULE}. "
-        "Stop immediately once the exact stop state is reached. "
-        "Do not proceed beyond this construction state. "
-    )
-
     if plan.is_final_scene:
         body = (
             "Final-only work may include landscaping, hands removed from frame, normal cinematic speed, "
             "and a cinematic zoom-out reveal. "
         )
     else:
-        body = (
-            "Later-stage materials remain visible, separated, and unused. "
-            f"{STATE_PERMANENCE_RULE}. "
-            "Do not move on to the next construction stage. "
-        )
+        body = ""
 
-    prompt = (f"{global_rules}{_scene_direction(subtype, plan)}{boundary_rules}{body}").rstrip()
-    return f"{prompt} {_negative_prompt_suffix()}"
+    prompt = (f"{global_rules}{_scene_direction(subtype, plan)}{body}").rstrip()
+    return append_scene_control_block(
+        f"{prompt} {_negative_prompt_suffix()}", plan, state_policy="architecture"
+    )
 
 
 architecture_profile = Profile(

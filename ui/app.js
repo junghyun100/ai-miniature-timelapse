@@ -13,6 +13,7 @@ export const INCLUDED_SOURCE_REVISION_KEYS = new Set([
     "selection", "subject", "category",
     "model_name", "dish_name", "dish_key", "craft_name",
     "idea_name", "materials", "final_object", "korean_narration",
+    "user_overrides",
     "duration_seconds", "clip_duration_seconds", "aspect_ratio",
     "style_bible",
     "derived_fields",
@@ -1007,6 +1008,39 @@ function sanitizeVehicleFutureActions(actions) {
     return Array.from(new Set(actions.map(sanitizeVehicleFutureAction).filter(Boolean)));
 }
 
+function expandAssemblyMicroActions(actions, isFinalScene) {
+    const cleanActions = actions.filter(Boolean);
+    if (cleanActions.length >= 4) return cleanActions;
+    if (isFinalScene) {
+        return [
+            ...cleanActions,
+            "Check newly fitted components without moving earlier installed parts",
+            "Brush away dust and loose assembly debris",
+            "Move unused tools and loose materials out of frame by hand",
+            "Withdraw the hands and hold the clean completed subject"
+        ].slice(0, 6);
+    }
+    if (cleanActions.length === 2) {
+        return [
+            "Select only the components required for the first listed operation",
+            cleanActions[0],
+            "Seat and fasten the first new connections through visible tool contact",
+            "Select only the components required for the second listed operation",
+            cleanActions[1],
+            "Seat, verify, and leave every newly installed component fixed"
+        ];
+    }
+    const currentAction = cleanActions[0] || "Complete the current assembly operation";
+    return [
+        "Select only the components required for this stage",
+        "Lift those components from the visible edge staging tray with the appropriate tool",
+        "Align them without disturbing installed components",
+        currentAction,
+        "Seat and fasten each new connection through visible hand or tool contact",
+        "Withdraw the tool and verify the newly installed components remain fixed"
+    ];
+}
+
 function buildVehicleSceneTemplate({
     scene_id,
     name,
@@ -1054,9 +1088,7 @@ function buildVehicleSceneStateText({
     if (isFinalScene) {
         return `${sceneName} is complete; all remaining parts are installed and the model is ready for the final reveal on a clean workbench.`;
     }
-    const futureActionList = sanitizeVehicleFutureActions(reservedFutureActions || []);
-    const futureSummary = futureActionList.length ? futureActionList.join(", ") : "no remaining actions";
-    return `Completed actions in this scene: ${currentActionList || sceneName}. The model must remain visibly incomplete, with future parts still separate, visible, and unused: ${futureSummary}.`;
+    return `Completed actions in this scene: ${currentActionList || sceneName}. The model must remain visibly incomplete; all not-yet-used parts stay visible and untouched in the edge staging tray.`;
 }
 
 function buildVehicleSceneContract({
@@ -1087,6 +1119,7 @@ function buildVehicleSceneContract({
         name: sceneName,
         start_state: startState,
         ordered_actions: currentActions,
+        visible_micro_actions: expandAssemblyMicroActions(currentActions, isFinalScene),
         end_state: exactStopState,
         completion_range: completionRange,
         is_final_scene: isFinalScene,
@@ -1197,12 +1230,13 @@ function buildProductScenePlans(subtypeKey, duration) {
             .map(sanitizeVehicleFutureAction);
         const endState = isFinal
             ? `${product.label} fully assembled alone on a clean workbench`
-            : `Completed actions in this scene: ${currentActions}. The ${product.label.toLowerCase()} remains visibly incomplete, with future parts still separate, visible, and untouched on the workbench: ${futureActions.slice(0, 3).join(", ") || "no remaining actions"}.`;
+            : `Completed actions in this scene: ${currentActions}. The ${product.label.toLowerCase()} remains visibly incomplete; all not-yet-used parts stay visible and untouched in the edge staging tray.`;
         const scene = {
             scene_id: index + 1,
             name: names[index],
             start_state: previousState,
             ordered_actions: actions,
+            visible_micro_actions: expandAssemblyMicroActions(actions, isFinal),
             end_state: endState,
             completion_range: PRODUCT_RANGES[duration][index],
             is_final_scene: isFinal,
@@ -1252,12 +1286,10 @@ function buildProductProfile(selection = {}) {
         negative_prompt_base: PRODUCT_NEGATIVE,
         first_frame_prompt_factory: () => `Hyper-realistic macro photo of 100% disassembled miniature ${subject} (${product.label}) parts neatly arranged on a wooden workbench, materials: ${materials}, all key parts separated clearly: ${keyParts}, giant human hands only, no miniature people, no completed model visible, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product photo quality, bright workshop lighting, scene: Master Image.`,
         scene_prompt_factory: (topic, detail, scenePlan) => {
-            const currentActions = scenePlan.ordered_actions.join("; ");
-            const reservedFutureActions = (scenePlan.reserved_future_actions || []).map(sanitizeVehicleFutureAction);
             const futureClause = scenePlan.is_final_scene
                 ? "Final-only permissions: final brush sweep, cleanup, and final reveal are allowed only here."
-                : `Prohibited future work: ${reservedFutureActions.slice(0, 3).join(", ") || "none remain"}.`;
-            return `Hyper-realistic macro ASMR assembly timelapse of ${subject}, product subtype ${product.label}, giant human hands only, precise subtype-specific assembly logic, materials: ${materials}, key parts: ${keyParts}. Completion range: ${scenePlan.completion_range}. Exact input/start state: ${scenePlan.start_state}. Ordered current actions: ${currentActions}. Exact stop state: ${scenePlan.exact_stop_state}. ${futureClause} Identity Lock: ${identityLock}. No floating or teleporting parts. ${detail} Negative Prompt: ${PRODUCT_NEGATIVE}.`;
+                : "Do not begin any later assembly stage.";
+            return `Hyper-realistic macro ASMR assembly timelapse of ${subject}, product subtype ${product.label}, giant human hands only, precise subtype-specific assembly logic, materials: ${materials}, key parts: ${keyParts}. ${futureClause} Identity Lock: ${identityLock}. No floating or teleporting parts. ${detail} Negative Prompt: ${PRODUCT_NEGATIVE}.`;
         }
     };
 }
@@ -1354,19 +1386,19 @@ function architectureSceneDefinitions(duration) {
 
 function buildArchitectureScenePlans(duration) {
     const definitions = architectureSceneDefinitions(duration);
-    let previousStop = "Completely unstarted bare ground with every structural, wall, roof, finish, and landscape material separated and unused.";
+    let previousStop = "Completely unstarted bare ground with every structural, wall, roof, finish, and landscape material visible and untouched in the edge staging tray.";
     const exactStopStates = duration === 60
         ? [
-            "Foundation laid and level, with wall, roof, and finish materials still separate and unused.",
-            "Walls and door and window frames installed, with roofing and finish materials still separate and unused.",
-            "Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials still separate and unused.",
-            "Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials still separate and unused.",
-            "Primer, paint, and weathering applied, with all landscaping materials still separate and unused.",
+            "Foundation laid and level, with wall, roof, and finish materials visible and untouched in the edge staging tray.",
+            "Walls and door and window frames installed, with roofing and finish materials visible and untouched in the edge staging tray.",
+            "Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials visible and untouched in the edge staging tray.",
+            "Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials visible and untouched in the edge staging tray.",
+            "Primer, paint, and weathering applied, with all landscaping materials visible and untouched in the edge staging tray.",
             "Completed Korean architecture scene with landscaping integrated and final reveal complete.",
         ]
         : [
-            "Foundation, walls, and door and window frames installed, with roof and finish materials still separate and unused.",
-            "Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials still separate and unused.",
+            "Foundation, walls, and door and window frames installed, with roof and finish materials visible and untouched in the edge staging tray.",
+            "Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials visible and untouched in the edge staging tray.",
             "Completed Korean architecture scene with painting, weathering, landscaping, and final reveal complete.",
         ];
     return definitions.map(([name, actions, completionRange], index) => {
@@ -1428,12 +1460,12 @@ function buildArchitectureProfile(selection = {}) {
             motion_rule: "ultra fast procedural construction timelapse"
         },
         negative_prompt_base: negativePrompt,
-        first_frame_prompt_factory: (topic) => `Ultra realistic macro photography, completely unstarted miniature ${subtype.label} construction site on an empty sand or soil surface, no foundation or structure built yet, every ${materials} component separated and staged outside the untouched footprint, subtype features reserved for later construction: ${features}, giant human fingers beginning only the first placement, tiny realistic construction tools, no completed building visible, 8K detail, cinematic studio lighting, shallow depth of field. Identity Lock: ${identityLock}. Topic: ${topic}.`,
+        first_frame_prompt_factory: (topic) => `Ultra realistic macro photography, completely unstarted miniature ${subtype.label} construction site on an empty sand or soil surface, no foundation or structure built yet, every ${materials} component organized in a visible edge staging tray outside the untouched footprint, subtype features reserved for later construction: ${features}, one giant human hand hovering above the first foundation piece without touching it, tiny realistic construction tools, no completed building visible, 8K detail, cinematic studio lighting, shallow depth of field. Identity Lock: ${identityLock}. Topic: ${topic}.`,
         scene_prompt_factory: (topic, detail, scenePlan) => {
             const finalRules = scenePlan.is_final_scene
                 ? "Only in this final scene, remove the hands, return to normal cinematic speed, and perform a cinematic zoom-out reveal."
-                : `Prohibited future work: ${scenePlan.reserved_future_actions.join(", ") || "none remain"}. Stop immediately at the exact stop state. Later-stage components and materials remain separate, visible, and untouched.`;
-            return `Ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, multiple rapid scene cuts, cinematic macro photography. Architecture subtype: ${subtype.label}. Topic: ${topic}. Subtype materials: ${materials}. Subtype features: ${features}. Completion range: ${scenePlan.completion_range}. Exact input/start state: ${scenePlan.start_state}. Ordered current actions: ${scenePlan.ordered_actions.join("; ")}. Exact stop state: ${scenePlan.exact_stop_state}. ${finalRules} Maintain the exact same building identity, camera angle, scale, lighting direction, ground tray, and object placement. ${detail} Negative Prompt: ${negativePrompt}.`;
+                : "Stop immediately at the exact stop state. Later-stage components and materials remain visible and untouched in the edge staging tray.";
+            return `Ultra fast timelapse speed, human hands continuously constructing and moving rapidly, giant human hands only, no miniature people, multiple rapid scene cuts within the exact same locked camera composition, cinematic macro photography. Architecture subtype: ${subtype.label}. Topic: ${topic}. Subtype materials: ${materials}. Subtype features: ${features}. ${finalRules} Maintain the exact same building identity, camera angle, scale, lighting direction, ground tray, and object placement. ${detail} Negative Prompt: ${negativePrompt}.`;
         }
     };
 }
@@ -1504,7 +1536,7 @@ function buildCookingProfile(selection = {}) {
         scene_prompt_factory: (topic, detail, scenePlan) => {
             const finalRule = scenePlan.is_final_scene
                 ? `Ladle ${dish.name} into ${dish.serveware}, add ${dish.garnish}, then allow the plated steam-filled cinematic hero reveal.`
-                : "Do not advance into any later stage. Stop at the exact stop state. Later-stage components and materials remain separate, visible, and untouched.";
+                : "Do not advance into any later stage. Stop at the exact stop state. Later-stage ingredients and finishing materials remain visible and untouched in the edge prep tray.";
             return `Ultra-realistic 8K HDR macro cinematography, 100mm macro lens, extreme close-up, seamless continuation from the exact previous state. Giant human hands only, no miniature people, same kitchen, same natural wooden cutting board, same ${dish.cookware}, same lighting, same fixed camera. Dish: ${dish.name}. Exact input/start state: ${scenePlan.start_state}. This clip covers only ${scenePlan.name}: ${scenePlan.ordered_actions.join("; ")}. Use realistic cooking physics and logical order without skipped steps. Exact stop state: ${scenePlan.exact_stop_state}. ${finalRule} No voices, no music, only dish-appropriate ASMR sounds. ${detail} Negative Prompt: ${COOKING_NEGATIVE}.`;
         }
     };
@@ -1620,14 +1652,11 @@ export const DEFAULT_PROFILES = {
                 const identityLock = data.identityLocks[cat] || data.identityLocks.car;
                 const negativePrompt = (data.negativeBase || IMMUTABLE_NEGATIVE).replace(/\.+$/, "");
                 const openLine = `hyper-realistic macro ASMR assembly timelapse, giant human hands only, no miniature people, no small people, no tiny workers, no human figures, no characters, precise mechanical assembly logic, tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, 8K product quality, bright workshop lighting, ${name.toLowerCase()}, scene: ${sceneName}.`;
-                const inputLine = `Exact input/start state: ${scenePlan.start_state}.`;
                 const currentActions = scenePlan.ordered_actions.filter(Boolean);
-                const actionLine = currentActions.length ? `This clip covers only ${scenePlan.name}. ${summarizeVehicleActions(currentActions)}.` : `This clip covers only ${scenePlan.name}.`;
                 const lockLine = `Identity Lock: ${identityLock}.`;
-                const exactStopLine = `Exact stop state: ${scenePlan.exact_stop_state}.`;
                 const reservedFutureActions = sanitizeVehicleFutureActions(scenePlan.reserved_future_actions || []);
                 const reservedFutureLine = reservedFutureActions.length
-                    ? `Reserved future actions and parts, kept for a later finishing stage: ${joinVisibleParts(reservedFutureActions)}.`
+                    ? "Reserved future actions and parts remain internal to the plan and must not begin in this clip."
                     : "Reserved future actions and parts: none remain.";
                 const continuityLine = `Maintain the same camera angle, scale, lighting direction, and workbench layout throughout, with hands only and no floating or teleporting parts.`;
                 const stopBoundaryLine = scenePlan.is_final_scene
@@ -1638,11 +1667,11 @@ export const DEFAULT_PROFILES = {
                     : "Keep later finishing work out of this scene.";
                 const endingLine = scenePlan.is_final_scene
                     ? "By the end, the fully assembled model sits alone on a clean workbench, ready for the final reveal."
-                    : `End on the exact stop state with future parts still separate on the workbench.`;
+                    : `End on the exact stop state with future parts visible and untouched in the edge staging tray.`;
                 const incompleteLine = scenePlan.is_final_scene
                     ? "The model may reach the fully assembled state in this scene."
                     : "The model must remain visibly incomplete.";
-                return `${openLine} ${inputLine} ${actionLine} ${lockLine} ${exactStopLine} ${reservedFutureLine} ${stopBoundaryLine} ${incompleteLine} ${sceneRules} ${continuityLine} ${endingLine} Negative Prompt: ${negativePrompt}.`;
+                return `${openLine} ${lockLine} ${reservedFutureLine} ${stopBoundaryLine} ${incompleteLine} ${sceneRules} ${continuityLine} ${endingLine} Negative Prompt: ${negativePrompt}.`;
             },
         };
     }

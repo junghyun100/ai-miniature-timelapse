@@ -41,6 +41,7 @@ def create_fallback_scene(
     profile_id: str,
     clip_duration_seconds: int = 10,
     topic: str = "",
+    user_overrides: dict[str, Any] | None = None,
 ) -> Scene:
     """
     Constructs a single deterministic fallback scene for scene_id using local scene_plan and style_bible.
@@ -89,7 +90,14 @@ def create_fallback_scene(
     )
 
     # Canonicalize to enforce identity lock & invariants
-    return canonicalize_scene(fallback_scene, scene_id, identity_lock)
+    return canonicalize_scene(
+        fallback_scene,
+        scene_id,
+        identity_lock,
+        scene_plan=scene_plan,
+        user_overrides=user_overrides,
+        profile_id=profile_id,
+    )
 
 
 def reconcile_scenes_with_fallback(
@@ -145,6 +153,7 @@ def reconcile_scenes_with_fallback(
                     profile_id=project.profile_id,
                     clip_duration_seconds=project.clip_duration_seconds,
                     topic=project.topic,
+                    user_overrides=project.user_overrides,
                 )
                 resolved_scenes.append(fb_scene)
                 fallback_scene_ids.append(i)
@@ -179,7 +188,14 @@ def reconcile_scenes_with_fallback(
                     lineage_revision="",
                 )
 
-                canonical_scene = canonicalize_scene(scene, i, identity_lock)
+                canonical_scene = canonicalize_scene(
+                    scene,
+                    i,
+                    identity_lock,
+                    scene_plan=scene_plan,
+                    user_overrides=project.user_overrides,
+                    profile_id=project.profile_id,
+                )
                 resolved_scenes.append(canonical_scene)
         else:
             # Missing scene - create fallback
@@ -190,6 +206,7 @@ def reconcile_scenes_with_fallback(
                 profile_id=project.profile_id,
                 clip_duration_seconds=project.clip_duration_seconds,
                 topic=project.topic,
+                user_overrides=project.user_overrides,
             )
             resolved_scenes.append(fb_scene)
             fallback_scene_ids.append(i)

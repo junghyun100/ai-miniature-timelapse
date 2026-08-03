@@ -16,6 +16,7 @@ from ..profile_types import (
     ScenePlan,
     StyleBible,
     WorkflowMode,
+    append_scene_control_block,
     register_profile,
 )
 
@@ -111,7 +112,7 @@ def _make_scene_video_prompt(
     if not validate_korean_narration(korean_narration):
         raise ValueError("korean_narration must contain 1 to 60 non-whitespace characters")
     materials_str = ", ".join(materials)
-    return (
+    prompt = (
         f"Single 10-second continuous clip, not split into multiple scenes. "
         f"[Opening Hook: close-up of discarded materials, Korean female voiceover speaks narration], "
         f"[Introducing Materials: Korean materials introduced — {materials_str}], "
@@ -130,6 +131,7 @@ def _make_scene_video_prompt(
         f"Negative Prompt: text, subtitle, caption, watermark, logo, burnt-in text, overlay text, "
         f"bad anatomy, deformed hands, blurry."
     )
+    return append_scene_control_block(prompt, SCENE_PLAN[0], state_policy="craft")
 
 
 # Single scene plan (10s total)

@@ -49,7 +49,8 @@ def _assert_reserved_future_continuity(scene_plans: list[ScenePlan]) -> None:
             "Exact stop state after this scene's completed actions:"
         )
         assert "visibly incomplete" in scene.exact_stop_state.lower()
-        assert "future parts still separate, visible, and unused" in scene.exact_stop_state.lower()
+        assert "not-yet-used parts stay visible and untouched" in scene.exact_stop_state.lower()
+        assert "edge staging tray" in scene.exact_stop_state.lower()
         assert scene.end_state
         assert scene.completion_range
         assert scene.is_final_scene is False
@@ -144,12 +145,12 @@ def test_airplane_30s_prompt_boundaries_and_final_only_rule() -> None:
 
     for prompt in (prompt1, prompt2):
         lowered = prompt.lower()
-        assert "completion range:" in lowered
-        assert "exact input/start state:" in lowered
-        assert "ordered current actions:" in lowered
-        assert "exact stop state:" in lowered
-        assert "prohibited future work:" in lowered
-        assert "the model must remain visibly incomplete" in lowered
+        assert "current stage range:" in lowered
+        assert "start state:" in lowered
+        assert "visible action sequence (" in lowered
+        assert "end frame contract:" in lowered
+        assert "do not invent work or begin a later stage" in lowered
+        assert "must remain visibly incomplete" in lowered
         assert "fully assembled model" not in lowered
         assert "clean workbench" not in lowered
         assert "final polish" not in lowered
@@ -159,21 +160,19 @@ def test_airplane_30s_prompt_boundaries_and_final_only_rule() -> None:
 
     assert "airframe skeleton and fuselage frame assembled" in prompt1.lower()
     assert "engine and cockpit mount secured" in prompt1.lower()
-    assert "wings and tail attached" in prompt1.lower()
-    assert "landing gear and control linkages installed" in prompt1.lower()
-    assert "later finishing stage" in prompt1.lower()
+    assert "wings and tail attached" not in prompt1.lower()
+    assert "landing gear and control linkages installed" not in prompt1.lower()
 
     assert "wings and tail attached" in prompt2.lower()
     assert "landing gear and control linkages installed" in prompt2.lower()
-    assert "exterior panels, canopy, and propeller fitted" in prompt2.lower()
-    assert "later finishing stage" in prompt2.lower()
+    assert "exterior panels, canopy, and propeller fitted" not in prompt2.lower()
 
     final_lower = prompt3.lower()
     assert "fully assembled" in final_lower
     assert "clean workbench" in final_lower
     assert "final reveal" in final_lower
     assert "final-only permissions" in final_lower
-    assert "exact stop state:" in final_lower
+    assert "end frame contract:" in final_lower
     assert prompt3.count("Negative Prompt:") == 1
     assert prompt3.rstrip().endswith("blurry.")
 
@@ -205,9 +204,9 @@ def test_six_scene_ranges_and_final_only_rules() -> None:
         assert "clean workbench" not in lowered
         assert "final polish" not in lowered
         assert "final reveal" not in lowered
-        assert "exact stop state:" in lowered
-        assert "prohibited future work:" in lowered
-        assert "the model must remain visibly incomplete" in lowered
+        assert "end frame contract:" in lowered
+        assert "do not invent work or begin a later stage" in lowered
+        assert "must remain visibly incomplete" in lowered
 
     final_prompt = make_scene_video_prompt(
         VehicleCategory.CAR,

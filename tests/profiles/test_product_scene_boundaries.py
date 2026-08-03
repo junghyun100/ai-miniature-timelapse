@@ -68,11 +68,12 @@ def _assert_scene_contract(subtype: str, duration: int) -> None:
             assert scene.reserved_future_actions
             assert scene.forbidden_future_actions == scene.reserved_future_actions
             assert all(action in scene.reserved_future_actions for action in expected_future[:-1])
-            assert "completion range:" in positive
-            assert "ordered current actions:" in positive
-            assert "exact stop state:" in positive
-            assert "prohibited future work:" in positive
-            assert "leave all future parts separate, visible, and untouched" in positive
+            assert "current stage range:" in positive
+            assert "visible action sequence (" in positive
+            assert "end frame contract:" in positive
+            assert "do not invent work or begin a later stage" in positive
+            assert "edge staging tray" in positive
+            assert "loose parts move only through visible hand or tool contact" in positive
             assert "fully assembled" not in positive
             assert "clean workbench" not in positive
             assert "final brush" not in positive

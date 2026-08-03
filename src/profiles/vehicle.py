@@ -17,6 +17,7 @@ from ..profile_types import (
     ScenePlan,
     StyleBible,
     WorkflowMode,
+    append_scene_control_block,
     register_profile,
 )
 
@@ -484,6 +485,38 @@ def _summarize_reserved_future_actions(reserved_actions: list[str]) -> str:
     return ", ".join(reserved_actions[:3]) if reserved_actions else "no remaining actions"
 
 
+def _assembly_micro_actions(actions: list[str], is_final: bool) -> list[str]:
+    """Expand broad vehicle stages into visible, scene-bounded motions."""
+    if len(actions) >= 4:
+        return actions
+    if is_final:
+        return [
+            *actions,
+            "Check all newly fitted components without moving earlier installed parts",
+            "Brush away dust and loose assembly debris",
+            "Move unused tools and loose materials out of frame by hand",
+            "Withdraw the hands and hold the clean completed model",
+        ][:6]
+    if len(actions) == 2:
+        return [
+            "Select only the components required for the first listed operation",
+            actions[0],
+            "Seat and fasten the first new connections with visible tool contact",
+            "Select only the components required for the second listed operation",
+            actions[1],
+            "Seat, verify, and leave every newly installed component fixed",
+        ]
+    joined = actions[0] if actions else "complete the current assembly operation"
+    return [
+        "Select only the components required for this stage",
+        "Lift those components from the visible edge staging tray with tweezers or fingers",
+        "Align them to the correct mounts without disturbing installed components",
+        joined,
+        "Seat and fasten every new connection with visible hand or tool contact",
+        "Withdraw the tool and verify the newly installed components remain fixed",
+    ]
+
+
 def _scene_start_state(
     scene_index: int,
     duration_seconds: int,
@@ -508,11 +541,9 @@ def _scene_end_state(
     if is_final_scene:
         return f"Fully assembled {label.lower()} model revealed on a clean workbench."
     completed_summary = _summarize_actions(ordered_actions) or scene_name
-    future_summary = _summarize_reserved_future_actions(reserved_future_actions)
     return (
         f"Completed actions in this scene: {completed_summary}. "
-        f"The {label.lower()} remains visibly incomplete, with future parts still separate, visible, and unused: "
-        f"{future_summary}."
+        f"The {label.lower()} remains visibly incomplete; all not-yet-used parts stay visible and untouched in the edge staging tray."
     )
 
 
@@ -531,13 +562,10 @@ def _scene_exact_stop_state(
             f"after the final polish. {STATE_PERMANENCE_RULE}."
         )
     completed_summary = _summarize_actions(ordered_actions) or scene_name
-    future_summary = _summarize_reserved_future_actions(
-        _sanitize_reserved_future_actions(reserved_future_actions)
-    )
     return (
         f"Exact stop state after this scene's completed actions: {completed_summary}. "
-        f"The {label.lower()} must remain visibly incomplete, with future parts still separate, visible, and unused: "
-        f"{future_summary}. {STATE_PERMANENCE_RULE}."
+        f"The {label.lower()} must remain visibly incomplete; all not-yet-used parts stay visible and untouched in the edge staging tray. "
+        f"{STATE_PERMANENCE_RULE}."
     )
 
 
@@ -595,6 +623,7 @@ def _build_scene_plans(category: VehicleCategory, duration_seconds: int) -> list
                 reserved_future_actions=reserved_actions,
                 forbidden_future_actions=forbidden_actions,
                 exact_stop_state=exact_stop_state,
+                visible_micro_actions=_assembly_micro_actions(ordered_actions, is_final_scene),
             )
         )
         previous_stop_state = exact_stop_state
@@ -1027,58 +1056,42 @@ def make_scene_video_prompt(
     category = _coerce_category(category)
     resolved_plan = _resolve_scene_plan(category, scene_id, scene_name, scene_plan, total_duration)
     model_lower = model_name.lower()
-    reserved_future_actions = _sanitize_reserved_future_actions(
-        resolved_plan.reserved_future_actions
-    )
-    reserved_future_clause = (
-        f"Prohibited future work: {', '.join(reserved_future_actions)}."
-        if reserved_future_actions
-        else "Prohibited future work: none remain."
-    )
-    current_actions = _summarize_actions(resolved_plan.ordered_actions)
-
     core_rules = (
         "hyper-realistic macro ASMR assembly timelapse, giant human hands only, "
         "no miniature people, no small people, no tiny workers, no human figures, no characters, "
         "precise mechanical assembly logic, no floating or teleporting parts, "
-        "parts attach in realistic order and disappear from the workbench as installed, "
+        "parts move from a visible edge staging tray through visible hand contact and attach in realistic order; installed parts remain fixed, "
         "tweezers, mini screwdriver, soft brush, nippers, 85mm lens, shallow depth of field, "
         "8K product quality, bright workshop lighting"
     )
 
-    ordered_actions = current_actions or "continue the current build step"
-
     if resolved_plan.is_final_scene:
-        return " ".join(
+        return append_scene_control_block(
+            " ".join(
+                [
+                    f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
+                    "Final-only permissions: final polish, cleanup, and hero reveal are allowed only here.",
+                    "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
+                    "Hands only. No floating or teleporting parts.",
+                    f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
+                ]
+            ),
+            resolved_plan,
+            state_policy="assembly",
+        )
+
+    return append_scene_control_block(
+        " ".join(
             [
                 f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
-                f"Completion range: {resolved_plan.completion_range}.",
-                f"Exact input/start state: {resolved_plan.start_state}.",
-                f"Ordered current actions: {ordered_actions}.",
-                f"Exact stop state: {resolved_plan.exact_stop_state}.",
-                "Final-only permissions: final polish, cleanup, and hero reveal are allowed only here.",
-                f"{STATE_PERMANENCE_RULE}.",
+                "The model must remain visibly incomplete; future parts stay visible and untouched in the edge staging tray.",
                 "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
                 "Hands only. No floating or teleporting parts.",
                 f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
             ]
-        )
-
-    return " ".join(
-        [
-            f"{core_rules}, {model_lower}, scene: {resolved_plan.name}.",
-            f"Completion range: {resolved_plan.completion_range}.",
-            f"Exact input/start state: {resolved_plan.start_state}.",
-            f"Ordered current actions: {ordered_actions}.",
-            f"Exact stop state: {resolved_plan.exact_stop_state}.",
-            reserved_future_clause,
-            "The model must remain visibly incomplete, with future parts still separate, visible, and unused.",
-            f"{STATE_PERMANENCE_RULE}.",
-            "Do not proceed beyond this stop state.",
-            "Maintain the same camera angle, scale, lighting direction, and workbench layout throughout.",
-            "Hands only. No floating or teleporting parts.",
-            f"Negative Prompt: {VEHICLE_NEGATIVE_BASE}",
-        ]
+        ),
+        resolved_plan,
+        state_policy="assembly",
     )
 
 
