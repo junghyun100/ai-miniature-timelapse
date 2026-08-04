@@ -110,7 +110,7 @@ class TestArchitectureProfile:
         assert len(plans) == 6
         assert [plan.name for plan in plans] == [
             "Foundation",
-            "Wall & Windows",
+            "Walls & Rough Openings",
             "Roofing",
             "Exterior",
             "Painting",

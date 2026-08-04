@@ -89,14 +89,13 @@ def test_sceneplan_backward_compatibility_defaults() -> None:
     assert "reserved_future_actions" in serialized
 
 
-def test_airplane_30s_names_ranges_and_continuity() -> None:
+def test_airplane_30s_names_match_actions_ranges_and_continuity() -> None:
     scenes = build_scene_plans_30s(VehicleCategory.AIRPLANE)
 
-    assert [scene.name for scene in scenes] == [
-        "Airframe Skeleton & Engine Mount",
-        "Wings, Tail, Landing Gear & Controls",
-        "Exterior Panels, Canopy, Propeller & Final Reveal",
-    ]
+    assert all(
+        scene.name == f"Stage {index}: {' + '.join(scene.ordered_actions)}"
+        for index, scene in enumerate(scenes, 1)
+    )
     assert [scene.completion_range for scene in scenes] == ["0-30%", "30-75%", "75-100%"]
     assert scenes[0].start_state.startswith("Empty workbench")
     assert scenes[1].start_state == scenes[0].exact_stop_state

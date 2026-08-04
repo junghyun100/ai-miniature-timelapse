@@ -285,136 +285,6 @@ def _category_label(category: VehicleCategory | str) -> str:
     return _coerce_category(category).value.replace("_", " ").title()
 
 
-VEHICLE_SCENE_TITLES_30S: dict[VehicleCategory, list[str]] = {
-    VehicleCategory.CAR: [
-        "Foundation & Chassis",
-        "Running Gear & Cabin",
-        "Body Panels & Final Reveal",
-    ],
-    VehicleCategory.MOTORCYCLE: [
-        "Frame & Engine",
-        "Wheels, Fork & Controls",
-        "Tank, Seat & Final Reveal",
-    ],
-    VehicleCategory.AIRPLANE: [
-        "Airframe Skeleton & Engine Mount",
-        "Wings, Tail, Landing Gear & Controls",
-        "Exterior Panels, Canopy, Propeller & Final Reveal",
-    ],
-    VehicleCategory.BOAT: ["Hull & Engine", "Deck, Mast & Rigging", "Trim & Final Reveal"],
-    VehicleCategory.AGRICULTURAL: [
-        "Chassis & Engine",
-        "Cab, Wheels & Hydraulics",
-        "Implements & Final Reveal",
-    ],
-    VehicleCategory.HELICOPTER: [
-        "Fuselage & Engine",
-        "Rotor System & Skids",
-        "Canopy & Final Reveal",
-    ],
-    VehicleCategory.CONSTRUCTION: [
-        "Chassis & Hydraulics",
-        "Boom, Arm & Tracks",
-        "Cab & Final Reveal",
-    ],
-    VehicleCategory.SPACESHIP: [
-        "Booster Core",
-        "Stages, Tanks & Guidance",
-        "Fairings & Final Reveal",
-    ],
-    VehicleCategory.TANK: ["Hull & Engine", "Suspension, Tracks & Turret", "Armor & Final Reveal"],
-    VehicleCategory.BICYCLE: [
-        "Frame & Drivetrain",
-        "Wheels, Fork & Brakes",
-        "Cockpit & Final Reveal",
-    ],
-}
-
-
-VEHICLE_SCENE_TITLES_60S: dict[VehicleCategory, list[str]] = {
-    VehicleCategory.CAR: [
-        "Foundation & Chassis",
-        "Engine & Powertrain",
-        "Suspension & Steering",
-        "Body Panels & Doors",
-        "Paint & Trim",
-        "Final Reveal",
-    ],
-    VehicleCategory.MOTORCYCLE: [
-        "Frame & Engine",
-        "Fasteners & Mounts",
-        "Wheels & Fork",
-        "Controls & Handlebars",
-        "Bodywork & Paint",
-        "Final Reveal",
-    ],
-    VehicleCategory.AIRPLANE: [
-        "Airframe Skeleton & Engine Mount",
-        "Wings & Tail",
-        "Landing Gear & Controls",
-        "Exterior Panels",
-        "Canopy, Propeller & Paint",
-        "Final Reveal",
-    ],
-    VehicleCategory.BOAT: [
-        "Hull & Keel",
-        "Engine & Propulsion",
-        "Deck & Mast",
-        "Rigging & Railings",
-        "Paint & Finish",
-        "Final Reveal",
-    ],
-    VehicleCategory.AGRICULTURAL: [
-        "Chassis & Engine",
-        "Transmission & Wheels",
-        "Cab & Hydraulics",
-        "Implements & Controls",
-        "Paint & Decals",
-        "Final Reveal",
-    ],
-    VehicleCategory.HELICOPTER: [
-        "Fuselage & Engine",
-        "Rotor System",
-        "Tail Boom & Rotor",
-        "Skids & Controls",
-        "Canopy & Paint",
-        "Final Reveal",
-    ],
-    VehicleCategory.CONSTRUCTION: [
-        "Chassis & Engine",
-        "Boom & Arm",
-        "Tracks & Suspension",
-        "Hydraulics & Controls",
-        "Cab & Counterweight",
-        "Final Reveal",
-    ],
-    VehicleCategory.SPACESHIP: [
-        "Booster Core",
-        "Engines & Tanks",
-        "Guidance & Separation",
-        "Fins & Fairings",
-        "Paint & Markings",
-        "Final Reveal",
-    ],
-    VehicleCategory.TANK: [
-        "Hull & Engine",
-        "Suspension & Tracks",
-        "Turret & Gun",
-        "Armor & Optics",
-        "Paint & Weathering",
-        "Final Reveal",
-    ],
-    VehicleCategory.BICYCLE: [
-        "Frame & Drivetrain",
-        "Wheels & Brakes",
-        "Handlebars & Controls",
-        "Saddle & Fitments",
-        "Paint & Decals",
-        "Final Reveal",
-    ],
-}
-
-
 VEHICLE_COMPLETION_RANGES_30S = ["0-30%", "30-75%", "75-100%"]
 VEHICLE_COMPLETION_RANGES_60S = ["0-15%", "15-35%", "35-55%", "55-75%", "75-90%", "90-100%"]
 
@@ -426,10 +296,10 @@ def _ordered_action_groups(category: VehicleCategory, duration_seconds: int) -> 
     return [[step] for step in steps[:6]]
 
 
-def _scene_titles(category: VehicleCategory, duration_seconds: int) -> list[str]:
-    if duration_seconds == 30:
-        return VEHICLE_SCENE_TITLES_30S[category]
-    return VEHICLE_SCENE_TITLES_60S[category]
+def _scene_titles(action_groups: list[list[str]]) -> list[str]:
+    return [
+        f"Stage {index}: {' + '.join(actions)}" for index, actions in enumerate(action_groups, 1)
+    ]
 
 
 def _completion_ranges(duration_seconds: int) -> list[str]:
@@ -578,7 +448,7 @@ def _scene_exact_stop_state(
 def _build_scene_plans(category: VehicleCategory, duration_seconds: int) -> list[ScenePlan]:
     category = _coerce_category(category)
     action_groups = _ordered_action_groups(category, duration_seconds)
-    titles = _scene_titles(category, duration_seconds)
+    titles = _scene_titles(action_groups)
     ranges = _completion_ranges(duration_seconds)
 
     plans: list[ScenePlan] = []

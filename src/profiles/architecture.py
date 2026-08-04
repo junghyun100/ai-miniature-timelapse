@@ -414,11 +414,11 @@ def _build_scene_plans_30s() -> list[ScenePlan]:
             "Survey and mark the footprint on the bare ground.",
             "Spread miniature cement and place the foundation stones or slab.",
             "Raise the structural posts or frame and build the wall sections.",
-            "Install the door and window frames while roof and finish materials remain separate.",
+            "Build and align only the rough door and window opening frames; leave finished doors, glazing, and trim separate.",
         ],
-        end_state="Foundation, walls, and door and window frames installed, with roof and finish materials visible and untouched in the edge staging tray.",
+        end_state="Foundation, walls, and rough door and window opening frames installed, with finished units, roof, and finish materials visible and untouched in the edge staging tray.",
         completion_range="0-35%",
-        exact_stop_state="Foundation, walls, and door and window frames installed, with roof and finish materials visible and untouched in the edge staging tray.",
+        exact_stop_state="Foundation, walls, and rough door and window opening frames installed, with finished units, roof, and finish materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Assemble the roof frame and install roof tiles or panels.",
             "Complete the exterior surfaces, doors, windows, and decorative details.",
@@ -438,7 +438,7 @@ def _build_scene_plans_30s() -> list[ScenePlan]:
         ordered_actions=[
             "Assemble the rafters, ridge, and subtype-specific roof frame.",
             "Install the roof tiles, panels, or metal covering in logical rows.",
-            "Finish the exterior wall surfaces and install doors and windows.",
+            "Apply finish layers over the completed wall structure without rebuilding it, then fit finished doors, glazing, and window units into the existing rough openings.",
             "Attach subtype-specific trim and decorative details while paint and landscaping materials remain separate.",
         ],
         end_state="Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials visible and untouched in the edge staging tray.",
@@ -503,17 +503,17 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
 
     scene2 = _scene_plan(
         scene_id=2,
-        name="Wall & Windows",
+        name="Walls & Rough Openings",
         start_state=scene1.exact_stop_state,
         ordered_actions=[
             "Raise the structural posts, columns, or frame members.",
             "Build the subtype-specific wall sections in logical order.",
-            "Install and align the door and window frames.",
+            "Build and align only the rough door and window opening frames; leave finished doors, glazing, and trim separate.",
             "Keep rafters, roof covering, and finish materials separated beside the work area.",
         ],
-        end_state="Walls and door and window frames installed, with roofing and finish materials visible and untouched in the edge staging tray.",
+        end_state="Walls and rough door and window opening frames installed, with finished units, roofing, and finish materials visible and untouched in the edge staging tray.",
         completion_range="15-35%",
-        exact_stop_state="Walls and door and window frames installed, with roofing and finish materials visible and untouched in the edge staging tray.",
+        exact_stop_state="Walls and rough door and window opening frames installed, with finished units, roofing, and finish materials visible and untouched in the edge staging tray.",
         reserved_future_actions=[
             "Assemble the roof frame and install roof tiles or panels.",
             "Complete exterior surfaces, doors, windows, and decorative details.",
@@ -554,8 +554,8 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
         name="Exterior",
         start_state=scene3.exact_stop_state,
         ordered_actions=[
-            "Apply subtype-specific exterior wall finishes.",
-            "Install the doors, windows, railings, or openings.",
+            "Apply cladding, plaster, or finish layers over the completed walls without rebuilding their structure.",
+            "Fit finished door leaves, window units or glazing, and railings into the existing rough openings.",
             "Attach trim, brackets, ornaments, signage, or other subtype-specific details.",
             "Keep primer, paint, weathering, and landscaping materials separated.",
         ],
@@ -578,7 +578,7 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
         start_state=scene4.exact_stop_state,
         ordered_actions=[
             "Apply primer to the appropriate exterior surfaces.",
-            "Paint the subtype-specific color palette and decorative treatment.",
+            "Paint only the installed surfaces and trim in the subtype-specific palette; add no new structural or decorative parts.",
             "Add controlled weathering and age variation.",
             "Keep grass, soil, fences, and other landscaping materials separated.",
         ],
@@ -600,7 +600,7 @@ def _build_scene_plans_60s() -> list[ScenePlan]:
         name="Landscaping & Reveal",
         start_state=scene5.exact_stop_state,
         ordered_actions=[
-            "Add grass, soil, fences, stones, paving, or subtype-specific landscaping elements.",
+            "Add grass, topsoil, fences, landscape stones, and surface paving outside the completed building footprint.",
             "Remove the giant hands from the frame after the last placement.",
             "Perform the normal cinematic speed zoom-out reveal.",
             "Hold the final hero view of the architecture subtype.",

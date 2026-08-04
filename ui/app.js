@@ -949,36 +949,6 @@ const VEHICLE_PROGRESS_RANGES = {
     60: ["0-15%", "15-35%", "35-55%", "55-75%", "75-90%", "90-100%"]
 };
 
-const VEHICLE_AIRPLANE_30_SCENE_NAMES = [
-    "Airframe Skeleton & Engine Mount",
-    "Wings, Tail, Landing Gear & Controls",
-    "Exterior Panels, Canopy, Propeller & Final Reveal"
-];
-
-const VEHICLE_AIRPLANE_60_SCENE_NAMES = [
-    "Airframe Skeleton",
-    "Engine & Cockpit Mount",
-    "Wings & Tail",
-    "Landing Gear & Controls",
-    "Exterior Panels & Canopy",
-    "Propeller, Final Polish & Reveal"
-];
-
-const VEHICLE_DEFAULT_30_SCENE_NAMES = [
-    "Core Structure & Mounts",
-    "Secondary Assemblies & Linkages",
-    "Exterior Finish & Reveal"
-];
-
-const VEHICLE_DEFAULT_60_SCENE_NAMES = [
-    "Core Structure",
-    "Power Unit Mount",
-    "Major Assemblies",
-    "Systems & Linkages",
-    "Exterior Details",
-    "Final Finish & Reveal"
-];
-
 function summarizeVehicleActions(actions) {
     return actions.filter(Boolean).join("; ");
 }
@@ -1071,11 +1041,8 @@ function buildVehicleSceneTemplate({
     };
 }
 
-function getVehicleSceneNames(category, duration) {
-    if (category === "airplane") {
-        return duration === 60 ? VEHICLE_AIRPLANE_60_SCENE_NAMES : VEHICLE_AIRPLANE_30_SCENE_NAMES;
-    }
-    return duration === 60 ? VEHICLE_DEFAULT_60_SCENE_NAMES : VEHICLE_DEFAULT_30_SCENE_NAMES;
+function getVehicleSceneNames(stepGroups) {
+    return stepGroups.map((actions, index) => `Stage ${index + 1}: ${actions.join(" + ")}`);
 }
 
 function buildVehicleSceneStateText({
@@ -1133,7 +1100,6 @@ function buildVehicleSceneContract({
 
 function buildVehicleScenePlans(data, category, duration) {
     const steps = data.assemblySteps[category] || data.assemblySteps.car;
-    const sceneNames = getVehicleSceneNames(category, duration);
     const sceneCount = duration === 60 ? 6 : 3;
     const completionRanges = VEHICLE_PROGRESS_RANGES[duration] || VEHICLE_PROGRESS_RANGES[30];
     const stepGroups = duration === 60
@@ -1143,6 +1109,7 @@ function buildVehicleScenePlans(data, category, duration) {
             steps.slice(2, 4),
             steps.slice(4, 6)
         ];
+    const sceneNames = getVehicleSceneNames(stepGroups);
     const baseForbiddenChanges = [
         "Camera angle",
         "Lighting direction",
@@ -1179,11 +1146,11 @@ function buildVehicleScenePlans(data, category, duration) {
 }
 
 const PRODUCT_SUBTYPE_DETAILS = {
-    watch: { label: "Mechanical Watch", materials: ["stainless steel", "sapphire crystal", "leather strap", "movement parts"], key_parts: ["case", "bezel", "dial", "hands", "crown", "movement", "strap", "buckle"], stages: ["Place the main plate and movement bridge into the open case base", "Seat the gear train and mainspring barrel, then lock the movement screws", "Align the dial and press the hour and minute hands into place", "Close the case with bezel, crystal, and crown fitted", "Thread the leather strap through the lugs and fasten the buckle", "Sweep away dust and reveal the finished mechanical watch"] },
+    watch: { label: "Mechanical Watch", materials: ["stainless steel", "sapphire crystal", "leather strap", "movement parts"], key_parts: ["case", "bezel", "dial", "hands", "crown", "movement", "strap", "buckle"], stages: ["Place the main plate into the open case base while keeping the movement bridge separate", "Seat the gear train and mainspring barrel, then place the movement bridge and lock its screws", "Align the dial and press the hour and minute hands into place", "Close the case with bezel, crystal, and crown fitted", "Thread the leather strap through the lugs and fasten the buckle", "Sweep away dust and reveal the finished mechanical watch"] },
     camera: { label: "Vintage Camera", materials: ["metal body", "leatherette", "glass lens elements", "shutter mechanism"], key_parts: ["body", "lens barrel", "shutter", "viewfinder", "film compartment", "winder"], stages: ["Lock the shutter box and body shell to the base frame", "Install the lens barrel and glass elements into the front mount", "Fit the film chamber, winding spool, and viewfinder assembly", "Close the top plate and back door, then add control dials", "Attach leatherette panels, strap lugs, and small branding details", "Brush away debris and reveal the finished vintage camera"] },
-    sneaker: { label: "Sneaker", materials: ["mesh upper", "foam midsole", "rubber outsole", "laces", "overlays"], key_parts: ["upper", "midsole", "outsole", "lacing system", "tongue", "heel counter", "insole"], stages: ["Stretch the upper over the last and align the toe box", "Glue the foam midsole to the rubber outsole", "Pull the laces through the eyelets and settle the tongue", "Attach the heel counter and side overlays for structure", "Add stitching lines, logo marks, and texture touches", "Sweep away fibers and reveal the finished sneaker"] },
+    sneaker: { label: "Sneaker", materials: ["mesh upper", "foam midsole", "rubber outsole", "laces", "overlays"], key_parts: ["upper", "midsole", "outsole", "lacing system", "tongue", "heel counter", "insole"], stages: ["Stretch the upper over the last and align the toe box", "Bond the foam midsole to the rubber outsole, then attach the sole unit to the lasted upper", "Pull the laces through the eyelets and settle the tongue", "Attach the heel counter and side overlays for structure", "Add stitching lines, logo marks, and texture touches", "Sweep away fibers and reveal the finished sneaker"] },
     robot: { label: "Robot", materials: ["metal", "plastic", "wire", "LED", "servo", "circuit board"], key_parts: ["head", "torso", "arms", "legs", "joints", "power core", "sensor array"], stages: ["Assemble the torso frame and power core housing", "Mount the arms, shoulder joints, and elbow actuators", "Attach the legs, hips, and knee joints", "Install the head, sensor array, and chest armor", "Add armor plates, wiring, and light details", "Brush away dust and reveal the finished robot"] },
-    dinosaur: { label: "Dinosaur Skeleton", materials: ["fossil bone replica", "metal armature", "display base"], key_parts: ["skull", "spine", "ribs", "pelvis", "femurs", "tail vertebrae", "claws"], stages: ["Pin the skull and spine into the metal armature", "Attach ribs, pelvis, and tail vertebrae in sequence", "Add the front legs, hind legs, and claw joints", "Shape the neck, tail, and posture on the display base", "Add surface texture, color wash, and fossil detail", "Brush away crumbs and reveal the finished dinosaur skeleton"] },
+    dinosaur: { label: "Dinosaur Skeleton", materials: ["fossil bone replica", "metal armature", "display base"], key_parts: ["skull", "spine", "ribs", "pelvis", "femurs", "tail vertebrae", "claws"], stages: ["Pin the skull and spine into the metal armature", "Attach ribs, pelvis, and tail vertebrae in sequence", "Add the front legs, hind legs, and claw joints", "Lock the existing neck and tail pose, then secure the assembled skeleton to the display base", "Add surface texture, color wash, and fossil detail", "Brush away crumbs and reveal the finished dinosaur skeleton"] },
     wizard_house: { label: "Wizard House", materials: ["wood", "stone", "thatch", "crystal", "potion bottles", "magic effects"], key_parts: ["base", "walls", "roof", "chimney", "door", "windows", "tower", "magical details"], stages: ["Set the stone base and lower walls on the foundation", "Raise upper walls, door frame, and window openings", "Build the roof structure and chimney", "Attach tower pieces, balconies, and trims", "Add crystals, potion bottles, lanterns, and magical details", "Sweep away dust and reveal the finished wizard house"] },
     spaceship: { label: "Spaceship", materials: ["metal hull", "engine parts", "thrusters", "cockpit glass", "solar panels"], key_parts: ["hull", "engines", "cockpit", "wings/fins", "landing gear", "antenna", "thrusters"], stages: ["Assemble the fuselage shell and central hull frame", "Mount the engines, thrusters, and power conduits", "Fit the cockpit, canopy, and antenna array", "Attach wings, fins, landing gear, and exterior panels", "Add decals, panel lines, and energy details", "Brush away debris and reveal the finished spaceship"] },
     hoverbike: { label: "Hoverbike", materials: ["metal frame", "anti-grav engines", "seat", "handlebars", "thrusters"], key_parts: ["frame", "engines", "seat", "handlebars", "thrusters", "stabilizers", "dashboard"], stages: ["Build the frame and anti-gravity engine core", "Mount the seat, handlebars, and dashboard housing", "Attach thrusters and stabilizers under the frame", "Fit the fairings, control lines, and body covers", "Add light strips, decals, and mechanical detailing", "Sweep away dust and reveal the finished hoverbike"] },
@@ -1370,16 +1337,16 @@ function architectureSceneDefinitions(duration) {
     if (duration === 60) {
         return [
             ["Foundation", ["mark and measure the bare footprint", "level the ground", "place foundation stones or slab elements"], "0-15%"],
-            ["Walls and Openings", ["raise the primary structural frame", "build walls", "fit door and window openings"], "15-35%"],
+            ["Walls and Rough Openings", ["raise the primary structural frame", "build wall structure", "build and align rough door and window opening frames while finished units remain separate"], "15-35%"],
             ["Roof Structure", ["assemble roof beams and rafters", "install subtype-appropriate roof covering"], "35-55%"],
-            ["Exterior", ["close exterior surfaces", "install doors and windows", "add architectural trim"], "55-75%"],
-            ["Painting and Weathering", ["apply subtype-appropriate primer or wood finish", "paint restrained accents", "add realistic weathering"], "75-90%"],
-            ["Landscaping and Reveal", ["complete paths and ground cover", "add subtype-appropriate site details", "remove hands and reveal at normal cinematic speed"], "90-100%"]
+            ["Exterior", ["apply finish layers over completed walls without rebuilding them", "fit finished doors, glazing, and window units into existing rough openings", "add architectural trim"], "55-75%"],
+            ["Painting and Weathering", ["apply subtype-appropriate primer or wood finish", "paint installed surfaces and trim without adding new parts", "add realistic weathering"], "75-90%"],
+            ["Landscaping and Reveal", ["complete paths and ground cover outside the building footprint", "add subtype-appropriate site details", "remove hands and reveal at normal cinematic speed"], "90-100%"]
         ];
     }
     return [
-        ["Foundation and Walls", ["mark and measure the bare footprint", "build the foundation", "raise the structural frame", "fit wall and opening frames"], "0-35%"],
-        ["Roofing and Exterior", ["assemble the roof structure", "install roof covering", "close exterior surfaces", "fit doors, windows, and trim"], "35-75%"],
+        ["Foundation and Walls", ["mark and measure the bare footprint", "build the foundation", "raise the structural frame and walls", "build rough opening frames while finished doors and windows remain separate"], "0-35%"],
+        ["Roofing and Exterior", ["assemble the roof structure", "install roof covering", "apply finish layers over completed walls without rebuilding them", "fit finished doors, glazing, windows, and trim into existing rough openings"], "35-75%"],
         ["Painting, Landscaping, and Reveal", ["apply subtype-appropriate finishes", "add realistic weathering", "complete paths and landscaping", "remove hands and reveal at normal cinematic speed"], "75-100%"]
     ];
 }
@@ -1390,14 +1357,14 @@ function buildArchitectureScenePlans(duration) {
     const exactStopStates = duration === 60
         ? [
             "Foundation laid and level, with wall, roof, and finish materials visible and untouched in the edge staging tray.",
-            "Walls and door and window frames installed, with roofing and finish materials visible and untouched in the edge staging tray.",
+            "Walls and rough door and window opening frames installed, with finished units, roofing, and finish materials visible and untouched in the edge staging tray.",
             "Roof frame and roof covering installed, with exterior fixtures, paint, and landscaping materials visible and untouched in the edge staging tray.",
             "Exterior surfaces, doors, windows, and decorative details installed, with painting and landscaping materials visible and untouched in the edge staging tray.",
             "Primer, paint, and weathering applied, with all landscaping materials visible and untouched in the edge staging tray.",
             "Completed Korean architecture scene with landscaping integrated and final reveal complete.",
         ]
         : [
-            "Foundation, walls, and door and window frames installed, with roof and finish materials visible and untouched in the edge staging tray.",
+            "Foundation, walls, and rough door and window opening frames installed, with finished units, roof, and finish materials visible and untouched in the edge staging tray.",
             "Roofing and exterior details installed, with primer, paint, weathering, and landscaping materials visible and untouched in the edge staging tray.",
             "Completed Korean architecture scene with painting, weathering, landscaping, and final reveal complete.",
         ];

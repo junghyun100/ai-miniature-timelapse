@@ -129,8 +129,8 @@ PRODUCT_SUBTYPES = {
 
 PRODUCT_SUBTYPE_STAGES = {
     "watch": [
-        "Place the main plate and movement bridge into the open case base",
-        "Seat the gear train and mainspring barrel, then lock the movement screws",
+        "Place the main plate into the open case base while keeping the movement bridge separate",
+        "Seat the gear train and mainspring barrel, then place the movement bridge and lock its screws",
         "Align the dial and press the hour and minute hands into place",
         "Close the case with bezel, crystal, and crown fitted",
         "Thread the leather strap through the lugs and fasten the buckle",
@@ -146,7 +146,7 @@ PRODUCT_SUBTYPE_STAGES = {
     ],
     "sneaker": [
         "Stretch the upper over the last and align the toe box",
-        "Glue the foam midsole to the rubber outsole",
+        "Bond the foam midsole to the rubber outsole, then attach the sole unit to the lasted upper",
         "Pull the laces through the eyelets and settle the tongue",
         "Attach the heel counter and side overlays for structure",
         "Add stitching lines, logo marks, and texture touches",
@@ -164,7 +164,7 @@ PRODUCT_SUBTYPE_STAGES = {
         "Pin the skull and spine into the metal armature",
         "Attach ribs, pelvis, and tail vertebrae in sequence",
         "Add the front legs, hind legs, and claw joints",
-        "Shape the neck, tail, and posture on the display base",
+        "Lock the existing neck and tail pose, then secure the assembled skeleton to the display base",
         "Add surface texture, color wash, and fossil detail",
         "Brush away crumbs and reveal the finished dinosaur skeleton",
     ],

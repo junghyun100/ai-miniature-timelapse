@@ -18,7 +18,7 @@ EXPECTED_30S_NAMES = [
 ]
 EXPECTED_60S_NAMES = [
     "Foundation",
-    "Wall & Windows",
+    "Walls & Rough Openings",
     "Roofing",
     "Exterior",
     "Painting",
