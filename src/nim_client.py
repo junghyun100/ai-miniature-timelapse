@@ -350,7 +350,7 @@ class NimClient:
                 "Never morph, redesign, replace, remove, reset, or rebuild the subject",
                 "Keep camera and scale fixed during listed work; framing may change only for an explicitly listed final reveal after all work and cleanup",
                 "Apply user physical scale, planned footprint, component-count, and composition overrides as mandatory visual constraints",
-                "Translate user_overrides.additional_instructions into concise natural English and integrate its meaning into every relevant prompt; never copy the Korean source text into prompt fields, except explicit Korean narration fields",
+                "Translate user_overrides.additional_instructions into concise natural English and integrate its meaning into every relevant prompt; romanize Korean proper nouns and identify them in English, for example 근정전 becomes Geunjeongjeon Hall; never copy the Korean source text into prompt fields, except explicit Korean narration fields",
                 "Scene 1 only may have first_frame_prompt",
                 "Negative prompt must remain identical",
                 "Template exclusions must remain",

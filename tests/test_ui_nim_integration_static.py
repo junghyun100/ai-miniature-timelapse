@@ -8,6 +8,9 @@ def test_ui_nim_proxy_contract_is_wired_into_index_html():
     html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert 'id="nimSessionToken"' in html
+    assert html.index("nvidia/nemotron-3-ultra-550b-a55b") < html.index(
+        "nvidia/nemotron-3-super-120b-a12b"
+    )
     assert "Proxy Session Token" in html
     assert 'placeholder="Proxy session token (세션 전용, 브라우저 미저장)"' in html
     assert "const NIM_PROXY_REWRITE_URL = 'http://127.0.0.1:4174/api/nim/rewrite';" in html
@@ -79,6 +82,8 @@ def test_ui_restores_identity_and_scale_contracts_after_nim_rewrite():
         "User physical scale, planned footprint, component-count, and composition overrides" in html
     )
     assert "Translate user_overrides.additional_instructions into concise natural English" in html
+    assert "근정전 becomes Geunjeongjeon Hall" in html
+    assert "Korean additional instructions require a successful NIM translation" in html
     assert "delete nimAppliedOverrides.additional_instructions" in html
     assert "appendMasterOverride(rewrittenFirstFrame, nimAppliedOverrides)" in html
     assert "appendSceneControlBlock(rewrittenVideo, scene, nimAppliedOverrides" in html

@@ -63,7 +63,7 @@ class ProxyConfig:
 
     # NIM upstream
     upstream_hosts: list[str] | None = None
-    default_model: str = "meta/llama-3.1-8b-instruct"
+    default_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
     upstream_timeout: float = 60.0
 
     # Auth
@@ -130,7 +130,9 @@ def _init_config_from_env():
             upstream_hosts=os.environ.get(
                 "NIM_PROXY_UPSTREAM_HOSTS", "integrate.api.nvidia.com,api.nvidia.com"
             ).split(","),
-            default_model=os.environ.get("NIM_PROXY_DEFAULT_MODEL", "meta/llama-3.1-8b-instruct"),
+            default_model=os.environ.get(
+                "NIM_PROXY_DEFAULT_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"
+            ),
             require_session_token=os.environ.get("NIM_PROXY_REQUIRE_TOKEN", "true").lower()
             != "false",
             env_api_key=os.environ.get("NIM_PROXY_ENV_API_KEY", ""),
@@ -615,7 +617,8 @@ async def forward_to_nim(
                     "Do not create new first-frame prompts. Do not change duration, subject identity, "
                     "camera, audio, exclusions, or assets. Do not omit physical action order. "
                     "Translate user instructions into natural English before integrating them into "
-                    "prompt fields; never copy untranslated source text except explicit narration."
+                    "prompt fields. Romanize Korean proper nouns and identify them in English, for example "
+                    "근정전 becomes Geunjeongjeon Hall. Never copy untranslated source text except explicit narration."
                 ),
             },
             {
@@ -685,7 +688,7 @@ def main():
     parser.add_argument(
         "--upstream-hosts", nargs="+", default=["integrate.api.nvidia.com", "api.nvidia.com"]
     )
-    parser.add_argument("--default-model", default="meta/llama-3.1-8b-instruct")
+    parser.add_argument("--default-model", default="nvidia/nemotron-3-ultra-550b-a55b")
     parser.add_argument(
         "--no-session-token",
         action="store_true",

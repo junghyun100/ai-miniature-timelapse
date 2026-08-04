@@ -713,8 +713,9 @@ class TestForwardToNIM:
 
             # FAILURE RULE: profile.id must NEVER be sent as model parameter!
             assert sent_model != "architecture.korean"
-            assert sent_model == "meta/llama-3.1-8b-instruct"
+            assert sent_model == "nvidia/nemotron-3-ultra-550b-a55b"
             assert "Translate user instructions into natural English" in system_prompt
+            assert "근정전 becomes Geunjeongjeon Hall" in system_prompt
 
     @run_async
     async def test_custom_model_id_forwarded(self, proxy_config, valid_nim_request):

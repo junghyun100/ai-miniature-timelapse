@@ -79,7 +79,7 @@ def run(
     prompt_bundle = export_text_bundle(project)
 
     if use_nim_generate:
-        model = nim_model or os.environ.get("NIM_MODEL", "nvidia/nemotron-3-super-120b-a12b")
+        model = nim_model or os.environ.get("NIM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
         try:
             generated_prompt_bundle = generate_nim_prompt(prompt_bundle, model)
         except RuntimeError as e:
@@ -169,8 +169,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--nim-model",
-        default="nvidia/nemotron-3-super-120b-a12b",
-        help="NIM model ID to use (default: nvidia/nemotron-3-super-120b-a12b)",
+        default="nvidia/nemotron-3-ultra-550b-a55b",
+        help="NIM model ID to use (default: nvidia/nemotron-3-ultra-550b-a55b)",
     )
     parser.add_argument(
         "--refine-prompts",

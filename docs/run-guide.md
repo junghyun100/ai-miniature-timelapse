@@ -80,7 +80,7 @@ curl -s http://127.0.0.1:4174/health
   "status": "ok",
   "version": "1.0",
   "upstream": ["integrate.api.nvidia.com", "api.nvidia.com"],
-  "default_model": "meta/llama-3.1-8b-instruct"
+  "default_model": "nvidia/nemotron-3-ultra-550b-a55b"
 }
 ```
 

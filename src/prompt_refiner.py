@@ -31,7 +31,7 @@ def _extract_text(data: dict[str, Any]) -> str:
 
 
 def refine_prompt(
-    prompt: str, instructions: str = "", model: str = "meta/llama-3.1-8b-instruct"
+    prompt: str, instructions: str = "", model: str = "nvidia/nemotron-3-ultra-550b-a55b"
 ) -> str:
     api_key = os.environ.get("NIM_API_KEY", "").strip() or os.environ.get("NGC_API_KEY", "").strip()
     if not api_key:
@@ -88,7 +88,7 @@ def main() -> None:
     )
     parser.add_argument("prompt_file")
     parser.add_argument("--instructions", default="")
-    parser.add_argument("--model", default="meta/llama-3.1-8b-instruct")
+    parser.add_argument("--model", default="nvidia/nemotron-3-ultra-550b-a55b")
     parser.add_argument("--output", default="-")
     args = parser.parse_args()
 

@@ -26,7 +26,7 @@ def _extract_text(data: dict[str, Any]) -> str:
     return ""
 
 
-def generate_prompt(prompt_brief: str, model: str = "meta/llama-3.1-8b-instruct") -> str:
+def generate_prompt(prompt_brief: str, model: str = "nvidia/nemotron-3-ultra-550b-a55b") -> str:
     api_key = os.environ.get("NIM_API_KEY", "").strip() or os.environ.get("NGC_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError(
@@ -82,7 +82,7 @@ def generate_prompt(prompt_brief: str, model: str = "meta/llama-3.1-8b-instruct"
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate a prompt pack with NVIDIA NIM.")
     parser.add_argument("brief_file")
-    parser.add_argument("--model", default="meta/llama-3.1-8b-instruct")
+    parser.add_argument("--model", default="nvidia/nemotron-3-ultra-550b-a55b")
     parser.add_argument("--output", default="-")
     args = parser.parse_args()
 

@@ -182,8 +182,8 @@
               <div class="field">
                 <label for="nimModel">모델</label>
                 <select id="nimModel">
-                  <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
                   <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
+                  <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
                 </select>
               </div>
               <div class="field">
@@ -962,6 +962,10 @@
       return overrides;
     }
 
+    function containsHangul(value) {
+      return /[\u3131-\u318e\uac00-\ud7a3]/.test(String(value || ''));
+    }
+
     function statePolicyForProfile(profileId) {
       if (profileId === 'architecture.korean') return 'Keep every already-built structural element visible and fixed; only surfaces or components named in the action sequence may change.';
       if (profileId === 'vehicle.assembly' || profileId === 'product.assembly') return 'Keep every already-installed component visible, attached, and fixed in the same position; loose parts move only through visible hand or tool contact.';
@@ -1071,7 +1075,7 @@
         'Every video frame must preserve the cumulative installed state from the preceding frame; only the listed current hand-driven action may change geometry.',
         'Never morph, redesign, replace, remove, reset, or rebuild the subject. Keep scale and framing fixed during listed work; framing may change only for an explicitly listed final reveal after all work and cleanup.',
         'User physical scale, planned footprint, component-count, and composition overrides are mandatory visual constraints, not optional creative suggestions.',
-        'Translate user_overrides.additional_instructions into concise natural English and integrate its meaning into every relevant prompt. Never copy the Korean source text into prompt fields; explicit Korean narration fields are the only exception.',
+        'Translate user_overrides.additional_instructions into concise natural English and integrate its meaning into every relevant prompt. Romanize Korean proper nouns and identify them in English, for example: 근정전 becomes Geunjeongjeon Hall. Never copy the Korean source text into prompt fields; explicit Korean narration fields are the only exception.',
         'Preserve scene ids, names, start_state, ordered_actions, and end_state exactly as provided.',
         `User overrides: ${JSON.stringify(projectData.user_overrides || {})}`,
         `Identity lock: ${projectData.identity_lock}`,
@@ -1395,6 +1399,9 @@
             buildHint.textContent = 'NIM 응답 적용 완료 - 릴레이 플랜 생성됨';
             showToast('NIM 프록시 응답을 적용했습니다.', 'success');
           } catch (err) {
+            if (containsHangul(userOverrides.additional_instructions)) {
+              throw new Error(`Korean additional instructions require a successful NIM translation: ${err.message}`);
+            }
             project.provenance = {
               source: 'local',
               error: err.message
@@ -1403,6 +1410,9 @@
             showToast(`NIM 실패, 로컬 플랜으로 계속합니다: ${err.message}`, 'error');
           }
         } else if (nimEnabled && !sessionToken) {
+          if (containsHangul(userOverrides.additional_instructions)) {
+            throw new Error('Korean additional instructions require NIM, but the proxy session token is missing.');
+          }
           project.provenance = {
             source: 'local',
             error: 'Proxy session token missing'
@@ -1410,6 +1420,9 @@
           buildHint.textContent = 'Proxy session token이 없어 로컬 플랜을 유지합니다.';
           showToast('Proxy session token이 없어 로컬 플랜을 유지합니다.', 'info');
         } else {
+          if (containsHangul(userOverrides.additional_instructions)) {
+            throw new Error('Korean additional instructions require NVIDIA NIM to produce English prompts.');
+          }
           project.provenance = { source: 'local' };
           buildHint.textContent = '로컬 deterministic 플랜 생성 완료';
         }
