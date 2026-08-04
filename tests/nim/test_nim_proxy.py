@@ -768,6 +768,12 @@ class TestSecurityRegression:
         config = ProxyConfig()
         assert config.require_session_token is True
 
+    def test_main_runs_current_app_without_regenerating_session_token(self):
+        with patch("sys.argv", ["nim_proxy_server.py"]), patch("uvicorn.run") as run:
+            proxy_module.main()
+
+        assert run.call_args.args[0] is proxy_module.app
+
     def test_api_key_never_in_request_body(self, valid_nim_request):
         """API key is never sent in request body to upstream."""
         json_str = json.dumps(valid_nim_request)

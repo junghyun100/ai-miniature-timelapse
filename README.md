@@ -142,6 +142,8 @@ export NIM_PROXY_SESSION_TOKEN="<SESSION_TOKEN>"
 uv run python3 src/nim_proxy_server.py --host 127.0.0.1 --port 4174
 ```
 
+Copy the full one-time `Session Token` printed at startup into the Relay Runner NIM field.
+
 ### Step 4: Verify Proxy Health
 ```bash
 curl -s http://127.0.0.1:4174/health

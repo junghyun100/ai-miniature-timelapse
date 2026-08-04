@@ -720,7 +720,7 @@ def main():
     print(f"   Max Body: {_config.max_body_size} bytes")
     print(f"   Upstream Hosts: {_config.upstream_hosts}")
     print(f"   Default Model: {_config.default_model}")
-    print(f"   Session Token: {_session_token[:8]}... (required: {_config.require_session_token})")
+    print(f"   Session Token: {_session_token} (required: {_config.require_session_token})")
     print(
         f"   API Key: {'[from env]' if _config.env_api_key or os.environ.get('NIM_API_KEY') else '[NOT SET]'}"
     )
@@ -729,7 +729,7 @@ def main():
     import uvicorn  # type: ignore[import-not-found]
 
     uvicorn.run(
-        "nim_proxy_server:app",
+        app,
         host=_config.host,
         port=_config.port,
         log_level="info",
