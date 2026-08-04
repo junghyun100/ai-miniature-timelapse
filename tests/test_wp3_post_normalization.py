@@ -263,6 +263,33 @@ class TestSceneCanonicalizer:
 
 
 class TestFallbackBuilder:
+    def test_nim_result_keeps_english_override_without_reappending_korean(
+        self, sample_project: Project
+    ):
+        korean_instruction = "피사체를 화면의 80%로 크게"
+        sample_project.user_overrides = {
+            "additional_instructions": korean_instruction,
+            "scale": "subject occupies approximately 80% of the frame",
+        }
+        nim_data = [
+            {
+                "id": 1,
+                "first_frame_prompt": f"Large subject filling 80% of frame. {korean_instruction}",
+                "video_prompt": f"Preserve the large subject scale. {korean_instruction}",
+            },
+            {"id": 2, "video_prompt": "Preserve the large subject scale."},
+            {"id": 3, "video_prompt": "Preserve the large subject scale."},
+        ]
+
+        scenes, fallbacks, prov_source = reconcile_scenes_with_fallback(nim_data, sample_project)
+
+        assert fallbacks == []
+        assert prov_source == ProvenanceSource.NIM
+        assert korean_instruction not in scenes[0].first_frame_prompt
+        assert korean_instruction not in scenes[0].video_prompt
+        assert "Large subject filling 80% of frame" in scenes[0].first_frame_prompt
+        assert "subject occupies approximately 80% of the frame" in scenes[0].video_prompt
+
     def test_missing_scene_2_triggers_partial_fallback(self, sample_project: Project):
         """NIM returns scenes 1 and 3, omitting scene 2."""
         nim_data = [

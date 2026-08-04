@@ -1071,6 +1071,7 @@
         'Every video frame must preserve the cumulative installed state from the preceding frame; only the listed current hand-driven action may change geometry.',
         'Never morph, redesign, replace, remove, reset, or rebuild the subject. Keep scale and framing fixed during listed work; framing may change only for an explicitly listed final reveal after all work and cleanup.',
         'User scale and composition overrides are mandatory visual constraints, not optional creative suggestions.',
+        'Translate user_overrides.additional_instructions into concise natural English and integrate its meaning into every relevant prompt. Never copy the Korean source text into prompt fields; explicit Korean narration fields are the only exception.',
         'Preserve scene ids, names, start_state, ordered_actions, and end_state exactly as provided.',
         `User overrides: ${JSON.stringify(projectData.user_overrides || {})}`,
         `Identity lock: ${projectData.identity_lock}`,
@@ -1144,25 +1145,31 @@
       }
 
       const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));
+      const rawAdditionalInstruction = String(projectData.user_overrides?.additional_instructions || '').trim();
+      const nimAppliedOverrides = { ...(projectData.user_overrides || {}) };
+      delete nimAppliedOverrides.additional_instructions;
+      const removeRawAdditionalInstruction = value => rawAdditionalInstruction
+        ? String(value || '').split(rawAdditionalInstruction).join('').replace(/\s{2,}/g, ' ').trim()
+        : String(value || '').trim();
       projectData.scenes = projectData.scenes.map((scene, index) => {
         const rewritten = rewrittenById.get(scene.id);
         if (!rewritten) return scene;
         const rewrittenVideo = ensureIdentityLock(
-          rewritten.video_prompt || scene.video_prompt,
+          removeRawAdditionalInstruction(rewritten.video_prompt || scene.video_prompt),
           projectData.identity_lock
         );
         const rewrittenFirstFrame = index === 0
           ? ensureIdentityLock(
-              rewritten.first_frame_prompt || scene.first_frame_prompt || '',
+              removeRawAdditionalInstruction(rewritten.first_frame_prompt || scene.first_frame_prompt || ''),
               projectData.identity_lock
             )
           : '';
         return {
           ...scene,
           first_frame_prompt: index === 0
-            ? appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)
+            ? appendMasterOverride(rewrittenFirstFrame, nimAppliedOverrides)
             : '',
-          video_prompt: appendSceneControlBlock(rewrittenVideo, scene, projectData.user_overrides, projectData.profile_id)
+          video_prompt: appendSceneControlBlock(rewrittenVideo, scene, nimAppliedOverrides, projectData.profile_id)
         };
       });
       projectData.provenance = {

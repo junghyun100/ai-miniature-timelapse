@@ -48,7 +48,7 @@ def test_ui_nim_proxy_stale_guard_and_scene_update_rules_exist():
         in html
     )
     assert "const rewrittenFirstFrame = index === 0" in html
-    assert "appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)" in html
+    assert "appendMasterOverride(rewrittenFirstFrame, nimAppliedOverrides)" in html
     assert "const rewrittenVideo = ensureIdentityLock(" in html
     assert "rewritten.video_prompt || scene.video_prompt" in html
     assert "projectData.identity_lock" in html
@@ -68,5 +68,7 @@ def test_ui_restores_identity_and_scale_contracts_after_nim_rewrite():
     assert "Never morph, redesign, replace, remove, reset, or rebuild" in html
     assert "`${control} PROMPT BODY: ${body}" in html
     assert "User scale and composition overrides are mandatory visual constraints" in html
-    assert "appendMasterOverride(rewrittenFirstFrame, projectData.user_overrides)" in html
-    assert "appendSceneControlBlock(rewrittenVideo, scene, projectData.user_overrides" in html
+    assert "Translate user_overrides.additional_instructions into concise natural English" in html
+    assert "delete nimAppliedOverrides.additional_instructions" in html
+    assert "appendMasterOverride(rewrittenFirstFrame, nimAppliedOverrides)" in html
+    assert "appendSceneControlBlock(rewrittenVideo, scene, nimAppliedOverrides" in html

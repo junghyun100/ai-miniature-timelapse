@@ -143,6 +143,11 @@ def reconcile_scenes_with_fallback(
             # NIM provided data for scene i
             s_data = nim_map[i]
             video_prompt = s_data.get("video_prompt", "").strip()
+            raw_additional_instruction = str(
+                project.user_overrides.get("additional_instructions", "")
+            ).strip()
+            if raw_additional_instruction:
+                video_prompt = video_prompt.replace(raw_additional_instruction, "").strip()
 
             # If video prompt is missing/empty, treat as fallback scene
             if not video_prompt:
@@ -160,6 +165,13 @@ def reconcile_scenes_with_fallback(
             else:
                 # Use NIM video prompt and canonicalize
                 ff_prompt = s_data.get("first_frame_prompt") if i == 1 else None
+                if ff_prompt and raw_additional_instruction:
+                    ff_prompt = ff_prompt.replace(raw_additional_instruction, "").strip()
+                nim_applied_overrides = {
+                    key: value
+                    for key, value in project.user_overrides.items()
+                    if key != "additional_instructions"
+                }
                 name = scene_plan.name if scene_plan else f"Scene {i}"
                 input_mode = InputMode.MASTER_IMAGE if i == 1 else InputMode.PREVIOUS_FINAL_FRAME
 
@@ -193,7 +205,7 @@ def reconcile_scenes_with_fallback(
                     i,
                     identity_lock,
                     scene_plan=scene_plan,
-                    user_overrides=project.user_overrides,
+                    user_overrides=nim_applied_overrides,
                     profile_id=project.profile_id,
                 )
                 resolved_scenes.append(canonical_scene)
