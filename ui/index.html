@@ -944,14 +944,14 @@
       if (/(규모|크게|큰\s*규모|대형|larger|bigger|increase.*scale|frame.*(?:size|coverage)|\d+\s*%|\d+(?:\.\d+)?\s*(?:배|x\b))/i.test(lowered)) {
         if (percentage) {
           const coverage = Math.min(90, Math.max(20, Number(percentage[1])));
-          overrides.scale = `subject occupies approximately ${coverage}% of the frame in the master image`;
+          overrides.scale = `large-format miniature project whose planned completed footprint or full assembly occupies approximately ${coverage}% of the frame, with visibly increased component count and repeated placements while remaining fully inside the frame`;
         } else if (multiplier) {
-          overrides.scale = `subject appears approximately ${multiplier[1]} times larger than the default while remaining fully inside the frame`;
+          overrides.scale = `large-format miniature project built at approximately ${multiplier[1]} times the default physical scale, with a broader planned footprint and visibly increased component count while remaining fully inside the frame`;
         } else {
-          overrides.scale = 'larger miniature subject occupying approximately 70% of the frame in the master image';
+          overrides.scale = 'large-format miniature project whose planned completed footprint or full assembly occupies approximately 70% of the frame, with a broader work area, visibly increased component count, and multiple placements within each listed action';
         }
       } else if (/(작게|작은\s*규모|smaller|reduce.*scale)/i.test(lowered)) {
-        overrides.scale = 'smaller miniature subject occupying approximately 40% of the frame in the master image';
+        overrides.scale = 'small-format miniature project whose planned completed footprint or full assembly occupies approximately 40% of the frame while remaining clearly legible';
       }
       if (/(작업량|촘촘|더 많은 단계|dense|more steps|more action)/i.test(lowered)) {
         overrides.workload = 'dense multi-step work expressed as visible micro-actions within each allowed scene stage';
@@ -984,9 +984,9 @@
       if (scale) {
         parts.push(`required scale and composition: ${scale}.`);
         parts.push(isFinalScene
-          ? 'Preserve that apparent size until an explicitly listed final reveal begins.'
-          : 'Preserve that exact apparent size and frame occupancy for the entire clip.');
-        parts.push('Do not zoom, crop, reframe, shrink, or enlarge the subject during construction.');
+          ? 'Preserve that physical scale and planned footprint until an explicitly listed final reveal begins.'
+          : 'Preserve the fixed camera distance, physical miniature scale, and planned footprint for the entire clip.');
+        parts.push('Do not zoom, crop, reframe, or change the miniature scale; the subject may grow only through the listed physical construction or assembly actions.');
       }
       if (clauses.length) parts.push(`${clauses.join('; ')}.`);
       return `${parts.join(' ')} `;
@@ -1070,7 +1070,7 @@
         'Maintain identity lock, camera angle, scale, lighting direction, and object placement continuity across scenes.',
         'Every video frame must preserve the cumulative installed state from the preceding frame; only the listed current hand-driven action may change geometry.',
         'Never morph, redesign, replace, remove, reset, or rebuild the subject. Keep scale and framing fixed during listed work; framing may change only for an explicitly listed final reveal after all work and cleanup.',
-        'User scale and composition overrides are mandatory visual constraints, not optional creative suggestions.',
+        'User physical scale, planned footprint, component-count, and composition overrides are mandatory visual constraints, not optional creative suggestions.',
         'Translate user_overrides.additional_instructions into concise natural English and integrate its meaning into every relevant prompt. Never copy the Korean source text into prompt fields; explicit Korean narration fields are the only exception.',
         'Preserve scene ids, names, start_state, ordered_actions, and end_state exactly as provided.',
         `User overrides: ${JSON.stringify(projectData.user_overrides || {})}`,
@@ -1145,15 +1145,25 @@
       }
 
       const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));
+      const missingSceneIds = projectData.scenes
+        .map(scene => scene.id)
+        .filter(sceneId => !rewrittenById.has(sceneId));
+      if (missingSceneIds.length) {
+        throw new Error(`NIM response missing scene(s): ${missingSceneIds.join(', ')}`);
+      }
       const rawAdditionalInstruction = String(projectData.user_overrides?.additional_instructions || '').trim();
       const nimAppliedOverrides = { ...(projectData.user_overrides || {}) };
       delete nimAppliedOverrides.additional_instructions;
-      const removeRawAdditionalInstruction = value => rawAdditionalInstruction
-        ? String(value || '').split(rawAdditionalInstruction).join('').replace(/\s{2,}/g, ' ').trim()
-        : String(value || '').trim();
+      const removeRawAdditionalInstruction = value => {
+        let cleaned = String(value || '');
+        if (rawAdditionalInstruction) cleaned = cleaned.split(rawAdditionalInstruction).join('');
+        return cleaned
+          .replace(/additional instructions:\s*(?=[.;]|$)/gi, '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+      };
       projectData.scenes = projectData.scenes.map((scene, index) => {
         const rewritten = rewrittenById.get(scene.id);
-        if (!rewritten) return scene;
         const rewrittenVideo = ensureIdentityLock(
           removeRawAdditionalInstruction(rewritten.video_prompt || scene.video_prompt),
           projectData.identity_lock
@@ -1455,6 +1465,12 @@
       appendMeta('주제', project.topic);
       appendMeta('Topic label', project.topic_label);
       if (project.narration) appendMeta('아이디어 시드', project.narration);
+      appendMeta(
+        '프롬프트 출처',
+        project.provenance?.source === 'nim'
+          ? 'NVIDIA NIM 영문 적용본'
+          : `로컬 초안 (추가 지시 원문 유지)${project.provenance?.error ? ` - ${project.provenance.error}` : ''}`
+      );
       appendMeta('Source Revision', project.source_revision, true);
       appendMeta('워크플로우', `${project.workflow_mode} (${project.scene_count} 씬)`);
       appendMeta(

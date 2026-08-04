@@ -276,13 +276,14 @@ def build_user_override_lock(
     parts = ["USER OVERRIDE LOCK (HIGH PRIORITY):"]
     if scale_value:
         reveal_exception = (
-            " Preserve that apparent size until an explicitly listed final reveal begins."
+            " Preserve that physical scale and planned footprint until an explicitly listed final reveal begins."
             if is_final_scene
-            else " Preserve that exact apparent size and frame occupancy for the entire clip."
+            else " Preserve the fixed camera distance, physical miniature scale, and planned footprint for the entire clip."
         )
         parts.append(f"required scale and composition: {scale_value}.{reveal_exception}")
         parts.append(
-            "Do not zoom, crop, reframe, shrink, or enlarge the subject during construction."
+            "Do not zoom, crop, reframe, or change the miniature scale; the subject may grow only through the "
+            "listed physical construction or assembly actions."
         )
     if clauses:
         parts.append("; ".join(clauses) + ".")

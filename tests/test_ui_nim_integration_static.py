@@ -53,6 +53,8 @@ def test_ui_nim_proxy_stale_guard_and_scene_update_rules_exist():
     assert "rewritten.video_prompt || scene.video_prompt" in html
     assert "projectData.identity_lock" in html
     assert "video_prompt: appendSceneControlBlock(rewrittenVideo" in html
+    assert "NIM response missing scene(s):" in html
+    assert "NVIDIA NIM 영문 적용본" in html
     assert "NIM 실패, 로컬 플랜으로 계속합니다" in html
 
 
@@ -60,14 +62,22 @@ def test_ui_restores_identity_and_scale_contracts_after_nim_rewrite():
     html = INDEX_HTML.read_text(encoding="utf-8")
 
     assert "function normalizeUserOverrides(instructions)" in html
-    assert "subject occupies approximately ${coverage}% of the frame in the master image" in html
+    assert (
+        "planned completed footprint or full assembly occupies approximately ${coverage}%" in html
+    )
+    assert (
+        "the subject may grow only through the listed physical construction or assembly actions"
+        in html
+    )
     assert "function ensureIdentityLock(prompt, identityLock)" in html
     assert "MASTER COMPOSITION CONTRACT:" in html
     assert "USER OVERRIDE LOCK (HIGH PRIORITY):" in html
     assert "TEMPORAL DELTA LOCK:" in html
     assert "Never morph, redesign, replace, remove, reset, or rebuild" in html
     assert "`${control} PROMPT BODY: ${body}" in html
-    assert "User scale and composition overrides are mandatory visual constraints" in html
+    assert (
+        "User physical scale, planned footprint, component-count, and composition overrides" in html
+    )
     assert "Translate user_overrides.additional_instructions into concise natural English" in html
     assert "delete nimAppliedOverrides.additional_instructions" in html
     assert "appendMasterOverride(rewrittenFirstFrame, nimAppliedOverrides)" in html

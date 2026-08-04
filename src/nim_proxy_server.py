@@ -613,7 +613,9 @@ async def forward_to_nim(
                     "Preserve scene IDs and count. Write only mutable fields: "
                     "first_frame_prompt (Scene 1 only) and video_prompt. "
                     "Do not create new first-frame prompts. Do not change duration, subject identity, "
-                    "camera, audio, exclusions, or assets. Do not omit physical action order."
+                    "camera, audio, exclusions, or assets. Do not omit physical action order. "
+                    "Translate user instructions into natural English before integrating them into "
+                    "prompt fields; never copy untranslated source text except explicit narration."
                 ),
             },
             {

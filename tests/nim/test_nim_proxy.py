@@ -709,10 +709,12 @@ class TestForwardToNIM:
             # Check what model parameter was passed in payload to upstream NIM
             call_kwargs = mock_instance.post.call_args[1]
             sent_model = call_kwargs["json"]["model"]
+            system_prompt = call_kwargs["json"]["messages"][0]["content"]
 
             # FAILURE RULE: profile.id must NEVER be sent as model parameter!
             assert sent_model != "architecture.korean"
             assert sent_model == "meta/llama-3.1-8b-instruct"
+            assert "Translate user instructions into natural English" in system_prompt
 
     @run_async
     async def test_custom_model_id_forwarded(self, proxy_config, valid_nim_request):
