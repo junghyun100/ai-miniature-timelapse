@@ -182,13 +182,17 @@
               <div class="field">
                 <label for="nimModel">모델</label>
                 <select id="nimModel">
-                  <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B</option>
                   <option value="nvidia/nemotron-3-super-120b-a12b">Nemotron 3 Super 120B</option>
+                  <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra 550B (느림)</option>
                 </select>
               </div>
               <div class="field">
                 <label for="nimSessionToken">Proxy Session Token</label>
                 <input id="nimSessionToken" type="password" placeholder="Proxy session token (세션 전용, 브라우저 미저장)" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="nimApiKey">NVIDIA NIM API 키 (선택)</label>
+                <input id="nimApiKey" type="password" placeholder="환경변수가 없을 때만 입력 (브라우저 미저장)" autocomplete="off" spellcheck="false" />
               </div>
               <label class="toggle inline" for="nimRefinementPolicy">
                 <input type="checkbox" id="nimRefinementPolicy" checked />
@@ -419,6 +423,7 @@
     let currentProfileId = 'architecture.korean';
     let currentExecProfileId = 'flow.frames_first.10s';
     let project = null;
+    let proxyApiKeyConfigured = false;
     let relayBranch = null;
     let activeSceneIndex = 0;
     let currentPhase = 'setup'; // 'setup' | 'plan' | 'execute'
@@ -483,8 +488,11 @@
     const resumeProjectBtn = document.getElementById('resumeProjectBtn');
     const nimModelEl = document.getElementById('nimModel');
     const nimSessionTokenEl = document.getElementById('nimSessionToken');
+    const nimApiKeyEl = document.getElementById('nimApiKey');
     const nimRefinementPolicyEl = document.getElementById('nimRefinementPolicy');
     const NIM_PROXY_REWRITE_URL = 'http://127.0.0.1:4174/api/nim/rewrite';
+    const NIM_PROXY_TRANSLATE_URL = 'http://127.0.0.1:4174/api/nim/translate';
+    const NIM_PROXY_SESSION_URL = 'http://127.0.0.1:4174/session';
 
     // ============================================================================
     // Initialization
@@ -503,6 +511,7 @@
         console.log('[init] Selection fields rendered');
         renderExecProfileList();
         setupEventListeners();
+        await refreshProxySessionToken({ silent: true });
         checkResumeAvailability();
         console.log('[init] Complete!');
       } catch (err) {
@@ -591,6 +600,9 @@
       nimSessionTokenEl.addEventListener('input', () => {
         // Never persist proxy session token to browser storage
       });
+      nimApiKeyEl.addEventListener('input', () => {
+        // Never persist the NVIDIA key; it exists only in this page session.
+      });
 
       // Stitch options persistence
       ['stitchTransition', 'stitchTransitionDuration', 'stitchCodec', 'stitchCrf', 'stitchPreset', 'stitchAutoNormalize'].forEach(id => {
@@ -625,6 +637,7 @@
       }
       // Never restore session token from storage on reload
       nimSessionTokenEl.value = '';
+      nimApiKeyEl.value = '';
 
       // Stepper click delegation
       stepperEl.addEventListener('click', (e) => {
@@ -966,6 +979,25 @@
       return /[\u3131-\u318e\uac00-\ud7a3]/.test(String(value || ''));
     }
 
+    function extractProxySessionToken(value) {
+      return String(value || '').normalize('NFKC').match(/[A-Za-z0-9_-]{32,}/)?.[0] || '';
+    }
+
+    async function refreshProxySessionToken({ silent = false } = {}) {
+      try {
+        const response = await fetch(NIM_PROXY_SESSION_URL);
+        const body = await response.json();
+        const token = extractProxySessionToken(body?.session_token);
+        if (!response.ok || !token) throw new Error('Proxy did not return a valid session token.');
+        proxyApiKeyConfigured = body?.api_key_configured === true;
+        nimSessionTokenEl.value = token;
+        return token;
+      } catch (error) {
+        if (!silent) showToast(`Proxy session refresh failed: ${error.message}`, 'error');
+        return '';
+      }
+    }
+
     function statePolicyForProfile(profileId) {
       if (profileId === 'architecture.korean') return 'Keep every already-built structural element visible and fixed; only surfaces or components named in the action sequence may change.';
       if (profileId === 'vehicle.assembly' || profileId === 'product.assembly') return 'Keep every already-installed component visible, attached, and fixed in the same position; loose parts move only through visible hand or tool contact.';
@@ -1114,16 +1146,85 @@
       };
     }
 
-    async function rewriteProjectPromptsWithNim(projectData, sessionToken) {
-      const requestPayload = buildNimRequestPayload(projectData);
-      const response = await fetch(NIM_PROXY_REWRITE_URL, {
-        method: 'POST',
-        headers: {
+    async function translateKoreanInstructionWithNim(text, sessionToken) {
+      let safeSessionToken = extractProxySessionToken(sessionToken);
+      if (!safeSessionToken) safeSessionToken = await refreshProxySessionToken();
+      const sessionApiKey = nimApiKeyEl.value.trim();
+      const sendRequest = token => {
+        const headers = {
           'Content-Type': 'application/json',
-          'X-Session-Token': sessionToken
-        },
-        body: JSON.stringify(requestPayload)
-      });
+          'X-Session-Token': token
+        };
+        if (sessionApiKey) headers['X-NIM-API-Key'] = sessionApiKey;
+        return fetch(NIM_PROXY_TRANSLATE_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ text, model_id: nimModelEl.value })
+        });
+      };
+      let response = await sendRequest(safeSessionToken);
+      if (response.status === 401) {
+        safeSessionToken = await refreshProxySessionToken();
+        response = await sendRequest(safeSessionToken);
+      }
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error?.message || `NIM translation failed (${response.status})`);
+      }
+      if (!body?.translated_text || containsHangul(body.translated_text)) {
+        throw new Error('NIM did not return a complete English translation.');
+      }
+      return body;
+    }
+
+    async function applyTranslatedInstruction(projectData, rawText, translationResult) {
+      const translatedText = translationResult.translated_text.trim();
+      projectData.user_overrides = {
+        ...(projectData.user_overrides || {}),
+        additional_instructions: translatedText
+      };
+      projectData.source_draft.user_overrides = projectData.user_overrides;
+      projectData.source_revision = await computeSourceRevision(projectData.source_draft);
+      projectData.scenes = projectData.scenes.map(scene => ({
+        ...scene,
+        first_frame_prompt: String(scene.first_frame_prompt || '').split(rawText).join(translatedText),
+        video_prompt: String(scene.video_prompt || '').split(rawText).join(translatedText)
+      }));
+      projectData.provenance = {
+        source: 'nim_translation',
+        model_id: translationResult.model_id || nimModelEl.value,
+        source_revision: projectData.source_revision
+      };
+    }
+
+    async function rewriteProjectPromptsWithNim(projectData, sessionToken) {
+      let safeSessionToken = extractProxySessionToken(sessionToken);
+      if (!safeSessionToken) safeSessionToken = await refreshProxySessionToken();
+      if (!safeSessionToken) {
+        throw new Error('Proxy session token must contain at least 32 URL-safe characters.');
+      }
+      const requestPayload = buildNimRequestPayload(projectData);
+      const sessionApiKey = nimApiKeyEl.value.trim();
+      if (sessionApiKey && !/^[\x21-\x7E]+$/.test(sessionApiKey)) {
+        throw new Error('NVIDIA NIM API key contains invalid characters.');
+      }
+      const sendRewriteRequest = token => {
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Session-Token': token
+        };
+        if (sessionApiKey) headers['X-NIM-API-Key'] = sessionApiKey;
+        return fetch(NIM_PROXY_REWRITE_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestPayload)
+        });
+      };
+      let response = await sendRewriteRequest(safeSessionToken);
+      if (response.status === 401) {
+        safeSessionToken = await refreshProxySessionToken();
+        if (safeSessionToken) response = await sendRewriteRequest(safeSessionToken);
+      }
 
       let responseBody = null;
       try {
@@ -1148,7 +1249,14 @@
         throw new Error('Stale NIM response ignored: local draft changed before apply');
       }
 
-      const rewrittenById = new Map(responseBody.scenes.map((scene) => [scene.id, scene]));
+      if (responseBody.scenes.length !== projectData.scenes.length) {
+        throw new Error(
+          `NIM response scene count mismatch: expected ${projectData.scenes.length}, received ${responseBody.scenes.length}`
+        );
+      }
+      const rewrittenById = new Map(
+        responseBody.scenes.map((scene, index) => [projectData.scenes[index].id, scene])
+      );
       const missingSceneIds = projectData.scenes
         .map(scene => scene.id)
         .filter(sceneId => !rewrittenById.has(sceneId));
@@ -1188,7 +1296,8 @@
       });
       projectData.provenance = {
         source: 'nim',
-        model_id: nimModelEl.value,
+        model_id: responseBody.model_id || nimModelEl.value,
+        fallback_from_model: responseBody.fallback_from_model,
         request_id: responseBody.request_id || requestPayload.request_id,
         source_revision: responseBody.source_revision
       };
@@ -1225,7 +1334,8 @@
           .join(' | ');
         const promptDetail = [selectionDetail, ideaSeed].filter(Boolean).join(' | ');
         const nimEnabled = nimEnabledEl.checked;
-        const sessionToken = nimSessionTokenEl.value.trim();
+        const sessionToken = extractProxySessionToken(nimSessionTokenEl.value);
+        if (sessionToken) nimSessionTokenEl.value = sessionToken;
 
         buildPlanBtn.disabled = true;
         buildHint.textContent = '릴레이 플랜 생성 중...';
@@ -1393,9 +1503,29 @@
         }
 
         if (nimEnabled && sessionToken) {
+          if (
+            containsHangul(userOverrides.additional_instructions) &&
+            !nimApiKeyEl.value.trim() &&
+            !proxyApiKeyConfigured
+          ) {
+            throw new Error('한글 추가 지시를 번역하려면 NVIDIA NIM API 키를 입력하세요.');
+          }
           buildHint.textContent = 'NIM 프록시로 프롬프트 정제 중...';
           try {
-            await rewriteProjectPromptsWithNim(project, sessionToken);
+            if (containsHangul(userOverrides.additional_instructions)) {
+              const translationResult = await translateKoreanInstructionWithNim(
+                userOverrides.additional_instructions,
+                sessionToken
+              );
+              await applyTranslatedInstruction(
+                project,
+                userOverrides.additional_instructions,
+                translationResult
+              );
+            } else {
+              await rewriteProjectPromptsWithNim(project, sessionToken);
+            }
+            proxyApiKeyConfigured = true;
             buildHint.textContent = 'NIM 응답 적용 완료 - 릴레이 플랜 생성됨';
             showToast('NIM 프록시 응답을 적용했습니다.', 'success');
           } catch (err) {
@@ -1481,7 +1611,7 @@
       appendMeta(
         '프롬프트 출처',
         project.provenance?.source === 'nim'
-          ? 'NVIDIA NIM 영문 적용본'
+          ? `NVIDIA NIM 영문 적용본 (${project.provenance.model_id})${project.provenance.fallback_from_model ? ` - fallback from ${project.provenance.fallback_from_model}` : ''}`
           : `로컬 초안 (추가 지시 원문 유지)${project.provenance?.error ? ` - ${project.provenance.error}` : ''}`
       );
       appendMeta('Source Revision', project.source_revision, true);

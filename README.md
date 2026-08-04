@@ -137,6 +137,10 @@ export ALLOWED_ORIGIN="http://127.0.0.1:4173"
 export NIM_PROXY_SESSION_TOKEN="<SESSION_TOKEN>"
 ```
 
+`NIM_API_KEY` is optional at startup. If it is not exported, enter the key in the UI's
+`NVIDIA NIM API key (optional)` field. The browser keeps that value in memory only,
+never writes it to browser storage, and sends it only to the loopback NIM proxy.
+
 ### Step 3: Boot NIM Proxy Server (Terminal 1)
 ```bash
 uv run python3 src/nim_proxy_server.py --host 127.0.0.1 --port 4174

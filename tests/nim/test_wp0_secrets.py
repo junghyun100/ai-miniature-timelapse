@@ -262,10 +262,13 @@ class TestFrontendSecretContract:
         assert "'api_key'" in html
         assert "localStorage.removeItem(legacyNimKeyStorageId)" in html
 
-        # Invariant 3: browser accepts only proxy session token, not NVIDIA API key
+        # Invariant 3: optional browser key is session-only and sent only to the local proxy
         assert 'placeholder="Proxy session token (세션 전용, 브라우저 미저장)"' in html
         assert "Proxy Session Token" in html
-        assert "NIM/NGC API 키" not in html
+        assert 'id="nimApiKey"' in html
+        assert "NVIDIA NIM API 키 (선택)" in html
+        assert "nimApiKeyEl.value = '';" in html
+        assert "headers['X-NIM-API-Key'] = sessionApiKey" in html
 
         # Invariant 4: No real-looking API key patterns in placeholder
         assert not re.search(r'placeholder=["\'][^"\']*nvapi-[^"\']*["\']', html)

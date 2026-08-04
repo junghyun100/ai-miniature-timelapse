@@ -80,7 +80,7 @@ def parse_raw_nim_response(
 def normalize_nim_response(
     raw_response: str | dict[str, Any],
     project: Project,
-    model_id: str = "nvidia/nemotron-3-ultra-550b-a55b",
+    model_id: str = "nvidia/nemotron-3-super-120b-a12b",
     expected_request_id: str | None = None,
 ) -> tuple[Project, Provenance]:
     """

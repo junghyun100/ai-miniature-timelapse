@@ -63,8 +63,8 @@ class ProxyConfig:
 
     # NIM upstream
     upstream_hosts: list[str] | None = None
-    default_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
-    upstream_timeout: float = 60.0
+    default_model: str = "nvidia/nemotron-3-super-120b-a12b"
+    upstream_timeout: float = 120.0
 
     # Auth
     require_session_token: bool = True
@@ -131,8 +131,9 @@ def _init_config_from_env():
                 "NIM_PROXY_UPSTREAM_HOSTS", "integrate.api.nvidia.com,api.nvidia.com"
             ).split(","),
             default_model=os.environ.get(
-                "NIM_PROXY_DEFAULT_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"
+                "NIM_PROXY_DEFAULT_MODEL", "nvidia/nemotron-3-super-120b-a12b"
             ),
+            upstream_timeout=float(os.environ.get("NIM_PROXY_UPSTREAM_TIMEOUT", "120")),
             require_session_token=os.environ.get("NIM_PROXY_REQUIRE_TOKEN", "true").lower()
             != "false",
             env_api_key=os.environ.get("NIM_PROXY_ENV_API_KEY", ""),
@@ -306,7 +307,7 @@ def error_response(status: int, code: str, message: str, details: dict | None = 
 # ============================================================================
 
 
-async def _send_json(send, status: int, payload: dict):
+async def _send_json(send, status: int, payload: dict, cors_origin: bytes | None = None):
     """Send JSON response via ASGI send."""
     config = _require_config()
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -320,13 +321,17 @@ async def _send_json(send, status: int, payload: dict):
                 # CORS - strict allowlist only
                 (
                     b"access-control-allow-origin",
-                    (
+                    cors_origin
+                    or (
                         config.allowed_origins[0]
                         if config.allowed_origins
                         else "http://127.0.0.1:4173"
                     ).encode(),
                 ),
-                (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
+                (
+                    b"access-control-allow-headers",
+                    b"Content-Type, X-Session-Token, X-NIM-API-Key",
+                ),
                 (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
                 (b"access-control-allow-credentials", b"true"),
             ],
@@ -425,7 +430,10 @@ async def app(scope, receive, send):
                     "status": 204,
                     "headers": [
                         (b"access-control-allow-origin", origin),
-                        (b"access-control-allow-headers", b"Content-Type, X-Session-Token"),
+                        (
+                            b"access-control-allow-headers",
+                            b"Content-Type, X-Session-Token, X-NIM-API-Key",
+                        ),
                         (b"access-control-allow-methods", b"POST, OPTIONS"),
                         (b"access-control-allow-credentials", b"true"),
                         (b"access-control-max-age", b"86400"),
@@ -458,6 +466,24 @@ async def app(scope, receive, send):
         await _send_json(send, 403, error_response(403, "FORBIDDEN", "Origin not allowed"))
         return
 
+    # Let the trusted local UI bootstrap the current per-launch token. The
+    # NVIDIA API key remains server-side and is never returned here.
+    if method == "GET" and path == "/session":
+        await _send_json(
+            send,
+            200,
+            {
+                "session_token": _session_token,
+                "api_key_configured": bool(
+                    config.env_api_key
+                    or os.environ.get("NIM_API_KEY")
+                    or os.environ.get("NGC_API_KEY")
+                ),
+            },
+            cors_origin=origin,
+        )
+        return
+
     # Validate session token
     if not _check_session_token(headers):
         print("  -> REJECTED: Invalid or missing session token")
@@ -467,6 +493,9 @@ async def app(scope, receive, send):
     # Route: POST /api/nim/rewrite
     if method == "POST" and path == "/api/nim/rewrite":
         await handle_nim_rewrite(scope, receive, send)
+        return
+    if method == "POST" and path == "/api/nim/translate":
+        await handle_nim_translate(scope, receive, send)
         return
 
     # 404
@@ -542,6 +571,8 @@ async def handle_nim_rewrite(scope, receive, send):
     # Forward to NIM upstream
     try:
         result = await forward_to_nim(payload, session_api_key=session_api_key)
+        if session_api_key:
+            config.env_api_key = session_api_key
     except httpx.TimeoutException:
         await _send_json(
             send, 504, error_response(504, "UPSTREAM_TIMEOUT", "NIM upstream timed out")
@@ -560,6 +591,29 @@ async def handle_nim_rewrite(scope, receive, send):
             ),
         )
         return
+    except ValueError as e:
+        if "No API key configured" in str(e):
+            await _send_json(
+                send,
+                503,
+                error_response(
+                    503,
+                    "NIM_API_KEY_MISSING",
+                    "NIM_API_KEY is not configured in the proxy environment",
+                ),
+            )
+            return
+        print(f"  -> INVALID NIM RESPONSE: {e}")
+        await _send_json(
+            send,
+            502,
+            error_response(
+                502,
+                "NIM_INVALID_RESPONSE",
+                "NIM returned truncated or invalid JSON. Try Super with 30 seconds, or retry.",
+            ),
+        )
+        return
     except Exception as e:
         print(f"  -> ERROR: {e}")
         await _send_json(send, 500, error_response(500, "INTERNAL_ERROR", "Proxy internal error"))
@@ -567,6 +621,134 @@ async def handle_nim_rewrite(scope, receive, send):
 
     # Return successful response
     await _send_json(send, 200, result)
+
+
+async def handle_nim_translate(scope, receive, send):
+    """Translate one short user instruction without allowing scene rewrites."""
+    config = _require_config()
+    body = b""
+    while True:
+        message = await receive()
+        if message["type"] == "http.request":
+            body += message.get("body", b"")
+            if len(body) > 16_384:
+                await _send_json(
+                    send,
+                    413,
+                    error_response(413, "PAYLOAD_TOO_LARGE", "Translation body too large"),
+                )
+                return
+            if not message.get("more_body", False):
+                break
+        elif message["type"] == "http.disconnect":
+            return
+
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        await _send_json(send, 400, error_response(400, "INVALID_JSON", "Invalid JSON body"))
+        return
+
+    text = payload.get("text") if isinstance(payload, dict) else None
+    model_id = payload.get("model_id") if isinstance(payload, dict) else None
+    if not isinstance(text, str) or not text.strip() or len(text) > 4000:
+        await _send_json(
+            send,
+            400,
+            error_response(400, "INVALID_TRANSLATION_TEXT", "Translation text is required"),
+        )
+        return
+
+    session_api_key = None
+    for key, value in scope["headers"]:
+        if key.lower() == b"x-nim-api-key":
+            session_api_key = value.decode("latin-1").strip()
+            break
+
+    try:
+        result = await translate_instruction(text.strip(), model_id, session_api_key)
+        if session_api_key:
+            config.env_api_key = session_api_key
+    except httpx.TimeoutException:
+        await _send_json(
+            send, 504, error_response(504, "UPSTREAM_TIMEOUT", "NIM translation timed out")
+        )
+        return
+    except httpx.HTTPStatusError as exc:
+        await _send_json(
+            send,
+            exc.response.status_code,
+            error_response(
+                exc.response.status_code,
+                "UPSTREAM_ERROR",
+                f"Upstream returned {exc.response.status_code}",
+            ),
+        )
+        return
+    except ValueError as exc:
+        code = (
+            "NIM_API_KEY_MISSING" if "No API key configured" in str(exc) else "INVALID_TRANSLATION"
+        )
+        status = 503 if code == "NIM_API_KEY_MISSING" else 502
+        await _send_json(send, status, error_response(status, code, str(exc)))
+        return
+
+    await _send_json(send, 200, result)
+
+
+async def translate_instruction(
+    text: str, model_id: str | None, session_api_key: str | None = None
+) -> dict[str, str]:
+    """Translate Korean instructions to concise prompt-ready English."""
+    config = _require_config()
+    api_key = session_api_key or config.env_api_key or os.environ.get("NIM_API_KEY")
+    if not api_key:
+        raise ValueError("No API key configured")
+    upstream_url = os.environ.get(
+        "NIM_UPSTREAM_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
+    )
+    from urllib.parse import urlparse
+
+    if urlparse(upstream_url).netloc not in (config.upstream_hosts or []):
+        raise ValueError("NIM upstream host is not allowed")
+    selected_model = model_id or config.default_model
+    payload = {
+        "model": selected_model,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Translate the user's Korean production instruction into concise natural English "
+                    "for insertion into an existing image/video prompt. Preserve intent, scale, materials, "
+                    "workload, and Korean proper nouns; romanize proper nouns and identify them in English. "
+                    'Return JSON only as {"translated_text":"..."}. Do not create scenes or prompts.'
+                ),
+            },
+            {"role": "user", "content": text},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 512,
+        "response_format": {"type": "json_object"},
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    async with httpx.AsyncClient(timeout=httpx.Timeout(config.upstream_timeout)) as client:
+        response = await client.post(
+            upstream_url,
+            json=payload,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        )
+        response.raise_for_status()
+        data = response.json()
+    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+    try:
+        translated = json.loads(content).get("translated_text", "")
+    except json.JSONDecodeError as exc:
+        raise ValueError("NIM translation was not valid JSON") from exc
+    if not isinstance(translated, str) or not translated.strip():
+        raise ValueError("NIM translation was empty")
+    if re.search(r"[\u3131-\u318e\uac00-\ud7a3]", translated):
+        raise ValueError("NIM translation still contains Korean text")
+    return {"translated_text": translated.strip(), "model_id": selected_model}
 
 
 async def forward_to_nim(
@@ -612,6 +794,7 @@ async def forward_to_nim(
                 "content": (
                     "You are a constrained wording assistant for AI video prompt generation. "
                     "Return JSON only. Do not add Markdown fences or commentary. "
+                    "Make the smallest possible edits and do not expand or repeat existing prompt text. "
                     "Preserve scene IDs and count. Write only mutable fields: "
                     "first_frame_prompt (Scene 1 only) and video_prompt. "
                     "Do not create new first-frame prompts. Do not change duration, subject identity, "
@@ -627,25 +810,44 @@ async def forward_to_nim(
             },
         ],
         "temperature": 0.3,
-        "max_tokens": 4096,
+        "max_tokens": 8192 if len(request_payload.get("scenes", [])) > 3 else 4096,
         "response_format": {"type": "json_object"},
+        "chat_template_kwargs": {"enable_thinking": False},
     }
 
+    fallback_model = "nvidia/nemotron-3-super-120b-a12b"
+    model_candidates = [model_id]
+    if model_id == "nvidia/nemotron-3-ultra-550b-a55b":
+        model_candidates.append(fallback_model)
+
     async with httpx.AsyncClient(timeout=httpx.Timeout(config.upstream_timeout)) as client:
-        response = await client.post(
-            upstream_url,
-            json=upstream_payload,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-        )
-        response.raise_for_status()
-        upstream_data = response.json()
+        for index, candidate in enumerate(model_candidates):
+            try:
+                response = await client.post(
+                    upstream_url,
+                    json={**upstream_payload, "model": candidate},
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                )
+                response.raise_for_status()
+                upstream_data = response.json()
+                model_id = candidate
+                break
+            except httpx.TimeoutException:
+                if index == len(model_candidates) - 1:
+                    raise
+            except httpx.HTTPStatusError as e:
+                if index == len(model_candidates) - 1 or e.response.status_code < 500:
+                    raise
 
     # Parse NIM response
     # NIM returns OpenAI format: {choices: [{message: {content: "..."}}]}
-    content = upstream_data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+    choice = upstream_data.get("choices", [{}])[0]
+    if choice.get("finish_reason") == "length":
+        raise ValueError("NIM response reached the output token limit")
+    content = choice.get("message", {}).get("content", "{}")
 
     try:
         nim_response: dict[str, Any] = json.loads(content)
@@ -653,15 +855,35 @@ async def forward_to_nim(
         # Try to extract JSON from text
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
-            nim_response = json.loads(match.group(0))
+            try:
+                nim_response = json.loads(match.group(0))
+            except json.JSONDecodeError as exc:
+                raise ValueError("NIM returned truncated or invalid JSON") from exc
         else:
             raise ValueError("NIM did not return valid JSON")
 
-    # Validate response schema (basic)
-    required = ("schema_version", "request_id", "source_revision", "scenes")
-    for field in required:
-        if field not in nim_response:
-            raise ValueError(f"NIM response missing required field: {field}")
+    # Restore immutable request metadata that wording models may omit.
+    immutable_defaults = {
+        "schema_version": request_payload.get("schema_version", "2.0"),
+        "request_id": request_payload.get("request_id", ""),
+        "source_revision": request_payload.get("source_revision", ""),
+    }
+    for field, value in immutable_defaults.items():
+        nim_response.setdefault(field, value)
+    if not isinstance(nim_response.get("scenes"), list):
+        raise ValueError("NIM response missing required field: scenes")
+    request_scenes = request_payload.get("scenes", [])
+    if len(nim_response["scenes"]) != len(request_scenes):
+        raise ValueError(
+            f"NIM response scene count mismatch: expected {len(request_scenes)}, "
+            f"received {len(nim_response['scenes'])}"
+        )
+    for index, scene in enumerate(nim_response["scenes"]):
+        if not isinstance(scene, dict):
+            raise ValueError(f"NIM response scene {index + 1} is not an object")
+        # Scene order is immutable. Models sometimes emit string or symbolic IDs,
+        # so restore the canonical request ID instead of rejecting valid prompt text.
+        scene["id"] = request_scenes[index]["id"]
 
     # Must match request_id and source_revision (staleness check)
     if nim_response["request_id"] != request_payload["request_id"]:
@@ -669,6 +891,10 @@ async def forward_to_nim(
 
     if nim_response["source_revision"] != request_payload["source_revision"]:
         raise ValueError("Response source_revision mismatch (stale)")
+
+    nim_response["model_id"] = model_id
+    if model_id != model_candidates[0]:
+        nim_response["fallback_from_model"] = model_candidates[0]
 
     return nim_response
 
@@ -688,14 +914,13 @@ def main():
     parser.add_argument(
         "--upstream-hosts", nargs="+", default=["integrate.api.nvidia.com", "api.nvidia.com"]
     )
-    parser.add_argument("--default-model", default="nvidia/nemotron-3-ultra-550b-a55b")
+    parser.add_argument("--default-model", default="nvidia/nemotron-3-super-120b-a12b")
+    parser.add_argument("--upstream-timeout", type=float, default=120.0)
     parser.add_argument(
         "--no-session-token",
         action="store_true",
         help="Disable session token requirement (dev only)",
     )
-    parser.add_argument("--env-api-key", default="", help="API key from env var name (advanced)")
-
     args = parser.parse_args()
 
     global _config, _session_token
@@ -707,8 +932,9 @@ def main():
         max_body_size=args.max_body_size,
         upstream_hosts=args.upstream_hosts,
         default_model=args.default_model,
+        upstream_timeout=args.upstream_timeout,
         require_session_token=not args.no_session_token,
-        env_api_key=args.env_api_key,
+        env_api_key=(os.environ.get("NIM_API_KEY") or os.environ.get("NGC_API_KEY") or "").strip(),
     )
 
     # Generate per-launch session token unless env override is provided.
@@ -722,7 +948,7 @@ def main():
     print(f"   Default Model: {_config.default_model}")
     print(f"   Session Token: {_session_token} (required: {_config.require_session_token})")
     print(
-        f"   API Key: {'[from env]' if _config.env_api_key or os.environ.get('NIM_API_KEY') else '[NOT SET]'}"
+        f"   API Key: {'[from environment]' if _config.env_api_key else '[UI session input required]'}"
     )
 
     # Run with uvicorn

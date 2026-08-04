@@ -9,7 +9,7 @@ import asyncio
 import functools
 import json
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -29,6 +29,7 @@ from src.nim_proxy_server import (
     app,
     error_response,
     forward_to_nim,
+    translate_instruction,
 )
 
 
@@ -337,6 +338,43 @@ class TestASGIApp:
         assert send.messages[0]["status"] == 403
 
     @run_async
+    async def test_trusted_ui_can_bootstrap_current_session_token(self, proxy_config):
+        proxy_module._config = proxy_config
+        proxy_module._session_token = "current-session-token-1234567890"
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/session",
+            "headers": [(b"origin", b"http://127.0.0.1:4173")],
+        }
+        send = MockSend()
+
+        await app(scope, MockReceive(), send)
+
+        assert send.messages[0]["status"] == 200
+        assert dict(send.messages[0]["headers"])[b"access-control-allow-origin"] == (
+            b"http://127.0.0.1:4173"
+        )
+        assert json.loads(send.messages[1]["body"])["session_token"] == proxy_module._session_token
+        assert json.loads(send.messages[1]["body"])["api_key_configured"] is True
+
+    @run_async
+    async def test_untrusted_origin_cannot_bootstrap_session_token(self, proxy_config):
+        proxy_module._config = proxy_config
+        proxy_module._session_token = "current-session-token-1234567890"
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/session",
+            "headers": [(b"origin", b"http://evil.com")],
+        }
+        send = MockSend()
+
+        await app(scope, MockReceive(), send)
+
+        assert send.messages[0]["status"] == 403
+
+    @run_async
     async def test_post_rejected_invalid_origin(self, proxy_config):
         """POST request from invalid origin rejected."""
         proxy_module._config = proxy_config
@@ -409,6 +447,32 @@ class TestASGIApp:
         assert send.messages[0]["status"] == 401
         body = json.loads(send.messages[1]["body"])
         assert body["error"]["code"] == "UNAUTHORIZED"
+
+    @run_async
+    async def test_invalid_nim_json_returns_structured_502(self, proxy_config, valid_nim_request):
+        proxy_config.max_body_size = 1_048_576
+        proxy_module._config = proxy_config
+        proxy_module._session_token = "test-token"
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/nim/rewrite",
+            "headers": [
+                (b"origin", b"http://127.0.0.1:4173"),
+                (b"x-session-token", b"test-token"),
+                (b"content-type", b"application/json"),
+            ],
+        }
+        send = MockSend()
+
+        with patch(
+            "src.nim_proxy_server.forward_to_nim",
+            new=AsyncMock(side_effect=ValueError("NIM returned truncated or invalid JSON")),
+        ):
+            await app(scope, MockReceive(json.dumps(valid_nim_request).encode()), send)
+
+        assert send.messages[0]["status"] == 502
+        assert json.loads(send.messages[1]["body"])["error"]["code"] == "NIM_INVALID_RESPONSE"
 
     @run_async
     async def test_post_body_too_large(self, proxy_config):
@@ -666,6 +730,31 @@ class TestForwardToNIM:
             assert "No API key configured" in str(exc.value)
 
     @run_async
+    async def test_translation_returns_only_prompt_ready_english(self, proxy_config):
+        proxy_module._config = proxy_config
+        with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
+            mock_instance = mock_client.return_value.__aenter__.return_value
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {"translated_text": "Build a larger Geunjeongjeon Hall."}
+                            )
+                        }
+                    }
+                ]
+            }
+            mock_instance.post.return_value = mock_response
+
+            result = await translate_instruction("근정전을 크게", None)
+
+        assert result["translated_text"] == "Build a larger Geunjeongjeon Hall."
+        assert result["model_id"] == "nvidia/nemotron-3-super-120b-a12b"
+
+    @run_async
     async def test_upstream_timeout_raises(self, proxy_config, valid_nim_request):
         """Upstream timeout raises httpx.TimeoutException."""
         proxy_module._config = proxy_config
@@ -690,8 +779,8 @@ class TestForwardToNIM:
             "request_id": valid_nim_request["request_id"],
             "source_revision": valid_nim_request["source_revision"],
             "scenes": [
-                {"id": 1, "video_prompt": "rewritten 1"},
-                {"id": 2, "video_prompt": "rewritten 2"},
+                {"id": "scene_1", "video_prompt": "rewritten 1"},
+                {"id": "scene_2", "video_prompt": "rewritten 2"},
             ],
         }
 
@@ -704,7 +793,7 @@ class TestForwardToNIM:
             mock_response.raise_for_status.return_value = None
             mock_instance.post.return_value = mock_response
 
-            await forward_to_nim(valid_nim_request)
+            result = await forward_to_nim(valid_nim_request)
 
             # Check what model parameter was passed in payload to upstream NIM
             call_kwargs = mock_instance.post.call_args[1]
@@ -713,9 +802,48 @@ class TestForwardToNIM:
 
             # FAILURE RULE: profile.id must NEVER be sent as model parameter!
             assert sent_model != "architecture.korean"
-            assert sent_model == "nvidia/nemotron-3-ultra-550b-a55b"
+            assert sent_model == "nvidia/nemotron-3-super-120b-a12b"
+            assert call_kwargs["json"]["chat_template_kwargs"] == {"enable_thinking": False}
             assert "Translate user instructions into natural English" in system_prompt
             assert "근정전 becomes Geunjeongjeon Hall" in system_prompt
+            assert [scene["id"] for scene in result["scenes"]] == [1, 2]
+
+    @run_async
+    async def test_ultra_5xx_falls_back_to_super(self, proxy_config, valid_nim_request):
+        proxy_module._config = proxy_config
+        valid_nim_request["model_id"] = "nvidia/nemotron-3-ultra-550b-a55b"
+        nim_response = {
+            "schema_version": "2.0",
+            "request_id": valid_nim_request["request_id"],
+            "source_revision": valid_nim_request["source_revision"],
+            "scenes": [
+                {"id": scene["id"], "video_prompt": f"rewritten {scene['id']}"}
+                for scene in valid_nim_request["scenes"]
+            ],
+        }
+
+        with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
+            mock_instance = mock_client.return_value.__aenter__.return_value
+            unavailable = MagicMock(status_code=503)
+            unavailable.raise_for_status.side_effect = httpx.HTTPStatusError(
+                "Unavailable", request=MagicMock(), response=unavailable
+            )
+            success = MagicMock()
+            success.raise_for_status.return_value = None
+            success.json.return_value = {
+                "choices": [{"message": {"content": json.dumps(nim_response)}}]
+            }
+            mock_instance.post.side_effect = [unavailable, success]
+
+            result = await forward_to_nim(valid_nim_request)
+
+        sent_models = [call.kwargs["json"]["model"] for call in mock_instance.post.call_args_list]
+        assert sent_models == [
+            "nvidia/nemotron-3-ultra-550b-a55b",
+            "nvidia/nemotron-3-super-120b-a12b",
+        ]
+        assert result["model_id"] == "nvidia/nemotron-3-super-120b-a12b"
+        assert result["fallback_from_model"] == "nvidia/nemotron-3-ultra-550b-a55b"
 
     @run_async
     async def test_custom_model_id_forwarded(self, proxy_config, valid_nim_request):
@@ -727,7 +855,10 @@ class TestForwardToNIM:
             "schema_version": "2.0",
             "request_id": valid_nim_request["request_id"],
             "source_revision": valid_nim_request["source_revision"],
-            "scenes": [],
+            "scenes": [
+                {"id": scene["id"], "video_prompt": f"rewritten {scene['id']}"}
+                for scene in valid_nim_request["scenes"]
+            ],
         }
 
         with patch("src.nim_proxy_server.httpx.AsyncClient") as mock_client:
